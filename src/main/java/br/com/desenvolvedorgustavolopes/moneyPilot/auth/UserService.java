@@ -1,33 +1,35 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.time.Instant;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    @Autowired
-    private UserRepository repository;
+    private final UserRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
-    public User createUser(User user) {
+    public UserDTO createUser(RegisterRequest request) {
         User newUser = new User();
 
-        newUser.setEmail(user.getEmail());
-        newUser.setPasswordHash(user.getPasswordHash());
-        newUser.setName(user.getName());
-        newUser.setCreatedAt(user.getCreatedAt());
+        newUser.setEmail(request.email());
+        newUser.setPasswordHash(passwordEncoder.encode(request.password()));
+        newUser.setName(request.name());
+        newUser.setCreatedAt(Instant.now());
 
-        return repository.save(newUser);
+        return new UserDTO(repository.save(newUser));
     }
 
     public boolean existByEmail(String email) {
         return repository.existsByEmail(email);
     }
 
-    public Optional<UserDTO> getUserByEmail(String email) {
-        return Optional.of(repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException(("Can't find user"))));
+    public UserDTO getUserByEmail(String email) {
+        return repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Can't find user"));
     }
 }

@@ -1,7 +1,7 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
 public record UserDTO(
-        Long idUser,
+        Long id,
         String email,
         String name
 ) {
