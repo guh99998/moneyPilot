@@ -126,8 +126,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
-    @ExceptionHandler(CategoryCantUpdatedException.class)
-    public ResponseEntity<ErrorResponse> handleCategoryCantUpdated(CategoryCantUpdatedException ex) {
+    @ExceptionHandler(CategoryCantChangeException.class)
+    public ResponseEntity<ErrorResponse> handleCategoryCantUpdated(CategoryCantChangeException ex) {
         ErrorResponse body = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.FORBIDDEN.value(),

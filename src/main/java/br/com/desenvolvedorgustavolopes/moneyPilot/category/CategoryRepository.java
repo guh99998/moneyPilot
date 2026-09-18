@@ -13,9 +13,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
         SELECT c
         FROM Category c
         WHERE c.userId = :userId
-            OR c.user IS NULL
+            OR c.userId IS NULL
     """)
-    Page<Category> findByUserIdIsNullOrUserId(@Param("userId") Long userId, Pageable pageable);
-
-    Optional<Category> findByIdAndUserId(Long categoryId, Long userId);
+    Page<Category> findVisibleToUser(@Param("userId") Long userId, Pageable pageable);
 }
