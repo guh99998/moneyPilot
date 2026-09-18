@@ -27,9 +27,4 @@ public class UserService {
     public boolean existByEmail(String email) {
         return repository.existsByEmail(email);
     }
-
-    public UserDTO getUserByEmail(String email) {
-        return repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Can't find user"));
-    }
 }

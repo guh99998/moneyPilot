@@ -19,12 +19,6 @@ public class UserController {
         return service.createUser(request);
     }
 
-    @GetMapping("/{email}")
-    @ResponseStatus(HttpStatus.OK)
-    public UserDTO findUserByEmail(@PathVariable String email) {
-        return service.getUserByEmail(email);
-    }
-
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
