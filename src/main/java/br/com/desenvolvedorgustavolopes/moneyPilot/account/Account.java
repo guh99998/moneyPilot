@@ -24,7 +24,7 @@ public class Account {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "type", nullable = false)
+    @Enumerated(EnumType.STRING)
     private AccountType type;
 
     @Column(name = "initial_balance", nullable = false)
