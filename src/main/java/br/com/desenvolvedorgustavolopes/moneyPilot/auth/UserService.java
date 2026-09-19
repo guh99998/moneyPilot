@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.exception.EmailAlreadyRegistredException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public UserDTO createUser(RegisterRequest request) {
+        if(existByEmail(request.email())) {
+            throw new EmailAlreadyRegistredException();
+        }
+
         User newUser = new User();
 
         newUser.setEmail(request.email());
@@ -24,7 +29,7 @@ public class UserService {
         return new UserDTO(repository.save(newUser));
     }
 
-    public boolean existByEmail(String email) {
+    private boolean existByEmail(String email) {
         return repository.existsByEmail(email);
     }
 }
