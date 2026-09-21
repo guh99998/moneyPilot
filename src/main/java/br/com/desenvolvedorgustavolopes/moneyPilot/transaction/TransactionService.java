@@ -5,19 +5,19 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.account.AccountRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.Category;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryService;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.AccountNotFoundException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.CategoryTypeMismatchException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.TransactionIsTransferException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.TransactionNotFoundException;
+import br.com.desenvolvedorgustavolopes.moneyPilot.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -73,9 +73,8 @@ public class TransactionService {
         Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
         Category category = categoryService.findVisibleCategory(request.categoryId());
 
-        if (!category.getType().name().equals(request.type().name())) {
+        if (!category.getType().name().equals(request.type().name()))
             throw new CategoryTypeMismatchException(request.categoryId(), request.type());
-        }
 
         Transaction transaction = new Transaction();
 
@@ -112,17 +111,17 @@ public class TransactionService {
         Transaction transaction = this.findOwnedTransaction(id);
         Long userId = userProvider.getCurrentUserId();
 
-        if (transaction.getTransferGroupId() != null) {
+        if (transaction.getTransferGroupId() != null)
             throw new TransactionIsTransferException(id);
-        }
+
 
         Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
 
         Category category = categoryService.findVisibleCategory(request.categoryId());
 
-        if (!category.getType().name().equals(request.type().name())) {
+        if (!category.getType().name().equals(request.type().name()))
             throw new CategoryTypeMismatchException(request.categoryId(), request.type());
-        }
+
 
         transaction.setAccountId(request.accountId());
         transaction.setCategoryId(request.categoryId());
@@ -143,5 +142,45 @@ public class TransactionService {
         } else {
             repository.delete(transaction);
         }
+    }
+
+    @Transactional
+    public List<TransactionResponse> createTransfer(TransferRequest request) {
+        Long userId = userProvider.getCurrentUserId();
+        if (request.fromAccountId().equals(request.toAccountId()))
+            throw new TransferSameAccountException();
+
+        Account fromAccount = accountRepository.findByIdAndUserId(request.fromAccountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.fromAccountId()));
+        Account toAccount = accountRepository.findByIdAndUserId(request.toAccountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.toAccountId()));
+
+        UUID transferGroupId = UUID.randomUUID();
+        Transaction fromTransaction = new Transaction();
+
+        fromTransaction.setAccountId(fromAccount.getId());
+        fromTransaction.setCategoryId(null);
+        fromTransaction.setAmount(request.amount());
+        fromTransaction.setType(TransactionType.EXPENSE);
+        fromTransaction.setDescription(request.description());
+        fromTransaction.setDate(request.date());
+        fromTransaction.setTransferGroupId(transferGroupId);
+        fromTransaction.setCreatedAt(Instant.now());
+        fromTransaction.setUpdatedAt(Instant.now());
+
+        Transaction toTransaction = new Transaction();
+
+        toTransaction.setAccountId(toAccount.getId());
+        toTransaction.setCategoryId(null);
+        toTransaction.setAmount(request.amount());
+        toTransaction.setType(TransactionType.INCOME);
+        toTransaction.setDescription(request.description());
+        toTransaction.setDate(request.date());
+        toTransaction.setTransferGroupId(transferGroupId);
+        toTransaction.setCreatedAt(Instant.now());
+        toTransaction.setUpdatedAt(Instant.now());
+
+        Transaction fromTransactionSave = repository.save(fromTransaction);
+        Transaction toTransactionSave = repository.save(toTransaction);
+
+        return List.of(new TransactionResponse(fromTransactionSave, fromAccount.getName(), null), new TransactionResponse(toTransactionSave, toAccount.getName(), null));
     }
 }
