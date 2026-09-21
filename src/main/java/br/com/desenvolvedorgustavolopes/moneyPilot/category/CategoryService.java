@@ -34,7 +34,7 @@ public class CategoryService {
         return new CategoryResponse(repository.save(category));
     }
 
-    private Category findVisibleCategory(Long categoryId) {
+    public Category findVisibleCategory(Long categoryId) {
         Long userId = userProvider.getCurrentUserId();
 
         Category category = repository.findById(categoryId).orElseThrow(() -> new CategoryNotFoundException(categoryId));
