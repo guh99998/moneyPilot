@@ -15,9 +15,11 @@ public record TransactionResponse(
         LocalDate date,
         UUID transferGroupId,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String accountName,
+        String categoryName
 ) {
-        public TransactionResponse(Transaction transaction) {
+        public TransactionResponse(Transaction transaction, String accountName, String categoryName) {
                 this(
                         transaction.getId(),
                         transaction.getAccountId(),
@@ -28,7 +30,9 @@ public record TransactionResponse(
                         transaction.getDate(),
                         transaction.getTransferGroupId(),
                         transaction.getCreatedAt(),
-                        transaction.getUpdatedAt()
+                        transaction.getUpdatedAt(),
+                        accountName,
+                        categoryName
                 );
         }
 }
