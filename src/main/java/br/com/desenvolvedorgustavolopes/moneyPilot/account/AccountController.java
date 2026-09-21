@@ -44,4 +44,10 @@ public class AccountController {
         service.deleteAccountById(id);
     }
 
+    @GetMapping("/{id}/balance")
+    @ResponseStatus(HttpStatus.OK)
+    public BalanceResponse getAccountBalance(@PathVariable Long id) {
+        return service.getAccountBalance(id);
+    }
+
 }

@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,4 +49,9 @@ public class TransactionController {
         service.deleteTransaction(id);
     }
 
+    @PostMapping("/transfers")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<TransactionResponse> createTransfer(@RequestBody @Valid TransferRequest request) {
+        return service.createTransfer(request);
+    }
 }

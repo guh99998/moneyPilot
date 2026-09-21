@@ -2,11 +2,13 @@ package br.com.desenvolvedorgustavolopes.moneyPilot.account;
 
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.AccountNotFoundException;
+import br.com.desenvolvedorgustavolopes.moneyPilot.transaction.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Service
@@ -15,6 +17,7 @@ public class AccountService {
 
     private final AccountRepository repository;
     private final AuthenticatedUserProvider userProvider;
+    private final TransactionRepository transactionRepository;
 
     public AccountResponse createAccount(AccountRequest request) {
         Account account = new Account();
@@ -62,5 +65,15 @@ public class AccountService {
         Account account = this.findOwnedAccount(id);
 
         repository.delete(account);
+    }
+
+    public BalanceResponse getAccountBalance(Long id) {
+        Account account = this.findOwnedAccount(id);
+
+        BigDecimal accountBalance = transactionRepository.getAccountBalance(account.getId());
+        Long counting = transactionRepository.countAllByAccountId(account.getId());
+        BigDecimal currentBalance = account.getInitialBalance().add(accountBalance);
+
+        return new BalanceResponse(account.getId(), account.getInitialBalance(), currentBalance, counting);
     }
 }
