@@ -1,7 +1,7 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
-    pageHead, emptyState, pager, formDialog, confirmDialog, todayIso
+    pageHead, emptyState, pager, formDialog, confirmDialog, todayIso, stackable
 } from '../ui.js';
 
 const filters = { accountId: '', categoryId: '', type: '', from: '', to: '' };
@@ -237,7 +237,7 @@ export async function renderTransactions() {
     }
 
     function table(rows) {
-        return el('div', { class: 'table-wrap' }, [
+        return stackable(el('div', { class: 'table-wrap' }, [
             el('table', {}, [
                 el('thead', {}, el('tr', {}, [
                     el('th', { text: 'Data' }),
@@ -270,7 +270,7 @@ export async function renderTransactions() {
                     ]);
                 }))
             ])
-        ]);
+        ]));
     }
 
     async function load() {

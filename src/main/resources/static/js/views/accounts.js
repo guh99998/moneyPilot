@@ -1,6 +1,6 @@
 import { api, fetchAll } from '../api.js';
 import {
-    el, fmtMoney, toast, reportError, pageHead, emptyState, formDialog, confirmDialog
+    el, fmtMoney, toast, reportError, pageHead, emptyState, formDialog, confirmDialog, stackable
 } from '../ui.js';
 
 const TYPE_LABEL = {
@@ -68,7 +68,7 @@ export async function renderAccounts() {
     }
 
     function table(rows) {
-        return el('div', { class: 'table-wrap' }, [
+        return stackable(el('div', { class: 'table-wrap' }, [
             el('table', {}, [
                 el('thead', {}, el('tr', {}, [
                     el('th', { text: 'Conta' }),
@@ -90,7 +90,7 @@ export async function renderAccounts() {
                     ])
                 ])))
             ])
-        ]);
+        ]));
     }
 
     async function load() {

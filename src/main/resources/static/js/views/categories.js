@@ -1,6 +1,6 @@
 import { api, fetchAll } from '../api.js';
 import {
-    el, badge, toast, reportError, pageHead, emptyState, formDialog, confirmDialog
+    el, badge, toast, reportError, pageHead, emptyState, formDialog, confirmDialog, stackable
 } from '../ui.js';
 
 const TYPE_OPTIONS = [
@@ -48,7 +48,7 @@ export async function renderCategories() {
     }
 
     function table(rows) {
-        return el('div', { class: 'table-wrap' }, [
+        return stackable(el('div', { class: 'table-wrap' }, [
             el('table', {}, [
                 el('thead', {}, el('tr', {}, [
                     el('th', { text: 'Categoria' }),
@@ -71,7 +71,7 @@ export async function renderCategories() {
                     ]);
                 }))
             ])
-        ]);
+        ]));
     }
 
     async function load() {

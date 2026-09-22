@@ -1,7 +1,7 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
     el, fmtMoney, monthName, monthPicker, toast, reportError,
-    pageHead, emptyState, formDialog, confirmDialog
+    pageHead, emptyState, formDialog, confirmDialog, stackable
 } from '../ui.js';
 
 const now = new Date();
@@ -86,7 +86,7 @@ export async function renderBudgets() {
     }
 
     function table(rows) {
-        return el('div', { class: 'table-wrap' }, [
+        return stackable(el('div', { class: 'table-wrap' }, [
             el('table', {}, [
                 el('thead', {}, el('tr', {}, [
                     el('th', { text: 'Categoria' }),
@@ -116,7 +116,7 @@ export async function renderBudgets() {
                     ]);
                 }))
             ])
-        ]);
+        ]));
     }
 
     async function load() {

@@ -36,30 +36,54 @@ function currentRoute() {
 }
 
 function buildSidebar(active) {
-    return el('aside', { class: 'sidebar' }, [
-        el('div', { class: 'brand' }, [
-            el('span', { class: 'brand-mark' }, el('img', { src: 'image/money-pilot-logo.png', alt: '' })),
-            el('span', { text: 'moneyPilot' })
+    // No celular a sidebar vira uma barra no topo e o menu abre por este botão.
+    const menuToggle = el('button', {
+        class: 'btn-ghost menu-toggle',
+        type: 'button',
+        'aria-label': 'Abrir menu',
+        'aria-expanded': 'false',
+        'aria-controls': 'sidebar-menu',
+        html: '<span></span><span></span><span></span>',
+        onClick: () => {
+            const open = sidebar.classList.toggle('open');
+            menuToggle.setAttribute('aria-expanded', String(open));
+            menuToggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+        }
+    });
+
+    const sidebar = el('aside', { class: 'sidebar' }, [
+        el('div', { class: 'sidebar-top' }, [
+            el('div', { class: 'brand' }, [
+                el('span', { class: 'brand-mark' }, el('img', { src: 'image/money-pilot-logo.png', alt: '' })),
+                el('span', { text: 'moneyPilot' })
+            ]),
+            menuToggle
         ]),
-        el('nav', { class: 'nav' }, ROUTES.map((route) => el('a', {
-            href: `#/${route.path}`,
-            class: route.path === active.path ? 'active' : '',
-            text: route.label
-        }))),
-        el('div', { class: 'sidebar-foot' }, [
-            el('span', { class: 'user-chip', text: session.email || '' }),
-            el('button', { class: 'btn-ghost btn-sm', text: 'Tema', onClick: toggleTheme }),
-            el('button', {
-                class: 'btn-ghost btn-sm',
-                text: 'Sair',
-                onClick: () => {
-                    session.clear();
-                    window.location.hash = '';
-                    render();
-                }
-            })
+        el('div', { class: 'sidebar-body', id: 'sidebar-menu' }, [
+            el('nav', { class: 'nav' }, ROUTES.map((route) => el('a', {
+                href: `#/${route.path}`,
+                class: route.path === active.path ? 'active' : '',
+                text: route.label,
+                // Tocar na página atual não dispara hashchange, então fecha à mão.
+                onClick: () => sidebar.classList.remove('open')
+            }))),
+            el('div', { class: 'sidebar-foot' }, [
+                el('span', { class: 'user-chip', text: session.email || '' }),
+                el('button', { class: 'btn-ghost btn-sm', text: 'Tema', onClick: toggleTheme }),
+                el('button', {
+                    class: 'btn-ghost btn-sm',
+                    text: 'Sair',
+                    onClick: () => {
+                        session.clear();
+                        window.location.hash = '';
+                        render();
+                    }
+                })
+            ])
         ])
     ]);
+
+    return sidebar;
 }
 
 async function render() {

@@ -242,3 +242,18 @@ export function monthPicker({ month, year, onChange }) {
         el('div', { class: 'field', style: 'max-width:110px' }, [el('label', { text: 'Ano' }), yearInput])
     ]);
 }
+
+/**
+ * Marca a tabela pra virar lista de cartões no celular: cada célula recebe o
+ * título da coluna em data-label, que o CSS mostra no lugar do cabeçalho.
+ */
+export function stackable(wrap) {
+    const labels = [...wrap.querySelectorAll('thead th')].map((th) => th.textContent);
+    wrap.querySelectorAll('tbody tr').forEach((tr) => {
+        [...tr.children].forEach((td, index) => {
+            if (labels[index]) td.dataset.label = labels[index];
+        });
+    });
+    wrap.classList.add('table-stack');
+    return wrap;
+}
