@@ -16,7 +16,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("""
     SELECT t
     FROM Transaction t, Account a
-    WHERE t.accountId = a.id and (:accountId IS NULL OR t.accountId = :accountId) and (:categoryId IS NULL OR t.categoryId = :categoryId) and a.userId = :userId and (:from IS NULL OR t.date >= :from) and (:to IS NULL OR t.date <= :to) and (:type IS NULL OR t.type = :type) and (:transferOnly IS NULL OR t.transferGroupId IS NOT NULL)
+    WHERE t.accountId = a.id and (:accountId IS NULL OR t.accountId = :accountId) and (:categoryId IS NULL OR t.categoryId = :categoryId) and a.userId = :userId and t.date >= COALESCE(:from, t.date) and t.date <= COALESCE(:to, t.date) and (:type IS NULL OR t.type = :type) and (:transferOnly IS NULL OR t.transferGroupId IS NOT NULL)
     """)
     Page<Transaction> findAllFiltered(@Param("userId") Long userId, @Param("accountId") Long accountId, @Param("categoryId") Long categoryId, @Param("from") LocalDate from, @Param("to") LocalDate to, @Param("type") TransactionType type, @Param("transferOnly") Boolean transferOnly, Pageable pageable);
 
