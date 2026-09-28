@@ -13,11 +13,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * Redireciona qualquer host diferente do oficial (ex.: o *.herokuapp.com) para ele.
- * Sem app.canonical-host configurado, não faz nada — local e testes seguem normais.
- * 308 em vez de 301 para POST/PUT continuarem POST/PUT depois do redirect.
- */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CanonicalHostFilter extends OncePerRequestFilter {
