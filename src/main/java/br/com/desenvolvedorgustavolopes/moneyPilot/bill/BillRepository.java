@@ -10,7 +10,9 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface BillRepository extends JpaRepository<Bill, Long> {
 
@@ -52,4 +54,6 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
                      @Param("status") BillStatus status,
                      @Param("accountId") Long accountId,
                      @Param("updatedAt") Instant updatedAt);
+
+    List<Bill> findAllByInstallmentGroupIdAndUserIdOrderByInstallmentNumberAsc(UUID installmentGroupId, Long userId);
 }

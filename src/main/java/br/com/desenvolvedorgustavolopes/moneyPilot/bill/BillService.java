@@ -16,8 +16,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -257,4 +262,79 @@ public class BillService {
         return new BillResponse(newBill, accountName, category.getName());
     }
 
+    @Transactional
+    public List<BillResponse> createInstallmentPlan(InstallmentPlanRequest request) {
+        Long userId = userProvider.getCurrentUserId();
+        String accountName = null;
+
+        if (request.accountId() != null) {
+            accountName = accountRepository.findByIdAndUserId(request.accountId(), userId)
+                    .orElseThrow(() -> new AccountNotFoundException(request.accountId())).getName();
+        }
+
+        Category category = categoryService.findVisibleCategory(request.categoryId());
+
+        if (request.type().name().equals(BillType.PAYABLE.name()))
+            if (category.getType().name().equals(CategoryType.INCOME.name()))
+                throw new CategoryTypeMismatchException(request.categoryId(), request.type());
+
+        if (request.type().name().equals(BillType.RECEIVABLE.name()))
+            if (category.getType().name().equals(CategoryType.EXPENSE.name()))
+                throw new CategoryTypeMismatchException(request.categoryId(), request.type());
+
+        if (request.totalAmount().compareTo(BigDecimal.valueOf(request.installments(), 2)) < 0)
+            throw new InstallmentAmountTooSmallException(BigDecimal.valueOf(request.installments(), 2), request.installments());
+
+        BigDecimal base = request.totalAmount().divide(BigDecimal.valueOf(request.installments()), 2, RoundingMode.DOWN);
+        BigDecimal residue = request.totalAmount().subtract(base.multiply(BigDecimal.valueOf(request.installments())));
+        BigDecimal first = base.add(residue);
+
+        UUID groupId = UUID.randomUUID();
+        Instant now = Instant.now();
+        List<Bill> bills = new ArrayList<>();
+
+        for (int i = 1; i <= request.installments(); i++) {
+            Bill bill = new Bill();
+
+            bill.setUserId(userId);
+            bill.setAccountId(request.accountId());
+            bill.setCategoryId(request.categoryId());
+            bill.setDescription(request.description());
+            bill.setType(request.type());
+            bill.setStatus(BillStatus.OPEN);
+            bill.setCreatedAt(now);
+            bill.setUpdatedAt(now);
+            bill.setAmount(i == 1 ? first : base);
+            bill.setDueDate(request.firstDueDate().plusMonths(i - 1));
+            bill.setInstallmentGroupId(groupId);
+            bill.setInstallmentNumber(i);
+            bill.setInstallmentTotal(request.installments());
+
+            bills.add(bill);
+        }
+
+        List<BillResponse> responses = new ArrayList<>();
+
+        for(Bill bill : repository.saveAll(bills)) {
+            responses.add(new BillResponse(bill, accountName, category.getName()));
+        }
+
+        return responses;
+    }
+
+    @Transactional
+    public void deleteInstallmentGroup(UUID groupId) {
+        Long userId = userProvider.getCurrentUserId();
+        List<Bill> bills = repository.findAllByInstallmentGroupIdAndUserIdOrderByInstallmentNumberAsc(groupId, userId);
+
+        if(bills.isEmpty())
+            throw new InstallmentGroupNotFoundException(groupId);
+
+        for (Bill bill : bills) {
+            if (bill.getStatus() == BillStatus.SETTLED)
+                throw new InstallmentGroupHasSettledBillException(bill.getInstallmentNumber(), bill.getInstallmentTotal(), bill.getId());
+        }
+
+        repository.deleteAll(bills);
+    }
 }
