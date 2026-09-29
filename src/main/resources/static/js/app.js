@@ -1,4 +1,4 @@
-import { session } from './api.js';
+import { api, session } from './api.js';
 import { el, clear, toast } from './ui.js';
 import { renderAuth } from './views/auth.js';
 import { renderDashboard } from './views/dashboard.js';
@@ -73,7 +73,9 @@ function buildSidebar(active) {
                 el('button', {
                     class: 'btn-ghost btn-sm',
                     text: 'Sair',
-                    onClick: () => {
+                    onClick: async () => {
+                        // Revoga o refresh token no servidor; se falhar, sai mesmo assim.
+                        await api.logout().catch(() => {});
                         session.clear();
                         window.location.hash = '';
                         render();
