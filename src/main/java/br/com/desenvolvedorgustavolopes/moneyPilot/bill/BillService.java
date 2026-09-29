@@ -20,9 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -336,5 +334,18 @@ public class BillService {
         }
 
         repository.deleteAll(bills);
+    }
+
+    @Transactional
+    public List<BillResponse> bulkSettle(BulkSettleRequest request) {
+        LinkedHashSet<Long> billIds = new LinkedHashSet<>(request.billIds());
+        List<BillResponse> results = new ArrayList<>();
+
+        for (Long id : billIds) {
+            Bill bill = this.findOwnedBill(id);
+            results.add(this.settle(id, new SettleRequest(request.accountId(), bill.getAmount())));
+        }
+
+        return results;
     }
 }

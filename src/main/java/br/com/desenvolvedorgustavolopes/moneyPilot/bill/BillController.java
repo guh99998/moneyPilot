@@ -85,4 +85,10 @@ public class BillController {
     public void deleteInstallmentGroup(@PathVariable UUID groupId) {
         service.deleteInstallmentGroup(groupId);
     }
+
+    @PostMapping("/settle")
+    @ResponseStatus(HttpStatus.OK)
+    public List<BillResponse> bulkSettle(@RequestBody @Valid BulkSettleRequest request) {
+        return service.bulkSettle(request);
+    }
 }
