@@ -12,8 +12,9 @@ public class AuthService {
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthTokens login(LoginRequest request) {
         User user = repository.findUserByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
@@ -21,7 +22,21 @@ public class AuthService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
-        String token = jwtService.generateToken(user.getEmail());
-        return new AuthResponse(token);
+        String accessToken = jwtService.generateToken(user.getEmail());
+
+        String refreshToken = refreshTokenService.issue(user.getId());
+
+        return new AuthTokens(accessToken, refreshToken);
+    }
+
+    public AuthTokens refresh(String rawToken) {
+        RefreshResult result = refreshTokenService.rotate(rawToken);
+        User user = repository.findById(result.userId()).orElseThrow(() -> new BadCredentialsException("Bad Credentials"));
+        String accessToken = jwtService.generateToken(user.getEmail());
+        return new AuthTokens(accessToken, result.refreshToken());
+    }
+
+    public void logout(String rawToken) {
+        refreshTokenService.revoke(rawToken);
     }
 }
