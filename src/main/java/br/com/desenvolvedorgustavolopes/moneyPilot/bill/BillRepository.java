@@ -3,9 +3,12 @@ package br.com.desenvolvedorgustavolopes.moneyPilot.bill;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -31,4 +34,20 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
                                @Param("dueDateFrom") LocalDate dueDateFrom,
                                @Param("dueDateTo") LocalDate dueDateTo,
                                Pageable pageable);
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+    UPDATE Bill b
+    SET b.status = :status, b.settledAt = :settledAt, b.settledAmount = :settledAmount, b.transactionId = :transactionId, b.accountId = :accountId, b.updatedAt = :updatedAt
+    WHERE b.id = :id AND b.userId = :userId AND b.status = :expectedStatus
+    """)
+    int settleIfOpen(@Param("id") Long id,
+                     @Param("userId") Long userId,
+                     @Param("expectedStatus") BillStatus expectedStatus,
+                     @Param("settledAt") Instant settledAt,
+                     @Param("settledAmount") BigDecimal settledAmount,
+                     @Param("transactionId") Long transactionId,
+                     @Param("status") BillStatus status,
+                     @Param("accountId") Long accountId,
+                     @Param("updatedAt") Instant updatedAt);
 }
