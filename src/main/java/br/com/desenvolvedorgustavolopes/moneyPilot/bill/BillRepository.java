@@ -25,6 +25,7 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
          AND (:categoryId IS NULL OR b.categoryId = :categoryId)
          AND (:accountId IS NULL OR b.accountId = :accountId)
          AND b.dueDate >= COALESCE(:dueDateFrom, b.dueDate) and b.dueDate <= COALESCE(:dueDateTo, b.dueDate)
+         AND (CAST(:dueBefore AS LocalDate) IS NULL OR b.dueDate < :dueBefore)
     """)
     Page<Bill> findAllFiltered(@Param("userId") Long userId,
                                @Param("type") BillType type,
@@ -33,6 +34,7 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
                                @Param("categoryId") Long categoryId,
                                @Param("dueDateFrom") LocalDate dueDateFrom,
                                @Param("dueDateTo") LocalDate dueDateTo,
+                               @Param("dueBefore") LocalDate dueBefore,
                                Pageable pageable);
 
     @Modifying(clearAutomatically = true)

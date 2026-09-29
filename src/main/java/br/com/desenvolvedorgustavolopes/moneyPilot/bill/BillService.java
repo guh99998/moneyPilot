@@ -6,14 +6,15 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvide
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.Category;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryService;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryType;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.AccountNotFoundException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.BillNotFoundException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.BillNotOpenException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.CategoryTypeMismatchException;
+import br.com.desenvolvedorgustavolopes.moneyPilot.exception.*;
+import br.com.desenvolvedorgustavolopes.moneyPilot.transaction.Transaction;
+import br.com.desenvolvedorgustavolopes.moneyPilot.transaction.TransactionRepository;
+import br.com.desenvolvedorgustavolopes.moneyPilot.transaction.TransactionType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,24 +27,36 @@ public class BillService {
     private final AuthenticatedUserProvider userProvider;
     private final AccountRepository accountRepository;
     private final CategoryService categoryService;
+    private final TransactionRepository transactionRepository;
 
     public Page<BillResponse> getAllBills(Long accountId,
                                           Long categoryId,
                                           BillType type,
-                                          BillStatus status,
+                                          BillStatusFilter status,
                                           LocalDate dueDateFrom,
                                           LocalDate dueDateTo,
                                           Pageable pageable) {
         Long userId = userProvider.getCurrentUserId();
+        BillStatus queryStatus = null;
+        LocalDate dueBefore = null;
 
-        if(accountId != null) {
+        if (status != null) {
+            if (status == BillStatusFilter.OVERDUE) {
+                queryStatus = BillStatus.OPEN;
+                dueBefore = LocalDate.now();
+            } else {
+                queryStatus = BillStatus.valueOf(status.name());
+            }
+        }
+
+        if (accountId != null) {
             accountRepository.findByIdAndUserId(accountId, userId).orElseThrow(
                     () -> new AccountNotFoundException(accountId)
             );
         }
 
         return repository.findAllFiltered(
-                userId, type, status, accountId, categoryId, dueDateFrom, dueDateTo, pageable
+                userId, type, queryStatus, accountId, categoryId, dueDateFrom, dueDateTo, dueBefore, pageable
         ).map(
                 b -> {
                     Category category = categoryService.findVisibleCategory(b.getCategoryId());
@@ -74,23 +87,24 @@ public class BillService {
         Long userId = userProvider.getCurrentUserId();
         String accountName = null;
 
-        if(request.accountId() != null) {
+        if (request.accountId() != null) {
             accountName = accountRepository.findByIdAndUserId(request.accountId(), userId)
                     .orElseThrow(() -> new AccountNotFoundException(request.accountId())).getName();
         }
 
         Category category = categoryService.findVisibleCategory(request.categoryId());
 
-        if(request.type().name().equals(BillType.PAYABLE.name()))
-            if(category.getType().name().equals(CategoryType.INCOME.name()))
+        if (request.type().name().equals(BillType.PAYABLE.name()))
+            if (category.getType().name().equals(CategoryType.INCOME.name()))
                 throw new CategoryTypeMismatchException(request.categoryId(), request.type());
 
-        if(request.type().name().equals(BillType.RECEIVABLE.name()))
-            if(category.getType().name().equals(CategoryType.EXPENSE.name()))
+        if (request.type().name().equals(BillType.RECEIVABLE.name()))
+            if (category.getType().name().equals(CategoryType.EXPENSE.name()))
                 throw new CategoryTypeMismatchException(request.categoryId(), request.type());
 
         Bill bill = new Bill();
 
+        bill.setUserId(userId);
         bill.setAccountId(request.accountId());
         bill.setCategoryId(request.categoryId());
         bill.setDescription(request.description());
@@ -108,7 +122,7 @@ public class BillService {
         Bill bill = this.findOwnedBill(id);
         String accountName = null;
 
-        if(bill.getAccountId() != null) {
+        if (bill.getAccountId() != null) {
             accountName = accountRepository.findByIdAndUserId(bill.getAccountId(), bill.getUserId())
                     .orElseThrow(() -> new AccountNotFoundException(bill.getAccountId())).getName();
         }
@@ -122,21 +136,24 @@ public class BillService {
         Bill bill = this.findOwnedBill(id);
         Long userId = userProvider.getCurrentUserId();
 
+        if (bill.getStatus() != BillStatus.OPEN)
+            throw new BillNotOpenException(id);
+
         String accountName = null;
 
-        if(request.accountId() != null) {
+        if (request.accountId() != null) {
             accountName = accountRepository.findByIdAndUserId(request.accountId(), userId)
                     .orElseThrow(() -> new AccountNotFoundException(request.accountId())).getName();
         }
 
         Category category = categoryService.findVisibleCategory(request.categoryId());
 
-        if(request.type().name().equals(BillType.PAYABLE.name()))
-            if(category.getType().name().equals(CategoryType.INCOME.name()))
+        if (request.type().name().equals(BillType.PAYABLE.name()))
+            if (category.getType().name().equals(CategoryType.INCOME.name()))
                 throw new CategoryTypeMismatchException(request.categoryId(), request.type());
 
-        if(request.type().name().equals(BillType.RECEIVABLE.name()))
-            if(category.getType().name().equals(CategoryType.EXPENSE.name()))
+        if (request.type().name().equals(BillType.RECEIVABLE.name()))
+            if (category.getType().name().equals(CategoryType.EXPENSE.name()))
                 throw new CategoryTypeMismatchException(request.categoryId(), request.type());
 
         bill.setAccountId(request.accountId());
@@ -153,18 +170,21 @@ public class BillService {
     public void deleteBill(Long id) {
         Bill bill = this.findOwnedBill(id);
 
+        if (bill.getStatus() != BillStatus.OPEN)
+            throw new BillNotOpenException(id);
+
         repository.delete(bill);
     }
 
     public BillResponse cancel(Long id) {
         Bill bill = this.findOwnedBill(id);
 
-        if(bill.getStatus() != BillStatus.OPEN)
+        if (bill.getStatus() != BillStatus.OPEN)
             throw new BillNotOpenException(id);
 
         String accountName = null;
 
-        if(bill.getAccountId() != null) {
+        if (bill.getAccountId() != null) {
             accountName = accountRepository.findByIdAndUserId(bill.getAccountId(), bill.getUserId())
                     .orElseThrow(() -> new AccountNotFoundException(bill.getAccountId())).getName();
         }
@@ -176,4 +196,65 @@ public class BillService {
 
         return new BillResponse(repository.save(bill), accountName, category.getName());
     }
+
+    @Transactional
+    public BillResponse settle(Long id, SettleRequest request) {
+        Bill bill = this.findOwnedBill(id);
+        Long userId = userProvider.getCurrentUserId();
+
+        if (bill.getStatus() != BillStatus.OPEN)
+            throw new BillNotOpenException(id);
+
+        Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
+        Category category = categoryService.findVisibleCategory(bill.getCategoryId());
+
+        Transaction transaction = new Transaction();
+        transaction.setAccountId(request.accountId());
+        transaction.setCategoryId(bill.getCategoryId());
+        transaction.setAmount(request.amount());
+        transaction.setType(bill.getType().name().equals(BillType.PAYABLE.name()) ? TransactionType.EXPENSE : TransactionType.INCOME);
+        transaction.setDescription(bill.getDescription());
+        transaction.setDate(LocalDate.now());
+        transaction.setCreatedAt(Instant.now());
+        transaction.setUpdatedAt(Instant.now());
+
+        transactionRepository.save(transaction);
+
+        if(repository.settleIfOpen(bill.getId(), userId, BillStatus.OPEN, Instant.now(), request.amount(), transaction.getId(), BillStatus.SETTLED, request.accountId(), Instant.now()) == 0)
+            throw new BillNotOpenException(id);
+
+        Bill newBill = repository.findByIdAndUserId(id, userId).orElseThrow(() -> new BillNotFoundException(id));
+
+        return new BillResponse(newBill, account.getName(), category.getName());
+    }
+
+    @Transactional
+    public BillResponse unsettle(Long id) {
+        Bill bill = this.findOwnedBill(id);
+        String accountName = null;
+
+        if(bill.getStatus() != BillStatus.SETTLED)
+            throw new BillNotSettledException(id);
+
+        Long transactionId = bill.getTransactionId();
+
+        if(bill.getAccountId() != null) {
+            accountName = accountRepository.findByIdAndUserId(bill.getAccountId(), bill.getUserId()).orElseThrow(() -> new AccountNotFoundException(bill.getAccountId())).getName();
+        }
+
+        Category category = categoryService.findVisibleCategory(bill.getCategoryId());
+
+        bill.setStatus(BillStatus.OPEN);
+        bill.setSettledAt(null);
+        bill.setSettledAmount(null);
+        bill.setTransactionId(null);
+        bill.setUpdatedAt(Instant.now());
+
+        Bill newBill = repository.save(bill);
+
+        transactionRepository.deleteById(transactionId);
+
+        return new BillResponse(newBill, accountName, category.getName());
+    }
+
 }
