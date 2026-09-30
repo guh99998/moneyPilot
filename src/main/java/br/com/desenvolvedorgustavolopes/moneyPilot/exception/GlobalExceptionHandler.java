@@ -365,4 +365,17 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
+
+    @ExceptionHandler(TransactionLinkedToBillException.class)
+    public ResponseEntity<ErrorResponse> handleTransactionLinkedToBill(TransactionLinkedToBillException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
 }

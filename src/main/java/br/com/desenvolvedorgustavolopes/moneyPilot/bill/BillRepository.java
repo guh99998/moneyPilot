@@ -56,4 +56,6 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
                      @Param("updatedAt") Instant updatedAt);
 
     List<Bill> findAllByInstallmentGroupIdAndUserIdOrderByInstallmentNumberAsc(UUID installmentGroupId, Long userId);
+
+    boolean existsByTransactionId(Long transactionId);
 }
