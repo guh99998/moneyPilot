@@ -378,4 +378,30 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
+
+    @ExceptionHandler(InvalidRecurrenceDateRangeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRecurrenceDateRange(InvalidRecurrenceDateRangeException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                Map.of("endDate", ex.getMessage())
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(BillRecurrenceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleBillRecurrenceNotFound(BillRecurrenceNotFoundException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
 }
