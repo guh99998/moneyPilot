@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -70,5 +72,23 @@ public class BillController {
     @ResponseStatus(HttpStatus.OK)
     public BillResponse unsettleBill(@PathVariable Long id) {
         return service.unsettle(id);
+    }
+
+    @PostMapping("/installments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<BillResponse> createInstallments(@RequestBody @Valid InstallmentPlanRequest request) {
+        return service.createInstallmentPlan(request);
+    }
+
+    @DeleteMapping("/installments/{groupId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteInstallmentGroup(@PathVariable UUID groupId) {
+        service.deleteInstallmentGroup(groupId);
+    }
+
+    @PostMapping("/settle")
+    @ResponseStatus(HttpStatus.OK)
+    public List<BillResponse> bulkSettle(@RequestBody @Valid BulkSettleRequest request) {
+        return service.bulkSettle(request);
     }
 }

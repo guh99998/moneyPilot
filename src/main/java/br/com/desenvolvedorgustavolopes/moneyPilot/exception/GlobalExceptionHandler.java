@@ -326,4 +326,56 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
+
+    @ExceptionHandler(InstallmentAmountTooSmallException.class)
+    public ResponseEntity<ErrorResponse> handleInstallmentAmountTooSmall(InstallmentAmountTooSmallException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(InstallmentGroupNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleInstallmentGroupNotFound(InstallmentGroupNotFoundException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(InstallmentGroupHasSettledBillException.class)
+    public ResponseEntity<ErrorResponse> handleInstallmentGroupHasSettledBill(InstallmentGroupHasSettledBillException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(TransactionLinkedToBillException.class)
+    public ResponseEntity<ErrorResponse> handleTransactionLinkedToBill(TransactionLinkedToBillException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
 }

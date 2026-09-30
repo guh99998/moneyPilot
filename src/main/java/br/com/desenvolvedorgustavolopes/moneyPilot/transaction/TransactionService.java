@@ -3,6 +3,7 @@ package br.com.desenvolvedorgustavolopes.moneyPilot.transaction;
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.Account;
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.AccountRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
+import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.Category;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryService;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.*;
@@ -27,6 +28,7 @@ public class TransactionService {
     private final AuthenticatedUserProvider userProvider;
     private final AccountRepository accountRepository;
     private final CategoryService categoryService;
+    private final BillRepository billRepository;
 
     public Page<TransactionResponse> getAllTransactions(Long accountId, Long categoryId, LocalDate from, LocalDate to, TransactionFilterType type, Pageable pageable) {
         Long userId = userProvider.getCurrentUserId();
@@ -114,6 +116,9 @@ public class TransactionService {
         if (transaction.getTransferGroupId() != null)
             throw new TransactionIsTransferException(id);
 
+        if (billRepository.existsByTransactionId(id))
+            throw new TransactionLinkedToBillException(id);
+
 
         Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
 
@@ -136,6 +141,9 @@ public class TransactionService {
 
     public void deleteTransaction(Long id) {
         Transaction transaction = this.findOwnedTransaction(id);
+
+        if (billRepository.existsByTransactionId(id))
+            throw new TransactionLinkedToBillException(id);
 
         if (transaction.getTransferGroupId() != null) {
             repository.deleteAll(repository.findAllByTransferGroupId(transaction.getTransferGroupId()));
