@@ -1,5 +1,6 @@
 import { api, fetchAll } from '../api.js';
 import { el, fmtMoney, monthName, monthPicker, pageHead, emptyState, reportError } from '../ui.js';
+import { presetBillFilters } from './bills.js';
 
 const now = new Date();
 let month = now.getMonth() + 1;
@@ -8,8 +9,8 @@ let forecastDays = 30;
 
 const FORECAST_PERIODS = [30, 60, 90];
 
-function statTile(label, value, tone, hint, hintTone) {
-    return el('div', { class: 'card stat' }, [
+function statTile(label, value, tone, hint, hintTone, href) {
+    return el(href ? 'a' : 'div', { class: `card stat ${href ? 'stat-link' : ''}`, href }, [
         el('span', { class: 'label', text: label }),
         el('span', { class: `value ${tone || ''}`, text: value }),
         hint ? el('span', { class: `hint ${hintTone || ''}`, text: hint }) : null
@@ -20,13 +21,18 @@ function plural(count, singular, pluralForm) {
     return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-/** Tile de títulos em aberto — vencido em vermelho, mas sempre com contagem e valor escritos. */
-function billTile(label, side) {
+/**
+ * Tile de títulos em aberto — vencido em vermelho, mas sempre com contagem e valor escritos.
+ * Leva à lista já filtrada: só os vencidos quando houver, senão tudo em aberto daquele tipo.
+ */
+function billTile(label, side, type) {
     const overdue = Number(side.overdueCount) || 0;
     const hint = overdue
         ? `${plural(overdue, 'vencido', 'vencidos')} · ${fmtMoney(side.overdueTotal)}`
         : `${plural(Number(side.count) || 0, 'título', 'títulos')} · nenhum vencido`;
-    return statTile(label, fmtMoney(side.total), '', hint, overdue ? 'critical' : '');
+    const tile = statTile(label, fmtMoney(side.total), '', hint, overdue ? 'critical' : '', '#/bills');
+    tile.addEventListener('click', () => presetBillFilters({ type, status: overdue ? 'OVERDUE' : 'OPEN' }));
+    return tile;
 }
 
 function shortDate(isoDate) {
@@ -258,8 +264,8 @@ export async function renderDashboard() {
                     )
                 ]),
                 el('div', { class: 'grid grid-2', style: 'margin-top:1rem' }, [
-                    billTile('A pagar', billsSummary.payable),
-                    billTile('A receber', billsSummary.receivable)
+                    billTile('A pagar', billsSummary.payable, 'PAYABLE'),
+                    billTile('A receber', billsSummary.receivable, 'RECEIVABLE')
                 ]),
                 forecastCard(forecast),
                 el('div', { class: 'grid grid-2', style: 'margin-top:1rem' }, [
