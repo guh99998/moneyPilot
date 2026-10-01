@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,5 +91,11 @@ public class BillController {
     @ResponseStatus(HttpStatus.OK)
     public List<BillResponse> bulkSettle(@RequestBody @Valid BulkSettleRequest request) {
         return service.bulkSettle(request);
+    }
+
+    @PostMapping("/materialize")
+    @ResponseStatus(HttpStatus.OK)
+    public List<BillResponse> materialize(@RequestParam YearMonth month) {
+        return service.materializeFromRecurrences(month);
     }
 }

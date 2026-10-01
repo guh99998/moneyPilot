@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 
 @Service
@@ -31,6 +32,7 @@ public class BillService {
     private final AccountRepository accountRepository;
     private final CategoryService categoryService;
     private final TransactionRepository transactionRepository;
+    private final BillRecurrenceRepository billRecurrenceRepository;
 
     public Page<BillResponse> getAllBills(Long accountId,
                                           Long categoryId,
@@ -347,5 +349,59 @@ public class BillService {
         }
 
         return results;
+    }
+
+    @Transactional
+    public List<BillResponse> materializeFromRecurrences(YearMonth yearMonth) {
+        Long userId = userProvider.getCurrentUserId();
+        List<BillRecurrence> billRecurrences = billRecurrenceRepository.findAllByUserIdAndActiveTrue(userId);
+        List<Bill> bills = new ArrayList<>();
+        Instant now = Instant.now();
+        for(BillRecurrence billRecurrence : billRecurrences) {
+            LocalDate dueDate = this.dueDateFor(yearMonth, billRecurrence.getDayOfMonth());
+            if(dueDate.isBefore(billRecurrence.getStartDate()))
+                continue;
+
+            if(billRecurrence.getEndDate() != null && dueDate.isAfter(billRecurrence.getEndDate()))
+                continue;
+
+            if (repository.existsByRecurrenceIdAndDueDate(billRecurrence.getId(), dueDate))
+                continue;
+
+            Bill bill = new Bill();
+            bill.setUserId(userId);
+            bill.setAccountId(billRecurrence.getAccountId());
+            bill.setCategoryId(billRecurrence.getCategoryId());
+            bill.setDescription(billRecurrence.getDescription());
+            bill.setAmount(billRecurrence.getAmount());
+            bill.setType(billRecurrence.getType());
+            bill.setDueDate(dueDate);
+            bill.setRecurrenceId(billRecurrence.getId());
+            bill.setStatus(BillStatus.OPEN);
+            bill.setCreatedAt(now);
+            bill.setUpdatedAt(now);
+
+            bills.add(bill);
+        }
+
+        List<BillResponse> responses = new ArrayList<>();
+
+        for(Bill bill : repository.saveAll(bills)) {
+            String accountName = null;
+            if (bill.getAccountId() != null)
+                accountName = accountRepository.findByIdAndUserId(bill.getAccountId(), bill.getUserId()).orElseThrow(() -> new AccountNotFoundException(bill.getAccountId())).getName();
+
+            Category category = categoryService.findVisibleCategory(bill.getCategoryId());
+
+            responses.add(new BillResponse(bill, accountName, category.getName()));
+        }
+
+        return responses;
+    }
+
+    private LocalDate dueDateFor(YearMonth yearMonth, Integer dayOfMonth) {
+        int days = yearMonth.lengthOfMonth();
+        int minDay = Math.min(days, dayOfMonth);
+        return yearMonth.atDay(minDay);
     }
 }

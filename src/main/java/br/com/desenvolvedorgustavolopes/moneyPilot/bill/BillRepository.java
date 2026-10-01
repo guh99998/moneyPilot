@@ -58,4 +58,8 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     List<Bill> findAllByInstallmentGroupIdAndUserIdOrderByInstallmentNumberAsc(UUID installmentGroupId, Long userId);
 
     boolean existsByTransactionId(Long transactionId);
+
+    boolean existsByRecurrenceId(Long recurrenceId);
+
+    boolean existsByRecurrenceIdAndDueDate(Long recurrenceId, LocalDate dueDate);
 }
