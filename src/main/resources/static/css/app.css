@@ -16,6 +16,8 @@
     --good:           #0ca30c;
     --warning:        #fab219;
     --critical:       #d03b3b;
+    --overdue:        #c4312f;
+    --pending:        #b7791f;
     --series-1:       #2a78d6;
     --shadow:         0 1px 2px rgba(11, 11, 11, .06), 0 4px 12px rgba(11, 11, 11, .04);
     --radius:         10px;
@@ -36,6 +38,8 @@
         --accent-soft:    #184f95;
         --income:         #3fa83f;
         --expense:        #e66767;
+        --overdue:        #f07a73;
+        --pending:        #e0a548;
         --series-1:       #3987e5;
         --shadow:         0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .3);
     }
@@ -55,6 +59,8 @@
     --accent-soft:    #184f95;
     --income:         #3fa83f;
     --expense:        #e66767;
+    --overdue:        #f07a73;
+    --pending:        #e0a548;
     --series-1:       #3987e5;
     --shadow:         0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px rgba(0, 0, 0, .3);
 }
@@ -245,6 +251,46 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .badge-income .swatch { background: var(--income); }
 .badge-expense .swatch { background: var(--expense); }
 .badge-transfer .swatch { background: var(--text-muted); }
+.badge-open .swatch { background: var(--pending); }
+.badge-overdue { color: var(--overdue); border-color: currentColor; }
+.badge-overdue .swatch { background: var(--overdue); }
+.badge-settled .swatch { background: var(--good); }
+.badge-canceled { color: var(--text-muted); }
+.badge-canceled .swatch { background: transparent; border: 1px solid var(--text-muted); }
+
+/* ---------- títulos ---------- */
+.stat-link { color: inherit; text-decoration: none; transition: border-color .15s ease; }
+.stat-link:hover { border-color: var(--accent); }
+
+.bills-table th.check, .bills-table td.check { width: 2.25rem; padding-right: 0; }
+.bills-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.bills-table input[type="checkbox"]:disabled { cursor: not-allowed; opacity: .35; }
+.bills-table td.due { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bills-table tr.is-overdue td.due { color: var(--overdue); font-weight: 600; }
+.bills-table tr.is-selected { background: var(--accent-soft); }
+.bills-table .cell-tag { display: block; font-size: .76rem; color: var(--text-muted); }
+.bills-table td.amount-out { color: var(--expense); }
+.bills-table td.amount-in { color: var(--income); }
+.bills-table td.is-canceled { color: var(--text-muted); text-decoration: line-through; }
+
+.selection-bar {
+    position: sticky; top: .5rem; z-index: 5;
+    display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem;
+    padding: .6rem .9rem; margin-bottom: 1rem;
+    background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.selection-count { font-weight: 600; }
+.selection-sum { font-variant-numeric: tabular-nums; color: var(--text-secondary); margin-right: auto; }
+.selection-warn { color: var(--critical); font-size: .82rem; }
+
+.dialog-lead { margin: 0 0 .9rem; color: var(--text-secondary); font-size: .9rem; }
+.installment-preview { border-top: 1px solid var(--border); padding-top: .75rem; margin-top: .25rem; }
+.preview-table { font-size: .84rem; }
+.preview-table th, .preview-table td { padding: .3rem .4rem; }
+.preview-table tr.gap td { color: var(--text-muted); font-style: italic; text-align: center; }
+.preview-table tbody tr:hover { background: none; }
+.preview-hint { margin: .5rem 0 0; font-size: .8rem; color: var(--text-secondary); }
+.preview-error { margin: 0; font-size: .85rem; color: var(--critical); font-weight: 550; }
 
 /* ---------- charts ---------- */
 .bars { display: flex; flex-direction: column; gap: .8rem; }
