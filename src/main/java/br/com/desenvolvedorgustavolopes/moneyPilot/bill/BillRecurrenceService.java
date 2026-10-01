@@ -5,14 +5,12 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvide
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.Category;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryService;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryType;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.AccountNotFoundException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.BillRecurrenceNotFoundException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.CategoryTypeMismatchException;
-import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidRecurrenceDateRangeException;
+import br.com.desenvolvedorgustavolopes.moneyPilot.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,6 +23,7 @@ public class BillRecurrenceService {
     private final AuthenticatedUserProvider userProvider;
     private final CategoryService categoryService;
     private final AccountRepository accountRepository;
+    private final BillRepository billRepository;
 
     private BillRecurrence findOwnedRecurrence(Long id) {
         Long userId = userProvider.getCurrentUserId();
@@ -116,6 +115,22 @@ public class BillRecurrenceService {
         billRecurrence.setDayOfMonth(request.dayOfMonth());
         billRecurrence.setStartDate(request.startDate());
         billRecurrence.setEndDate(request.endDate());
+        billRecurrence.setUpdatedAt(Instant.now());
+
+        return toResponse(repository.save(billRecurrence));
+    }
+
+    public void deleteBillRecurrence(Long id) {
+        BillRecurrence billRecurrence = this.findOwnedRecurrence(id);
+        if(billRepository.existsByRecurrenceId(id))
+            throw new BillRecurrenceHasBillsException(id);
+
+        repository.delete(billRecurrence);
+    }
+
+    public BillRecurrenceResponse deactivate(Long id) {
+        BillRecurrence billRecurrence = this.findOwnedRecurrence(id);
+        billRecurrence.setActive(false);
         billRecurrence.setUpdatedAt(Instant.now());
 
         return toResponse(repository.save(billRecurrence));
