@@ -14,5 +14,5 @@ public abstract class AbstractIntegrationTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:latest");
+    static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:18");
 }
