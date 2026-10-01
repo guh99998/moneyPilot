@@ -4,13 +4,129 @@ import { el, fmtMoney, monthName, monthPicker, pageHead, emptyState, reportError
 const now = new Date();
 let month = now.getMonth() + 1;
 let year = now.getFullYear();
+let forecastDays = 30;
 
-function statTile(label, value, tone, hint) {
+const FORECAST_PERIODS = [30, 60, 90];
+
+function statTile(label, value, tone, hint, hintTone) {
     return el('div', { class: 'card stat' }, [
         el('span', { class: 'label', text: label }),
         el('span', { class: `value ${tone || ''}`, text: value }),
-        hint ? el('span', { class: 'hint', text: hint }) : null
+        hint ? el('span', { class: `hint ${hintTone || ''}`, text: hint }) : null
     ]);
+}
+
+function plural(count, singular, pluralForm) {
+    return `${count} ${count === 1 ? singular : pluralForm}`;
+}
+
+/** Tile de títulos em aberto — vencido em vermelho, mas sempre com contagem e valor escritos. */
+function billTile(label, side) {
+    const overdue = Number(side.overdueCount) || 0;
+    const hint = overdue
+        ? `${plural(overdue, 'vencido', 'vencidos')} · ${fmtMoney(side.overdueTotal)}`
+        : `${plural(Number(side.count) || 0, 'título', 'títulos')} · nenhum vencido`;
+    return statTile(label, fmtMoney(side.total), '', hint, overdue ? 'critical' : '');
+}
+
+function shortDate(isoDate) {
+    const [, monthPart, day] = String(isoDate).split('-');
+    return `${day}/${monthPart}`;
+}
+
+function signedMoney(value) {
+    const number = Number(value) || 0;
+    if (number === 0) return fmtMoney(0);
+    return `${number < 0 ? '−' : '+'} ${fmtMoney(Math.abs(number))}`;
+}
+
+/** Saldo projetado por bloco de 7 dias — barra proporcional ao maior saldo, número sempre escrito. */
+function forecastChart(forecast) {
+    const buckets = forecast.buckets || [];
+    const max = Math.max(...buckets.map((bucket) => Math.abs(Number(bucket.projectedBalance) || 0)), 0) || 1;
+
+    return el('div', { class: 'bars' }, buckets.map((bucket) => {
+        const projected = Number(bucket.projectedBalance) || 0;
+        const negative = projected < 0;
+        const period = bucket.days === 1
+            ? shortDate(bucket.start)
+            : `${shortDate(bucket.start)} – ${shortDate(bucket.end)}`;
+        const moves = [];
+        if (Number(bucket.receivable)) moves.push(`a receber ${fmtMoney(bucket.receivable)}`);
+        if (Number(bucket.payable)) moves.push(`a pagar ${fmtMoney(bucket.payable)}`);
+
+        return el('div', {
+            class: 'bar-row',
+            title: `${period}: saldo projetado ${fmtMoney(projected)} (${signedMoney(bucket.net)} no período)`
+        }, [
+            el('span', { class: 'name', text: period }),
+            el('span', { class: `amount ${negative ? 'neg' : ''}`, text: fmtMoney(projected) }),
+            el('div', { class: 'bar-track' }, [
+                el('div', {
+                    class: `bar-fill ${negative ? 'neg' : ''}`,
+                    style: `width: ${Math.max((Math.abs(projected) / max) * 100, 2)}%`
+                })
+            ]),
+            el('span', {
+                class: 'detail',
+                text: moves.length ? `${moves.join(' · ')} → ${signedMoney(bucket.net)}` : 'sem títulos no período'
+            })
+        ]);
+    }));
+}
+
+function forecastNote(forecast) {
+    const overdue = forecast.overdue || {};
+    const count = Number(overdue.count) || 0;
+    if (!count) {
+        return el('p', {
+            class: 'forecast-note',
+            text: `Parte do saldo de hoje, ${fmtMoney(forecast.currentBalance)}, e soma os títulos em aberto até ${shortDate(forecast.to)}.`
+        });
+    }
+    const parts = [];
+    if (Number(overdue.payable)) parts.push(`${fmtMoney(overdue.payable)} a pagar`);
+    if (Number(overdue.receivable)) parts.push(`${fmtMoney(overdue.receivable)} a receber`);
+    return el('p', {
+        class: 'forecast-note critical',
+        text: `${plural(count, 'título vencido entra', 'títulos vencidos entram')} no primeiro período: ${parts.join(' e ')}.`
+    });
+}
+
+/** Card da previsão: recarrega só a si mesmo quando o período muda. */
+function forecastCard(initial) {
+    const card = el('div', { class: 'card', style: 'margin-top:1rem' });
+
+    function render(forecast) {
+        const picker = el('div', { class: 'segmented', role: 'group', 'aria-label': 'Período da previsão' },
+            FORECAST_PERIODS.map((days) => el('button', {
+                type: 'button',
+                'aria-pressed': days === forecastDays ? 'true' : 'false',
+                text: `${days} dias`,
+                onClick: () => change(days)
+            })));
+
+        card.replaceChildren(
+            el('div', { class: 'card-head' }, [el('h2', { text: 'Fluxo de caixa projetado' }), picker]),
+            forecast ? forecastNote(forecast) : '',
+            forecast ? forecastChart(forecast) : el('div', { class: 'empty', text: 'Carregando…' })
+        );
+    }
+
+    async function change(days) {
+        if (days === forecastDays) return;
+        forecastDays = days;
+        render(null);
+        try {
+            render(await api.reports.cashFlowForecast(forecastDays));
+        } catch (error) {
+            reportError(error);
+            card.replaceChildren(emptyState(error?.message || 'Não foi possível carregar a previsão.'));
+        }
+    }
+
+    render(initial);
+    return card;
 }
 
 /** Barras horizontais, série única (magnitude) — rótulo e valor diretos em cada barra. */
@@ -110,11 +226,13 @@ export async function renderDashboard() {
         );
 
         try {
-            const [summary, spending, budgets, balances] = await Promise.all([
+            const [summary, spending, budgets, balances, billsSummary, forecast] = await Promise.all([
                 api.reports.monthlySummary(month, year),
                 api.reports.spendingByCategory(month, year),
                 api.reports.budgetVsActual(month, year),
-                loadBalances()
+                loadBalances(),
+                api.reports.billsSummary(),
+                api.reports.cashFlowForecast(forecastDays)
             ]);
 
             const balance = Number(summary.balance);
@@ -139,6 +257,11 @@ export async function renderDashboard() {
                         `Saldo somado das contas: ${fmtMoney(totalOnAccounts)}`
                     )
                 ]),
+                el('div', { class: 'grid grid-2', style: 'margin-top:1rem' }, [
+                    billTile('A pagar', billsSummary.payable),
+                    billTile('A receber', billsSummary.receivable)
+                ]),
+                forecastCard(forecast),
                 el('div', { class: 'grid grid-2', style: 'margin-top:1rem' }, [
                     el('div', { class: 'card' }, [
                         el('div', { class: 'card-head' }, [

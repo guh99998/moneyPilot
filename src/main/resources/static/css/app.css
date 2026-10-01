@@ -142,7 +142,7 @@ h3 { font-size: .95rem; }
     padding: 1.1rem 1.15rem;
 }
 .card + .card { margin-top: 1rem; }
-.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; }
+.card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; margin-bottom: .9rem; }
 .card-head .sub { color: var(--text-muted); font-size: .82rem; }
 
 .grid { display: grid; gap: 1rem; }
@@ -254,6 +254,18 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .bar-track { grid-column: 1 / -1; height: 10px; background: var(--surface-2); border-radius: 5px; overflow: hidden; }
 .bar-fill { height: 100%; background: var(--series-1); border-radius: 0 4px 4px 0; transition: width .2s ease; }
 .bar-row:hover .bar-fill { filter: brightness(1.12); }
+.bar-fill.neg { background: var(--critical); }
+.bar-row .amount.neg { color: var(--expense); font-weight: 600; }
+.bar-row .detail { grid-column: 1 / -1; font-size: .78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+.stat .hint.critical { color: var(--critical); font-weight: 600; }
+.forecast-note { font-size: .82rem; color: var(--text-secondary); margin: 0 0 .9rem; }
+.forecast-note.critical { color: var(--critical); font-weight: 550; }
+
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex: none; }
+.segmented button { border: 0; border-radius: 0; padding: .25rem .65rem; font-size: .8rem; background: var(--surface); color: var(--text-secondary); }
+.segmented button + button { border-left: 1px solid var(--border); }
+.segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 
 .meter { display: flex; flex-direction: column; gap: .3rem; }
 .meter-head { display: flex; justify-content: space-between; gap: .75rem; font-size: .87rem; align-items: baseline; }

@@ -175,7 +175,9 @@ export const api = {
     reports: {
         monthlySummary: (month, year) => request('/reports/monthly-summary', { query: { month, year } }),
         spendingByCategory: (month, year) => request('/reports/spending-by-category', { query: { month, year } }),
-        budgetVsActual: (month, year) => request('/reports/budget-vs-actual', { query: { month, year } })
+        budgetVsActual: (month, year) => request('/reports/budget-vs-actual', { query: { month, year } }),
+        cashFlowForecast: (days) => request('/reports/cash-flow-forecast', { query: { days } }),
+        billsSummary: () => request('/reports/bills-summary')
     }
 };
 
