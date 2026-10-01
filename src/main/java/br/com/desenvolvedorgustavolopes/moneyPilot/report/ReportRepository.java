@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -67,4 +68,12 @@ public interface ReportRepository extends Repository<Transaction, Long> {
                                             @Param("year") Integer year,
                                             @Param("from") LocalDate from,
                                             @Param("nextMonth") LocalDate nextMonth);
+
+    @Query("""
+    SELECT
+        COALESCE((SELECT SUM(a.initialBalance) FROM Account a WHERE a.userId = :userId), 0)
+         +
+        COALESCE((SELECT SUM(CASE WHEN t.type = 'INCOME' THEN t.amount ELSE -t.amount END) FROM Transaction t, Account a WHERE t.accountId = a.id AND a.userId = :userId), 0)
+    """)
+    BigDecimal getTotalBalance(@Param("userId") Long userId);
 }
