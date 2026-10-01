@@ -6,6 +6,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -79,6 +80,7 @@ public interface ReportRepository extends Repository<Transaction, Long> {
 
     @Query("""
     SELECT b.dueDate AS dueDate,
+        COUNT(b) AS billCount,
         COALESCE(SUM(CASE WHEN b.type = 'PAYABLE' THEN b.amount ELSE 0 END), 0) AS totalPayable,
         COALESCE(SUM(CASE WHEN b.type = 'RECEIVABLE' THEN b.amount ELSE 0 END), 0) AS totalReceivable
     FROM Bill b
@@ -90,4 +92,24 @@ public interface ReportRepository extends Repository<Transaction, Long> {
     """)
     List<BillDueTotals> findOpenBillTotalsByDueDate(@Param("userId") Long userId,
                                                     @Param("to") LocalDate to);
+
+    @Query("""
+    SELECT COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE') AS payableCount,
+        COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE'), 0) AS payableTotal,
+        COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE' AND b.dueDate < :today) AS payableOverdueCount,
+        COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE' AND b.dueDate < :today), 0) AS payableOverdueTotal,
+        COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'RECEIVABLE') AS receivableCount,
+        COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'RECEIVABLE'), 0) AS receivableTotal,
+        COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'RECEIVABLE' AND b.dueDate < :today) AS receivableOverdueCount,
+        COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'RECEIVABLE' AND b.dueDate < :today), 0) AS receivableOverdueTotal,
+        COUNT(b) FILTER (WHERE b.status = 'SETTLED' AND b.settledAt >= :monthStart AND b.settledAt < :nextMonthStart) AS settledCount,
+        COALESCE(SUM(b.settledAmount) FILTER (WHERE b.status = 'SETTLED' AND b.type = 'PAYABLE' AND b.settledAt >= :monthStart AND b.settledAt < :nextMonthStart), 0) AS settledPayable,
+        COALESCE(SUM(b.settledAmount) FILTER (WHERE b.status = 'SETTLED' AND b.type = 'RECEIVABLE' AND b.settledAt >= :monthStart AND b.settledAt < :nextMonthStart), 0) AS settledReceivable
+    FROM Bill b
+    WHERE b.userId = :userId
+    """)
+    BillsSummaryTotals findBillsSummary(@Param("userId") Long userId,
+                                        @Param("today") LocalDate today,
+                                        @Param("monthStart") Instant monthStart,
+                                        @Param("nextMonthStart") Instant nextMonthStart);
 }

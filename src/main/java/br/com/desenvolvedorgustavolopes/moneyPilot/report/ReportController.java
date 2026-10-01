@@ -34,4 +34,16 @@ public class ReportController {
     public List<BudgetVsActualResponse> getBudgetVsActual(@RequestParam @Min(1) @Max(12) Integer month, @RequestParam Integer year) {
         return service.getBudgetVsActual(month, year);
     }
+
+    @GetMapping("/cash-flow-forecast")
+    @ResponseStatus(HttpStatus.OK)
+    public CashFlowForecastResponse getCashFlowForecast(@RequestParam(defaultValue = "30") Integer days) {
+        return service.getCashFlowForecast(days);
+    }
+
+    @GetMapping("/bills-summary")
+    @ResponseStatus(HttpStatus.OK)
+    public BillsSummaryResponse getBillsSummary() {
+        return service.getBillsSummary();
+    }
 }
