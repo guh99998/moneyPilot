@@ -76,4 +76,18 @@ public interface ReportRepository extends Repository<Transaction, Long> {
         COALESCE((SELECT SUM(CASE WHEN t.type = 'INCOME' THEN t.amount ELSE -t.amount END) FROM Transaction t, Account a WHERE t.accountId = a.id AND a.userId = :userId), 0)
     """)
     BigDecimal getTotalBalance(@Param("userId") Long userId);
+
+    @Query("""
+    SELECT b.dueDate AS dueDate,
+        COALESCE(SUM(CASE WHEN b.type = 'PAYABLE' THEN b.amount ELSE 0 END), 0) AS totalPayable,
+        COALESCE(SUM(CASE WHEN b.type = 'RECEIVABLE' THEN b.amount ELSE 0 END), 0) AS totalReceivable
+    FROM Bill b
+    WHERE b.userId = :userId
+        AND b.status = 'OPEN'
+        AND b.dueDate <= :to
+    GROUP BY b.dueDate
+    ORDER BY b.dueDate
+    """)
+    List<BillDueTotals> findOpenBillTotalsByDueDate(@Param("userId") Long userId,
+                                                    @Param("to") LocalDate to);
 }
