@@ -3,6 +3,7 @@ import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
     pageHead, emptyState, pager, collapsibleFilters, sortHeader, sortSelect, formDialog, confirmDialog, todayIso, stackable
 } from '../ui.js';
+import { presetBillFilters } from './bills.js';
 
 const filters = { accountId: '', categoryId: '', type: '', from: '', to: '' };
 let page = 0;
@@ -236,6 +237,19 @@ export async function renderTransactions() {
         });
     }
 
+    function askUnsettle(transaction) {
+        confirmDialog({
+            title: 'Desfazer baixa',
+            message: `Este lançamento de ${fmtMoney(transaction.amount)} sai do extrato e o título "${transaction.description || transaction.categoryName}" volta a ficar em aberto.`,
+            confirmLabel: 'Desfazer baixa',
+            onConfirm: async () => {
+                await api.bills.unsettle(transaction.billId);
+                toast('Baixa desfeita.', 'success');
+                load();
+            }
+        });
+    }
+
     function askDelete(transaction) {
         const isTransfer = Boolean(transaction.transferGroupId);
         confirmDialog({
@@ -266,9 +280,18 @@ export async function renderTransactions() {
                 ])),
                 el('tbody', {}, rows.map((transaction) => {
                     const isTransfer = Boolean(transaction.transferGroupId);
+                    const fromBill = Boolean(transaction.billId);
                     return el('tr', {}, [
                         el('td', { class: 'due', text: fmtDate(transaction.date) }),
-                        el('td', { class: 'desc', text: transaction.description || '—' }),
+                        el('td', { class: 'desc' }, [
+                            el('span', { class: 'desc-main', text: transaction.description || '—' }),
+                            fromBill ? el('a', {
+                                class: 'cell-tag bill-link',
+                                href: '#/bills',
+                                text: transaction.billType === 'RECEIVABLE' ? 'Recebimento de título' : 'Pagamento de título',
+                                onClick: () => presetBillFilters({ status: 'SETTLED' })
+                            }) : null
+                        ]),
                         el('td', { class: 'muted cat', text: transaction.categoryName || '—' }),
                         el('td', { class: 'muted acct', text: transaction.accountName || '—' }),
                         el('td', { class: 'status' }, typeBadge(transaction)),
@@ -277,12 +300,15 @@ export async function renderTransactions() {
                             style: `color: var(--${transaction.type === 'INCOME' ? 'income' : 'expense'})`,
                             text: signedAmount(transaction)
                         }),
-                        el('td', { class: 'actions' }, [
-                            isTransfer
-                                ? el('span', { class: 'meter-foot', text: 'não editável' })
-                                : el('button', { class: 'btn-ghost btn-sm', text: 'Editar', onClick: () => openTransactionDialog(transaction) }),
-                            el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(transaction) })
-                        ])
+                        // Lançamento de baixa não se edita nem se apaga (a API recusa): o caminho é desfazer a baixa.
+                        el('td', { class: 'actions' }, fromBill
+                            ? [el('button', { class: 'btn-ghost btn-sm', text: 'Desfazer baixa', onClick: () => askUnsettle(transaction) })]
+                            : [
+                                isTransfer
+                                    ? el('span', { class: 'meter-foot', text: 'não editável' })
+                                    : el('button', { class: 'btn-ghost btn-sm', text: 'Editar', onClick: () => openTransactionDialog(transaction) }),
+                                el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(transaction) })
+                            ])
                     ]);
                 }))
             ])

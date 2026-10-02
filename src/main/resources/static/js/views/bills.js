@@ -295,14 +295,18 @@ function installmentPlanDialog({ accounts, categories, onSaved }) {
 function settleDialog({ bill, accounts, onSaved }) {
     const accountSelect = el('select', { required: true }, accountOptions(accounts, bill.accountId ?? accounts[0]?.id));
     const amountInput = el('input', { type: 'number', step: '0.01', min: '0.01', required: true, value: bill.amount });
+    const dateInput = el('input', { type: 'date', required: true, max: todayIso(), value: todayIso() });
     const warning = el('p', { class: 'preview-hint', hidden: true });
 
-    // Armadilha conhecida: baixar por menos quita o título inteiro, sem gerar resíduo.
     amountInput.addEventListener('input', () => {
         const paid = amountInput.value ? toCents(amountInput.value) : 0;
         const due = toCents(bill.amount);
-        warning.hidden = !paid || paid >= due;
-        warning.textContent = `O título fica quitado por inteiro: a diferença de ${fmtMoney(centsToDecimal(due - paid))} não vira um novo título.`;
+        warning.hidden = !paid || paid === due;
+        // Armadilha conhecida: baixar por menos quita o título inteiro, sem gerar resíduo.
+        // Por mais (juros, multa) o lançamento registra o que saiu de fato.
+        warning.textContent = paid < due
+            ? `O título fica quitado por inteiro: a diferença de ${fmtMoney(centsToDecimal(due - paid))} não vira um novo título.`
+            : `${fmtMoney(centsToDecimal(paid - due))} acima do valor do título (juros ou multa). O lançamento registra o valor pago.`;
     });
 
     const verb = bill.type === 'PAYABLE' ? 'Pagar' : 'Receber';
@@ -313,10 +317,14 @@ function settleDialog({ bill, accounts, onSaved }) {
         body: [
             el('p', { class: 'dialog-lead', text: `Vencimento ${fmtDate(bill.dueDate)} · valor ${fmtMoney(bill.amount)}` }),
             field(bill.type === 'PAYABLE' ? 'Sai da conta' : 'Entra na conta', accountSelect),
-            field('Valor efetivo', amountInput, warning)
+            el('div', { class: 'form-row' }, [
+                field(bill.type === 'PAYABLE' ? 'Pago em' : 'Recebido em', dateInput),
+                field('Valor efetivo', amountInput)
+            ]),
+            warning
         ],
         onSubmit: async () => {
-            await api.bills.settle(bill.id, { accountId: Number(accountSelect.value), amount: amountInput.value });
+            await api.bills.settle(bill.id, { accountId: Number(accountSelect.value), amount: amountInput.value, settledOn: dateInput.value });
             toast('Baixa registrada — o lançamento já está no extrato.', 'success');
             onSaved();
         }
@@ -325,6 +333,7 @@ function settleDialog({ bill, accounts, onSaved }) {
 
 function bulkSettleDialog({ bills, accounts, onSaved }) {
     const accountSelect = el('select', { required: true }, accountOptions(accounts, accounts[0]?.id));
+    const dateInput = el('input', { type: 'date', required: true, max: todayIso(), value: todayIso() });
     const payable = bills.filter((bill) => bill.type === 'PAYABLE').reduce((acc, bill) => acc + toCents(bill.amount), 0);
     const receivable = bills.filter((bill) => bill.type === 'RECEIVABLE').reduce((acc, bill) => acc + toCents(bill.amount), 0);
     const lines = [];
@@ -337,11 +346,11 @@ function bulkSettleDialog({ bills, accounts, onSaved }) {
         focus: accountSelect,
         body: [
             el('p', { class: 'dialog-lead', text: `${lines.join(' e ')}, cada um pelo valor integral.` }),
-            field('Conta', accountSelect),
+            el('div', { class: 'form-row' }, [field('Conta', accountSelect), field('Data da baixa', dateInput)]),
             el('p', { class: 'preview-hint', text: 'É tudo ou nada: se um título falhar, nenhum é baixado e o erro diz qual foi.' })
         ],
         onSubmit: async () => {
-            await api.bills.bulkSettle({ billIds: bills.map((bill) => bill.id), accountId: Number(accountSelect.value) });
+            await api.bills.bulkSettle({ billIds: bills.map((bill) => bill.id), accountId: Number(accountSelect.value), settledOn: dateInput.value });
             toast(`${bills.length} ${bills.length === 1 ? 'título baixado' : 'títulos baixados'}.`, 'success');
             selected.clear();
             onSaved();

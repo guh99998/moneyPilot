@@ -505,6 +505,8 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .bills-table tr.is-overdue td.due { color: var(--overdue); font-weight: 700; }
 .bills-table tr.is-selected { background: var(--accent-soft); }
 .bills-table .cell-tag { display: block; font-size: .74rem; color: var(--text-muted); }
+.cell-tag.bill-link { display: block; font-size: .74rem; font-weight: 700; color: var(--navy-3); text-decoration: none; }
+.cell-tag.bill-link:hover { text-decoration: underline; }
 .bills-table td.amount-out { color: var(--expense); font-weight: 600; }
 .bills-table td.amount-in { color: var(--income); font-weight: 600; }
 .bills-table td.is-canceled { color: var(--text-muted); text-decoration: line-through; font-weight: 400; }
