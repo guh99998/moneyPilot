@@ -281,6 +281,29 @@ class CashFlowForecastIntegrationTest extends AbstractIntegrationTest {
         assertEquals(0, getSummary(token).settledThisMonth().count());
     }
 
+    @Test
+    void billsSummary_countsTheSettlementByThePaymentDateNotTheClick() throws Exception {
+        LocalDate today = LocalDate.now(SAO_PAULO);
+        fixToday(today);
+        String token = registerAndLogin();
+        Long accountId = createAccount(token, "1000.00");
+
+        // pago no mês passado, registrado só hoje: não é "baixado neste mês"
+        Long lastMonth = createBill(token, BillType.PAYABLE, FOOD_CATEGORY_ID, "80.00", today.minusMonths(1));
+        mockMvc.perform(post("/api/v1/bills/{id}/settle", lastMonth)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new SettleRequest(accountId, new BigDecimal("80.00"), today.minusMonths(1).withDayOfMonth(1)))))
+                .andExpect(status().isOk());
+        Long thisMonth = createBill(token, BillType.PAYABLE, FOOD_CATEGORY_ID, "20.00", today);
+        settle(token, thisMonth, accountId, "20.00");
+
+        BillsSummaryResponse summary = getSummary(token);
+
+        assertEquals(1, summary.settledThisMonth().count());
+        assertEquals(0, new BigDecimal("20.00").compareTo(summary.settledThisMonth().payable()));
+    }
+
     // ---- helpers ----
 
     private void fixToday(LocalDate today) {
