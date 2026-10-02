@@ -1,6 +1,6 @@
 import { api, fetchAll } from '../api.js';
 import {
-    el, fmtMoney, toast, reportError, pageHead, emptyState, formDialog, confirmDialog, stackable
+    el, fmtMoney, toast, reportError, pageHead, emptyState, formDialog, confirmDialog, stackable, sortHeader, sortSelect
 } from '../ui.js';
 
 const TYPE_LABEL = {
@@ -10,6 +10,31 @@ const TYPE_LABEL = {
     CASH: 'Dinheiro',
     INVESTMENT: 'Investimento'
 };
+
+let sort = { key: 'name', dir: 'asc' };
+
+const SORT_OPTIONS = [
+    { key: 'name', label: 'Conta', asc: 'A → Z', desc: 'Z → A' },
+    { key: 'type', label: 'Tipo', asc: 'A → Z', desc: 'Z → A' },
+    { key: 'initialBalance', label: 'Saldo inicial', asc: 'menor primeiro', desc: 'maior primeiro' },
+    { key: 'currentBalance', label: 'Saldo atual', asc: 'menor primeiro', desc: 'maior primeiro' },
+    { key: 'transactionCount', label: 'Lançamentos', asc: 'menos primeiro', desc: 'mais primeiro' }
+];
+const NUMERIC_KEYS = new Set(['initialBalance', 'currentBalance', 'transactionCount']);
+
+/** Ordena no navegador: a tela já carrega todas as contas. Vazios vão sempre para o fim. */
+function sortRows(rows) {
+    const factor = sort.dir === 'asc' ? 1 : -1;
+    const value = (row) => (sort.key === 'type' ? TYPE_LABEL[row.type] || row.type : row[sort.key]);
+    return [...rows].sort((a, b) => {
+        const left = value(a);
+        const right = value(b);
+        if (left === null || left === undefined) return 1;
+        if (right === null || right === undefined) return -1;
+        if (NUMERIC_KEYS.has(sort.key)) return (Number(left) - Number(right)) * factor || a.id - b.id;
+        return String(left).localeCompare(String(right), 'pt-BR', { sensitivity: 'base' }) * factor || a.id - b.id;
+    });
+}
 
 const TYPE_OPTIONS = Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }));
 
@@ -71,15 +96,15 @@ export async function renderAccounts() {
         return stackable(el('div', { class: 'table-wrap' }, [
             el('table', {}, [
                 el('thead', {}, el('tr', {}, [
-                    el('th', { text: 'Conta' }),
-                    el('th', { text: 'Tipo' }),
-                    el('th', { class: 'num', text: 'Saldo inicial' }),
-                    el('th', { class: 'num', text: 'Saldo atual' }),
-                    el('th', { class: 'num', text: 'Lançamentos' }),
+                    sortHeader({ label: 'Conta', key: 'name', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Tipo', key: 'type', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Saldo inicial', key: 'initialBalance', sort, onSort: changeSort, numeric: true }),
+                    sortHeader({ label: 'Saldo atual', key: 'currentBalance', sort, onSort: changeSort, numeric: true }),
+                    sortHeader({ label: 'Lançamentos', key: 'transactionCount', sort, onSort: changeSort, numeric: true }),
                     el('th', { text: '' })
                 ])),
-                el('tbody', {}, rows.map((row) => el('tr', {}, [
-                    el('td', { text: row.name }),
+                el('tbody', {}, sortRows(rows).map((row) => el('tr', {}, [
+                    el('td', { class: 'desc', text: row.name }),
                     el('td', { class: 'muted', text: TYPE_LABEL[row.type] || row.type }),
                     el('td', { class: 'num muted', text: fmtMoney(row.initialBalance) }),
                     el('td', { class: 'num', text: row.currentBalance === null ? '—' : fmtMoney(row.currentBalance) }),
@@ -91,6 +116,23 @@ export async function renderAccounts() {
                 ])))
             ])
         ]));
+    }
+
+    let loaded = [];
+
+    function changeSort(next) {
+        sort = next;
+        render();
+    }
+
+    function render() {
+        view.replaceChildren(
+            head(),
+            loaded.length > 1 ? el('div', { class: 'sort-only' }, sortSelect({ options: SORT_OPTIONS, sort, onSort: changeSort })) : '',
+            el('div', { class: 'card' }, [
+                loaded.length ? table(loaded) : emptyState('Nenhuma conta cadastrada ainda.')
+            ])
+        );
     }
 
     async function load() {
@@ -107,9 +149,8 @@ export async function renderAccounts() {
                 }
             }));
 
-            view.replaceChildren(head(), el('div', { class: 'card' }, [
-                rows.length ? table(rows) : emptyState('Nenhuma conta cadastrada ainda.')
-            ]));
+            loaded = rows;
+            render();
         } catch (error) {
             reportError(error);
             view.replaceChildren(head(), emptyState(error?.message || 'Não foi possível carregar as contas.'));

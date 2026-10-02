@@ -1,11 +1,20 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
-    pageHead, emptyState, pager, formDialog, confirmDialog, todayIso, stackable
+    pageHead, emptyState, pager, collapsibleFilters, sortHeader, sortSelect, formDialog, confirmDialog, todayIso, stackable
 } from '../ui.js';
+import { presetBillFilters } from './bills.js';
 
 const filters = { accountId: '', categoryId: '', type: '', from: '', to: '' };
 let page = 0;
+let sort = { key: 'date', dir: 'desc' };
+
+const SORT_OPTIONS = [
+    { key: 'date', label: 'Data', asc: 'mais antigo primeiro', desc: 'mais recente primeiro' },
+    { key: 'description', label: 'Descrição', asc: 'A → Z', desc: 'Z → A' },
+    { key: 'amount', label: 'Valor', asc: 'menor primeiro', desc: 'maior primeiro' },
+    { key: 'type', label: 'Tipo', asc: 'despesas primeiro', desc: 'receitas primeiro' }
+];
 
 const TYPE_LABEL = { INCOME: 'Receita', EXPENSE: 'Despesa', TRANSFER: 'Transferência' };
 
@@ -144,12 +153,14 @@ export async function renderTransactions() {
     }
 
     function filterBar() {
-        return el('div', { class: 'filters' }, [
+        const active = Object.entries(filters).filter(([name, value]) => value && value !== '').length;
+        return collapsibleFilters('transactions', el('div', { class: 'filters' }, [
             selectField('Conta', 'accountId', accounts.map((a) => ({ value: a.id, label: a.name })), 'Todas'),
             selectField('Categoria', 'categoryId', categories.map((c) => ({ value: c.id, label: c.name })), 'Todas'),
             selectField('Tipo', 'type', Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label })), 'Todos'),
             dateField('De', 'from'),
             dateField('Até', 'to'),
+            sortSelect({ options: SORT_OPTIONS, sort, onSort: changeSort }),
             el('button', {
                 class: 'btn-sm',
                 text: 'Limpar',
@@ -159,7 +170,13 @@ export async function renderTransactions() {
                     load();
                 }
             })
-        ]);
+        ]), active);
+    }
+
+    function changeSort(next) {
+        sort = next;
+        page = 0;
+        load();
     }
 
     function head() {
@@ -220,6 +237,19 @@ export async function renderTransactions() {
         });
     }
 
+    function askUnsettle(transaction) {
+        confirmDialog({
+            title: 'Desfazer baixa',
+            message: `Este lançamento de ${fmtMoney(transaction.amount)} sai do extrato e o título "${transaction.description || transaction.categoryName}" volta a ficar em aberto.`,
+            confirmLabel: 'Desfazer baixa',
+            onConfirm: async () => {
+                await api.bills.unsettle(transaction.billId);
+                toast('Baixa desfeita.', 'success');
+                load();
+            }
+        });
+    }
+
     function askDelete(transaction) {
         const isTransfer = Boolean(transaction.transferGroupId);
         confirmDialog({
@@ -238,35 +268,47 @@ export async function renderTransactions() {
 
     function table(rows) {
         return stackable(el('div', { class: 'table-wrap' }, [
-            el('table', {}, [
+            el('table', { class: 'compact-rows' }, [
                 el('thead', {}, el('tr', {}, [
-                    el('th', { text: 'Data' }),
-                    el('th', { text: 'Descrição' }),
+                    sortHeader({ label: 'Data', key: 'date', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Descrição', key: 'description', sort, onSort: changeSort }),
                     el('th', { text: 'Categoria' }),
                     el('th', { text: 'Conta' }),
-                    el('th', { text: 'Tipo' }),
-                    el('th', { class: 'num', text: 'Valor' }),
+                    sortHeader({ label: 'Tipo', key: 'type', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Valor', key: 'amount', sort, onSort: changeSort, numeric: true }),
                     el('th', { text: '' })
                 ])),
                 el('tbody', {}, rows.map((transaction) => {
                     const isTransfer = Boolean(transaction.transferGroupId);
+                    const fromBill = Boolean(transaction.billId);
                     return el('tr', {}, [
-                        el('td', { text: fmtDate(transaction.date) }),
-                        el('td', { text: transaction.description || '—' }),
-                        el('td', { class: 'muted', text: transaction.categoryName || '—' }),
-                        el('td', { class: 'muted', text: transaction.accountName || '—' }),
-                        el('td', {}, typeBadge(transaction)),
+                        el('td', { class: 'due', text: fmtDate(transaction.date) }),
+                        el('td', { class: 'desc' }, [
+                            el('span', { class: 'desc-main', text: transaction.description || '—' }),
+                            fromBill ? el('a', {
+                                class: 'cell-tag bill-link',
+                                href: '#/bills',
+                                text: transaction.billType === 'RECEIVABLE' ? 'Recebimento de título' : 'Pagamento de título',
+                                onClick: () => presetBillFilters({ status: 'SETTLED' })
+                            }) : null
+                        ]),
+                        el('td', { class: 'muted cat', text: transaction.categoryName || '—' }),
+                        el('td', { class: 'muted acct', text: transaction.accountName || '—' }),
+                        el('td', { class: 'status' }, typeBadge(transaction)),
                         el('td', {
                             class: 'num',
                             style: `color: var(--${transaction.type === 'INCOME' ? 'income' : 'expense'})`,
                             text: signedAmount(transaction)
                         }),
-                        el('td', { class: 'actions' }, [
-                            isTransfer
-                                ? el('span', { class: 'meter-foot', text: 'não editável' })
-                                : el('button', { class: 'btn-ghost btn-sm', text: 'Editar', onClick: () => openTransactionDialog(transaction) }),
-                            el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(transaction) })
-                        ])
+                        // Lançamento de baixa não se edita nem se apaga (a API recusa): o caminho é desfazer a baixa.
+                        el('td', { class: 'actions' }, fromBill
+                            ? [el('button', { class: 'btn-ghost btn-sm', text: 'Desfazer baixa', onClick: () => askUnsettle(transaction) })]
+                            : [
+                                isTransfer
+                                    ? el('span', { class: 'meter-foot', text: 'não editável' })
+                                    : el('button', { class: 'btn-ghost btn-sm', text: 'Editar', onClick: () => openTransactionDialog(transaction) }),
+                                el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(transaction) })
+                            ])
                     ]);
                 }))
             ])
@@ -277,7 +319,7 @@ export async function renderTransactions() {
         view.replaceChildren(head(), filterBar(), el('div', { class: 'empty', text: 'Carregando…' }));
 
         try {
-            const result = normalizePage(await api.transactions.list({ ...filters, page, size: 20 }));
+            const result = normalizePage(await api.transactions.list({ ...filters, page, size: 20, sort: [`${sort.key},${sort.dir}`, `id,${sort.dir}`] }));
             const content = result.content.length
                 ? el('div', { class: 'card' }, [
                     table(result.content),

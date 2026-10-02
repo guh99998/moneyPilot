@@ -3,6 +3,8 @@ package br.com.desenvolvedorgustavolopes.moneyPilot.transaction;
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.Account;
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.AccountRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
+import br.com.desenvolvedorgustavolopes.moneyPilot.bill.Bill;
+import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.Category;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryService;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.*;
@@ -17,7 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +32,7 @@ public class TransactionService {
     private final AuthenticatedUserProvider userProvider;
     private final AccountRepository accountRepository;
     private final CategoryService categoryService;
+    private final BillRepository billRepository;
 
     public Page<TransactionResponse> getAllTransactions(Long accountId, Long categoryId, LocalDate from, LocalDate to, TransactionFilterType type, Pageable pageable) {
         Long userId = userProvider.getCurrentUserId();
@@ -53,8 +59,15 @@ public class TransactionService {
 
         Pageable pageableComDesempate = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort().and(Sort.by(Sort.Direction.DESC, "id")));
 
-        return repository
-                .findAllFiltered(userId, accountId, categoryId, from, to, queryType, transferOnly, pageableComDesempate).
+        Page<Transaction> page = repository.findAllFiltered(userId, accountId, categoryId, from, to, queryType, transferOnly, pageableComDesempate);
+
+        // Uma consulta por página para saber quais lançamentos vieram de baixa de título.
+        Map<Long, Bill> billsByTransaction = billRepository
+                .findAllByTransactionIdIn(page.getContent().stream().map(Transaction::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(Bill::getTransactionId, Function.identity()));
+
+        return page.
                 map(
                         t -> {Account account = accountRepository.findById(t.getAccountId()).orElseThrow(() -> new AccountNotFoundException(t.getAccountId()));
                             String categoryName;
@@ -64,7 +77,7 @@ public class TransactionService {
                             } else {
                                 categoryName = null;
                             }
-                            return new TransactionResponse(t, account.getName(), categoryName);
+                            return new TransactionResponse(t, account.getName(), categoryName, billsByTransaction.get(t.getId()));
                         });
     }
 
@@ -103,8 +116,9 @@ public class TransactionService {
         Transaction transaction = this.findOwnedTransaction(id);
         Account account = accountRepository.findById(transaction.getAccountId()).orElseThrow(() -> new AccountNotFoundException(transaction.getAccountId()));
         Category category = categoryService.findVisibleCategory(transaction.getCategoryId());
+        Bill bill = billRepository.findAllByTransactionIdIn(List.of(transaction.getId())).stream().findFirst().orElse(null);
 
-        return new TransactionResponse(transaction, account.getName(), category.getName());
+        return new TransactionResponse(transaction, account.getName(), category.getName(), bill);
     }
 
     public TransactionResponse updateTransaction(Long id, TransactionRequest request) {
@@ -113,6 +127,9 @@ public class TransactionService {
 
         if (transaction.getTransferGroupId() != null)
             throw new TransactionIsTransferException(id);
+
+        if (billRepository.existsByTransactionId(id))
+            throw new TransactionLinkedToBillException(id);
 
 
         Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
@@ -136,6 +153,9 @@ public class TransactionService {
 
     public void deleteTransaction(Long id) {
         Transaction transaction = this.findOwnedTransaction(id);
+
+        if (billRepository.existsByTransactionId(id))
+            throw new TransactionLinkedToBillException(id);
 
         if (transaction.getTransferGroupId() != null) {
             repository.deleteAll(repository.findAllByTransferGroupId(transaction.getTransferGroupId()));

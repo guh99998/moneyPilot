@@ -33,31 +33,81 @@ export const session = {
 function buildUrl(path, query) {
     const url = new URL(BASE + path, window.location.origin);
     Object.entries(query || {}).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+        if (Array.isArray(value)) value.forEach((item) => url.searchParams.append(key, item));
+        else if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
     });
     return url;
 }
 
-async function request(path, { method = 'GET', body, query, anonymous = false } = {}) {
+const NETWORK_ERROR_MESSAGE = 'Não foi possível falar com o servidor. Verifique sua conexão.';
+
+let refreshing = null;
+
+/**
+ * Troca o refresh token (cookie httpOnly, enviado pelo navegador) por um access token novo.
+ * A renovação em andamento é uma só e todas as chamadas que recebem 401 ao mesmo tempo esperam
+ * pela mesma promise: cada renovação rotaciona o refresh token, e rotacionar várias vezes em
+ * paralelo é indistinguível de reuso — o servidor derrubaria a própria sessão.
+ */
+function refreshAccessToken() {
+    if (!refreshing) {
+        refreshing = fetch(buildUrl('/auth/refresh'), { method: 'POST' })
+            .catch(() => {
+                throw new ApiError(0, NETWORK_ERROR_MESSAGE);
+            })
+            .then(async (response) => {
+                if (!response.ok) throw new ApiError(response.status, 'Sua sessão expirou. Entre novamente.');
+                const payload = await response.json();
+                localStorage.setItem(TOKEN_KEY, payload.token);
+                return payload.token;
+            })
+            .finally(() => {
+                refreshing = null;
+            });
+    }
+    return refreshing;
+}
+
+async function send(path, { method, body, query, token }) {
     const headers = {};
     if (body !== undefined) headers['Content-Type'] = 'application/json';
-    if (!anonymous && session.token) headers.Authorization = `Bearer ${session.token}`;
+    if (token) headers.Authorization = `Bearer ${token}`;
 
-    let response;
     try {
-        response = await fetch(buildUrl(path, query), {
+        return await fetch(buildUrl(path, query), {
             method,
             headers,
             body: body === undefined ? undefined : JSON.stringify(body)
         });
     } catch {
-        throw new ApiError(0, 'Não foi possível falar com o servidor. Verifique sua conexão.');
+        throw new ApiError(0, NETWORK_ERROR_MESSAGE);
     }
+}
+
+function expireSession() {
+    session.clear();
+    window.dispatchEvent(new CustomEvent('session:expired'));
+    return new ApiError(401, 'Sua sessão expirou. Entre novamente.');
+}
+
+async function request(path, { method = 'GET', body, query, anonymous = false } = {}) {
+    const options = { method, body, query };
+    const sentWith = anonymous ? null : session.token;
+    let response = await send(path, { ...options, token: sentWith });
 
     if (response.status === 401 && !anonymous) {
-        session.clear();
-        window.dispatchEvent(new CustomEvent('session:expired'));
-        throw new ApiError(401, 'Sua sessão expirou. Entre novamente.');
+        let token;
+        try {
+            // Se outra chamada já renovou enquanto esta estava em voo, reaproveita o token novo.
+            token = session.token && session.token !== sentWith ? session.token : await refreshAccessToken();
+        } catch (error) {
+            // Sem rede não dá para saber se a sessão acabou: mantém o login e deixa o erro chegar à tela.
+            if (error.status === 0) throw error;
+            throw expireSession();
+        }
+
+        response = await send(path, { ...options, token });
+        if (response.status === 401) throw expireSession();
     }
 
     if (response.status === 204) return null;
@@ -91,6 +141,7 @@ export function normalizePage(payload) {
 export const api = {
     register: (body) => request('/auth/register', { method: 'POST', body, anonymous: true }),
     login: (body) => request('/auth/login', { method: 'POST', body, anonymous: true }),
+    logout: () => request('/auth/logout', { method: 'POST', anonymous: true }),
 
     accounts: {
         list: (query) => request('/accounts', { query }),
@@ -122,10 +173,25 @@ export const api = {
         remove: (id) => request(`/budgets/${id}`, { method: 'DELETE' })
     },
 
+    bills: {
+        list: (query) => request('/bills', { query }),
+        create: (body) => request('/bills', { method: 'POST', body }),
+        update: (id, body) => request(`/bills/${id}`, { method: 'PUT', body }),
+        remove: (id) => request(`/bills/${id}`, { method: 'DELETE' }),
+        cancel: (id) => request(`/bills/${id}/cancel`, { method: 'POST' }),
+        settle: (id, body) => request(`/bills/${id}/settle`, { method: 'POST', body }),
+        unsettle: (id) => request(`/bills/${id}/unsettle`, { method: 'POST' }),
+        bulkSettle: (body) => request('/bills/settle', { method: 'POST', body }),
+        createInstallments: (body) => request('/bills/installments', { method: 'POST', body }),
+        removeInstallments: (groupId) => request(`/bills/installments/${groupId}`, { method: 'DELETE' })
+    },
+
     reports: {
         monthlySummary: (month, year) => request('/reports/monthly-summary', { query: { month, year } }),
         spendingByCategory: (month, year) => request('/reports/spending-by-category', { query: { month, year } }),
-        budgetVsActual: (month, year) => request('/reports/budget-vs-actual', { query: { month, year } })
+        budgetVsActual: (month, year) => request('/reports/budget-vs-actual', { query: { month, year } }),
+        cashFlowForecast: (days) => request('/reports/cash-flow-forecast', { query: { days } }),
+        billsSummary: () => request('/reports/bills-summary')
     }
 };
 

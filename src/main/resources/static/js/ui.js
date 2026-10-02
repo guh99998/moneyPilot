@@ -218,7 +218,7 @@ export function pageHead(title, subtitle, actions = []) {
             el('h1', { text: title }),
             subtitle ? el('p', { text: subtitle }) : null
         ]),
-        el('div', { style: 'display:flex; gap:.5rem; flex-wrap:wrap;' }, actions)
+        el('div', { class: 'page-actions' }, actions)
     ]);
 }
 
@@ -237,9 +237,9 @@ export function monthPicker({ month, year, onChange }) {
         onChange: () => onChange(Number(monthSelect.value), Number(yearInput.value))
     });
 
-    return el('div', { class: 'filters' }, [
+    return el('div', { class: 'month-picker' }, [
         el('div', { class: 'field' }, [el('label', { text: 'Mês' }), monthSelect]),
-        el('div', { class: 'field', style: 'max-width:110px' }, [el('label', { text: 'Ano' }), yearInput])
+        el('div', { class: 'field' }, [el('label', { text: 'Ano' }), yearInput])
     ]);
 }
 
@@ -256,4 +256,65 @@ export function stackable(wrap) {
     });
     wrap.classList.add('table-stack');
     return wrap;
+}
+
+const filtersOpen = new Map();
+
+/**
+ * Filtros recolhíveis: no celular viram um "Filtros (n)" que abre e fecha;
+ * no desktop ficam sempre abertos. O estado sobrevive ao re-render da tela.
+ */
+export function collapsibleFilters(key, filtersNode, activeCount) {
+    const desktop = window.matchMedia('(min-width: 900px)').matches;
+    const details = el('details', { class: 'filter-toggle', open: desktop || filtersOpen.get(key) }, [
+        el('summary', { text: activeCount ? `Filtros · ${activeCount} ativo${activeCount > 1 ? 's' : ''}` : 'Filtros' }),
+        filtersNode
+    ]);
+    details.addEventListener('toggle', () => filtersOpen.set(key, details.open));
+    return details;
+}
+
+/*
+ * Ordenação por coluna. O estado é { key, dir } com dir 'asc' | 'desc'.
+ * Clicar numa coluna nova começa em 'asc' (mais antigo / A→Z / menor primeiro);
+ * clicar de novo inverte.
+ */
+export function nextSort(sort, key) {
+    if (sort.key === key) return { key, dir: sort.dir === 'asc' ? 'desc' : 'asc' };
+    return { key, dir: 'asc' };
+}
+
+/** Cabeçalho clicável. `kind` só muda o texto lido pelo leitor de tela. */
+export function sortHeader({ label, key, sort, onSort, numeric = false }) {
+    const active = sort.key === key;
+    const ariaSort = active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+    return el('th', { class: `sortable ${numeric ? 'num' : ''} ${active ? 'is-sorted' : ''}`.trim(), 'aria-sort': ariaSort }, [
+        el('button', {
+            type: 'button',
+            class: 'sort-btn',
+            title: `Ordenar por ${label.toLowerCase()}`,
+            onClick: () => onSort(nextSort(sort, key))
+        }, [
+            el('span', { text: label }),
+            el('span', { class: 'sort-icon', 'aria-hidden': 'true', text: active ? (sort.dir === 'asc' ? '↑' : '↓') : '↕' })
+        ])
+    ]);
+}
+
+/**
+ * No celular o cabeçalho da tabela some (vira cartões), então a ordenação vira um select.
+ * options: [{ key, label, asc, desc }] — asc/desc são as legendas de cada direção.
+ */
+export function sortSelect({ options, sort, onSort }) {
+    const select = el('select', {
+        onChange: () => {
+            const [key, dir] = select.value.split(':');
+            onSort({ key, dir });
+        }
+    }, options.flatMap((option) => ['asc', 'desc'].map((dir) => el('option', {
+        value: `${option.key}:${dir}`,
+        text: `${option.label}: ${option[dir]}`,
+        selected: sort.key === option.key && sort.dir === dir
+    }))));
+    return el('div', { class: 'field sort-field' }, [el('label', { text: 'Ordenar por' }), select]);
 }

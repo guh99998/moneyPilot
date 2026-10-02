@@ -18,4 +18,10 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Front-end tests
+        run: node --test "src/test/js/*.test.mjs"
       - run: ./mvnw verify
