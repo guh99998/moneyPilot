@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -142,12 +141,11 @@ public class ReportService {
         Long userId = userProvider.getCurrentUserId();
 
         LocalDate today = LocalDate.now(clock);
-        LocalDate firstDay = today.withDayOfMonth(1);
-        Instant monthStart = firstDay.atStartOfDay(clock.getZone()).toInstant();
-        Instant nextMonthStart = firstDay.plusMonths(1).atStartOfDay(clock.getZone()).toInstant();
+        LocalDate monthStart = today.withDayOfMonth(1);
 
+        // "Baixado no mês" segue a data do pagamento (a do lançamento gerado), não a do clique.
         return new BillsSummaryResponse(
-                reportRepository.findBillsSummary(userId, today, monthStart, nextMonthStart)
+                reportRepository.findBillsSummary(userId, today, monthStart, monthStart.plusMonths(1))
         );
     }
 }
