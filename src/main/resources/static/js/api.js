@@ -33,7 +33,8 @@ export const session = {
 function buildUrl(path, query) {
     const url = new URL(BASE + path, window.location.origin);
     Object.entries(query || {}).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+        if (Array.isArray(value)) value.forEach((item) => url.searchParams.append(key, item));
+        else if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
     });
     return url;
 }

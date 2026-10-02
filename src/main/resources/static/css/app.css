@@ -217,6 +217,19 @@ th {
 td { padding: .65rem .6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: var(--surface-2); }
+th.sortable { padding: 0; }
+.sort-btn {
+    width: 100%; border: 0; border-radius: 0; background: transparent;
+    padding: .55rem .6rem; font: inherit; font-size: .76rem; font-weight: 700; color: var(--text-muted);
+    display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap;
+}
+.sort-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--navy); }
+th.num .sort-btn { justify-content: flex-end; }
+th.is-sorted .sort-btn { color: var(--navy); }
+.sort-icon { font-size: .8rem; opacity: .45; }
+th.is-sorted .sort-icon { opacity: 1; color: var(--green); }
+.sort-field { grid-column: 1 / -1; }
+.sort-only .sort-field { margin-bottom: 1rem; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 td.actions { text-align: right; white-space: nowrap; }
 td.muted { color: var(--text-muted); }
@@ -644,6 +657,7 @@ dialog::backdrop { background: rgba(19, 41, 75, .45); }
 
     .filters { display: flex; flex-wrap: wrap; }
     .filter-toggle > summary { display: none; }
+    .sort-field { display: none; }
     .filters .field { min-width: 140px; flex: 1 1 140px; max-width: 220px; }
 
     .main { padding: 1.6rem 2rem 4rem; }

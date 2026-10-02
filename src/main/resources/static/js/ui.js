@@ -273,3 +273,48 @@ export function collapsibleFilters(key, filtersNode, activeCount) {
     details.addEventListener('toggle', () => filtersOpen.set(key, details.open));
     return details;
 }
+
+/*
+ * Ordenação por coluna. O estado é { key, dir } com dir 'asc' | 'desc'.
+ * Clicar numa coluna nova começa em 'asc' (mais antigo / A→Z / menor primeiro);
+ * clicar de novo inverte.
+ */
+export function nextSort(sort, key) {
+    if (sort.key === key) return { key, dir: sort.dir === 'asc' ? 'desc' : 'asc' };
+    return { key, dir: 'asc' };
+}
+
+/** Cabeçalho clicável. `kind` só muda o texto lido pelo leitor de tela. */
+export function sortHeader({ label, key, sort, onSort, numeric = false }) {
+    const active = sort.key === key;
+    const ariaSort = active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+    return el('th', { class: `sortable ${numeric ? 'num' : ''} ${active ? 'is-sorted' : ''}`.trim(), 'aria-sort': ariaSort }, [
+        el('button', {
+            type: 'button',
+            class: 'sort-btn',
+            title: `Ordenar por ${label.toLowerCase()}`,
+            onClick: () => onSort(nextSort(sort, key))
+        }, [
+            el('span', { text: label }),
+            el('span', { class: 'sort-icon', 'aria-hidden': 'true', text: active ? (sort.dir === 'asc' ? '↑' : '↓') : '↕' })
+        ])
+    ]);
+}
+
+/**
+ * No celular o cabeçalho da tabela some (vira cartões), então a ordenação vira um select.
+ * options: [{ key, label, asc, desc }] — asc/desc são as legendas de cada direção.
+ */
+export function sortSelect({ options, sort, onSort }) {
+    const select = el('select', {
+        onChange: () => {
+            const [key, dir] = select.value.split(':');
+            onSort({ key, dir });
+        }
+    }, options.flatMap((option) => ['asc', 'desc'].map((dir) => el('option', {
+        value: `${option.key}:${dir}`,
+        text: `${option.label}: ${option[dir]}`,
+        selected: sort.key === option.key && sort.dir === dir
+    }))));
+    return el('div', { class: 'field sort-field' }, [el('label', { text: 'Ordenar por' }), select]);
+}

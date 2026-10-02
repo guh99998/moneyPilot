@@ -1,12 +1,19 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
-    pageHead, emptyState, pager, collapsibleFilters, confirmDialog, todayIso, stackable
+    pageHead, emptyState, pager, collapsibleFilters, sortHeader, sortSelect, confirmDialog, todayIso, stackable
 } from '../ui.js';
 
 const EMPTY_FILTERS = { type: '', status: 'OPEN', categoryId: '', accountId: '', dueDateFrom: '', dueDateTo: '' };
 const filters = { ...EMPTY_FILTERS };
 let page = 0;
+let sort = { key: 'dueDate', dir: 'asc' };
+
+const SORT_OPTIONS = [
+    { key: 'dueDate', label: 'Vencimento', asc: 'mais antigo primeiro', desc: 'mais distante primeiro' },
+    { key: 'description', label: 'Descrição', asc: 'A → Z', desc: 'Z → A' },
+    { key: 'amount', label: 'Valor', asc: 'menor primeiro', desc: 'maior primeiro' }
+];
 
 // Seleção sobrevive à troca de página: guarda o título inteiro para somar sem refazer a busca.
 const selected = new Map();
@@ -386,12 +393,19 @@ export async function renderBills() {
             selectField('Conta', 'accountId', accounts.map((a) => ({ value: a.id, label: a.name })), 'Todas'),
             dateField('Vence de', 'dueDateFrom'),
             dateField('até', 'dueDateTo'),
+            sortSelect({ options: SORT_OPTIONS, sort, onSort: changeSort }),
             el('button', {
                 class: 'btn-sm',
                 text: 'Limpar',
                 onClick: () => { presetBillFilters({}); load(); }
             })
         ]), active);
+    }
+
+    function changeSort(next) {
+        sort = next;
+        page = 0;
+        load();
     }
 
     function head() {
@@ -550,12 +564,12 @@ export async function renderBills() {
             el('table', { class: 'bills-table compact-rows' }, [
                 el('thead', {}, el('tr', {}, [
                     el('th', { class: 'check' }, headerCheck),
-                    el('th', { text: 'Vencimento' }),
-                    el('th', { text: 'Descrição' }),
+                    sortHeader({ label: 'Vencimento', key: 'dueDate', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Descrição', key: 'description', sort, onSort: changeSort }),
                     el('th', { text: 'Categoria' }),
                     el('th', { text: 'Conta' }),
                     el('th', { text: 'Status' }),
-                    el('th', { class: 'num', text: 'Valor' }),
+                    sortHeader({ label: 'Valor', key: 'amount', sort, onSort: changeSort, numeric: true }),
                     el('th', { text: '' })
                 ])),
                 el('tbody', {}, rows.map((bill) => {
@@ -610,7 +624,7 @@ export async function renderBills() {
         view.replaceChildren(head(), filterBar(), el('div', { class: 'empty', text: 'Carregando…' }));
 
         try {
-            result = normalizePage(await api.bills.list({ ...filters, page, size: 20 }));
+            result = normalizePage(await api.bills.list({ ...filters, page, size: 20, sort: [`${sort.key},${sort.dir}`, `id,${sort.dir}`] }));
             rows = result.content;
             // Atualiza a cópia guardada de quem continua selecionado; quem saiu de OPEN sai da seleção.
             rows.forEach((bill) => {

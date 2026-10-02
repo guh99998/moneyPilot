@@ -1,11 +1,19 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
-    pageHead, emptyState, pager, collapsibleFilters, formDialog, confirmDialog, todayIso, stackable
+    pageHead, emptyState, pager, collapsibleFilters, sortHeader, sortSelect, formDialog, confirmDialog, todayIso, stackable
 } from '../ui.js';
 
 const filters = { accountId: '', categoryId: '', type: '', from: '', to: '' };
 let page = 0;
+let sort = { key: 'date', dir: 'desc' };
+
+const SORT_OPTIONS = [
+    { key: 'date', label: 'Data', asc: 'mais antigo primeiro', desc: 'mais recente primeiro' },
+    { key: 'description', label: 'Descrição', asc: 'A → Z', desc: 'Z → A' },
+    { key: 'amount', label: 'Valor', asc: 'menor primeiro', desc: 'maior primeiro' },
+    { key: 'type', label: 'Tipo', asc: 'despesas primeiro', desc: 'receitas primeiro' }
+];
 
 const TYPE_LABEL = { INCOME: 'Receita', EXPENSE: 'Despesa', TRANSFER: 'Transferência' };
 
@@ -151,6 +159,7 @@ export async function renderTransactions() {
             selectField('Tipo', 'type', Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label })), 'Todos'),
             dateField('De', 'from'),
             dateField('Até', 'to'),
+            sortSelect({ options: SORT_OPTIONS, sort, onSort: changeSort }),
             el('button', {
                 class: 'btn-sm',
                 text: 'Limpar',
@@ -161,6 +170,12 @@ export async function renderTransactions() {
                 }
             })
         ]), active);
+    }
+
+    function changeSort(next) {
+        sort = next;
+        page = 0;
+        load();
     }
 
     function head() {
@@ -241,12 +256,12 @@ export async function renderTransactions() {
         return stackable(el('div', { class: 'table-wrap' }, [
             el('table', { class: 'compact-rows' }, [
                 el('thead', {}, el('tr', {}, [
-                    el('th', { text: 'Data' }),
-                    el('th', { text: 'Descrição' }),
+                    sortHeader({ label: 'Data', key: 'date', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Descrição', key: 'description', sort, onSort: changeSort }),
                     el('th', { text: 'Categoria' }),
                     el('th', { text: 'Conta' }),
-                    el('th', { text: 'Tipo' }),
-                    el('th', { class: 'num', text: 'Valor' }),
+                    sortHeader({ label: 'Tipo', key: 'type', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Valor', key: 'amount', sort, onSort: changeSort, numeric: true }),
                     el('th', { text: '' })
                 ])),
                 el('tbody', {}, rows.map((transaction) => {
@@ -278,7 +293,7 @@ export async function renderTransactions() {
         view.replaceChildren(head(), filterBar(), el('div', { class: 'empty', text: 'Carregando…' }));
 
         try {
-            const result = normalizePage(await api.transactions.list({ ...filters, page, size: 20 }));
+            const result = normalizePage(await api.transactions.list({ ...filters, page, size: 20, sort: [`${sort.key},${sort.dir}`, `id,${sort.dir}`] }));
             const content = result.content.length
                 ? el('div', { class: 'card' }, [
                     table(result.content),
