@@ -99,7 +99,7 @@ export async function renderBudgets() {
                     const hasActual = row.spentAmount !== undefined && row.spentAmount !== null;
                     const remaining = hasActual ? Number(row.remainingAmount) : null;
                     return el('tr', {}, [
-                        el('td', { text: row.categoryName || `#${row.categoryId}` }),
+                        el('td', { class: 'desc', text: row.categoryName || `#${row.categoryId}` }),
                         el('td', { class: 'num', text: fmtMoney(row.amountLimit) }),
                         el('td', { class: 'num muted', text: hasActual ? fmtMoney(row.spentAmount) : '—' }),
                         el('td', {

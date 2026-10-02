@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -33,6 +34,7 @@ public class BillService {
     private final CategoryService categoryService;
     private final TransactionRepository transactionRepository;
     private final BillRecurrenceRepository billRecurrenceRepository;
+    private final Clock clock;
 
     public Page<BillResponse> getAllBills(Long accountId,
                                           Long categoryId,
@@ -48,7 +50,7 @@ public class BillService {
         if (status != null) {
             if (status == BillStatusFilter.OVERDUE) {
                 queryStatus = BillStatus.OPEN;
-                dueBefore = LocalDate.now();
+                dueBefore = LocalDate.now(clock);
             } else {
                 queryStatus = BillStatus.valueOf(status.name());
             }
@@ -210,6 +212,12 @@ public class BillService {
         if (bill.getStatus() != BillStatus.OPEN)
             throw new BillNotOpenException(id);
 
+        // O lançamento entra no dia em que o dinheiro saiu ou entrou, não no dia do clique.
+        LocalDate today = LocalDate.now(clock);
+        LocalDate settledOn = request.settledOn() != null ? request.settledOn() : today;
+        if (settledOn.isAfter(today))
+            throw new SettleDateInFutureException(settledOn, today);
+
         Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
         Category category = categoryService.findVisibleCategory(bill.getCategoryId());
 
@@ -219,7 +227,7 @@ public class BillService {
         transaction.setAmount(request.amount());
         transaction.setType(bill.getType().name().equals(BillType.PAYABLE.name()) ? TransactionType.EXPENSE : TransactionType.INCOME);
         transaction.setDescription(bill.getDescription());
-        transaction.setDate(LocalDate.now());
+        transaction.setDate(settledOn);
         transaction.setCreatedAt(Instant.now());
         transaction.setUpdatedAt(Instant.now());
 
@@ -345,7 +353,7 @@ public class BillService {
 
         for (Long id : billIds) {
             Bill bill = this.findOwnedBill(id);
-            results.add(this.settle(id, new SettleRequest(request.accountId(), bill.getAmount())));
+            results.add(this.settle(id, new SettleRequest(request.accountId(), bill.getAmount(), request.settledOn())));
         }
 
         return results;

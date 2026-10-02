@@ -33,7 +33,8 @@ export const session = {
 function buildUrl(path, query) {
     const url = new URL(BASE + path, window.location.origin);
     Object.entries(query || {}).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+        if (Array.isArray(value)) value.forEach((item) => url.searchParams.append(key, item));
+        else if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
     });
     return url;
 }
@@ -172,10 +173,25 @@ export const api = {
         remove: (id) => request(`/budgets/${id}`, { method: 'DELETE' })
     },
 
+    bills: {
+        list: (query) => request('/bills', { query }),
+        create: (body) => request('/bills', { method: 'POST', body }),
+        update: (id, body) => request(`/bills/${id}`, { method: 'PUT', body }),
+        remove: (id) => request(`/bills/${id}`, { method: 'DELETE' }),
+        cancel: (id) => request(`/bills/${id}/cancel`, { method: 'POST' }),
+        settle: (id, body) => request(`/bills/${id}/settle`, { method: 'POST', body }),
+        unsettle: (id) => request(`/bills/${id}/unsettle`, { method: 'POST' }),
+        bulkSettle: (body) => request('/bills/settle', { method: 'POST', body }),
+        createInstallments: (body) => request('/bills/installments', { method: 'POST', body }),
+        removeInstallments: (groupId) => request(`/bills/installments/${groupId}`, { method: 'DELETE' })
+    },
+
     reports: {
         monthlySummary: (month, year) => request('/reports/monthly-summary', { query: { month, year } }),
         spendingByCategory: (month, year) => request('/reports/spending-by-category', { query: { month, year } }),
-        budgetVsActual: (month, year) => request('/reports/budget-vs-actual', { query: { month, year } })
+        budgetVsActual: (month, year) => request('/reports/budget-vs-actual', { query: { month, year } }),
+        cashFlowForecast: (days) => request('/reports/cash-flow-forecast', { query: { days } }),
+        billsSummary: () => request('/reports/bills-summary')
     }
 };
 

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -67,4 +68,48 @@ public interface ReportRepository extends Repository<Transaction, Long> {
                                             @Param("year") Integer year,
                                             @Param("from") LocalDate from,
                                             @Param("nextMonth") LocalDate nextMonth);
+
+    @Query("""
+    SELECT
+        COALESCE((SELECT SUM(a.initialBalance) FROM Account a WHERE a.userId = :userId), 0)
+         +
+        COALESCE((SELECT SUM(CASE WHEN t.type = 'INCOME' THEN t.amount ELSE -t.amount END) FROM Transaction t, Account a WHERE t.accountId = a.id AND a.userId = :userId), 0)
+    """)
+    BigDecimal getTotalBalance(@Param("userId") Long userId);
+
+    @Query("""
+    SELECT b.dueDate AS dueDate,
+        COUNT(b) AS billCount,
+        COALESCE(SUM(CASE WHEN b.type = 'PAYABLE' THEN b.amount ELSE 0 END), 0) AS totalPayable,
+        COALESCE(SUM(CASE WHEN b.type = 'RECEIVABLE' THEN b.amount ELSE 0 END), 0) AS totalReceivable
+    FROM Bill b
+    WHERE b.userId = :userId
+        AND b.status = 'OPEN'
+        AND b.dueDate <= :to
+    GROUP BY b.dueDate
+    ORDER BY b.dueDate
+    """)
+    List<BillDueTotals> findOpenBillTotalsByDueDate(@Param("userId") Long userId,
+                                                    @Param("to") LocalDate to);
+
+    @Query("""
+    SELECT COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE') AS payableCount,
+        COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE'), 0) AS payableTotal,
+        COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE' AND b.dueDate < :today) AS payableOverdueCount,
+        COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE' AND b.dueDate < :today), 0) AS payableOverdueTotal,
+        COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'RECEIVABLE') AS receivableCount,
+        COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'RECEIVABLE'), 0) AS receivableTotal,
+        COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'RECEIVABLE' AND b.dueDate < :today) AS receivableOverdueCount,
+        COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'RECEIVABLE' AND b.dueDate < :today), 0) AS receivableOverdueTotal,
+        COUNT(b) FILTER (WHERE b.status = 'SETTLED' AND t.date >= :monthStart AND t.date < :nextMonthStart) AS settledCount,
+        COALESCE(SUM(b.settledAmount) FILTER (WHERE b.status = 'SETTLED' AND b.type = 'PAYABLE' AND t.date >= :monthStart AND t.date < :nextMonthStart), 0) AS settledPayable,
+        COALESCE(SUM(b.settledAmount) FILTER (WHERE b.status = 'SETTLED' AND b.type = 'RECEIVABLE' AND t.date >= :monthStart AND t.date < :nextMonthStart), 0) AS settledReceivable
+    FROM Bill b
+    LEFT JOIN Transaction t ON t.id = b.transactionId
+    WHERE b.userId = :userId
+    """)
+    BillsSummaryTotals findBillsSummary(@Param("userId") Long userId,
+                                        @Param("today") LocalDate today,
+                                        @Param("monthStart") LocalDate monthStart,
+                                        @Param("nextMonthStart") LocalDate nextMonthStart);
 }
