@@ -17,20 +17,8 @@ const ROUTES = [
     { path: 'budgets', label: 'Orçamentos', render: renderBudgets }
 ];
 
-const THEME_KEY = 'moneypilot.theme';
-
-function applyStoredTheme() {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored) document.documentElement.dataset.theme = stored;
-}
-
-function toggleTheme() {
-    const current = document.documentElement.dataset.theme
-        || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem(THEME_KEY, next);
-}
+// O app tem só o tema claro; limpa a preferência que versões antigas gravavam.
+localStorage.removeItem('moneypilot.theme');
 
 function currentRoute() {
     const path = window.location.hash.replace(/^#\/?/, '');
@@ -57,7 +45,7 @@ function buildSidebar(active) {
         el('div', { class: 'sidebar-top' }, [
             el('div', { class: 'brand' }, [
                 el('span', { class: 'brand-mark' }, el('img', { src: 'image/money-pilot-logo.png', alt: '' })),
-                el('span', { text: 'moneyPilot' })
+                el('span', {}, ['money', el('span', { class: 'pilot', text: 'Pilot' })])
             ]),
             menuToggle
         ]),
@@ -71,7 +59,6 @@ function buildSidebar(active) {
             }))),
             el('div', { class: 'sidebar-foot' }, [
                 el('span', { class: 'user-chip', text: session.email || '' }),
-                el('button', { class: 'btn-ghost btn-sm', text: 'Tema', onClick: toggleTheme }),
                 el('button', {
                     class: 'btn-ghost btn-sm',
                     text: 'Sair',
@@ -123,5 +110,4 @@ window.addEventListener('session:expired', () => {
     render();
 });
 
-applyStoredTheme();
 render();

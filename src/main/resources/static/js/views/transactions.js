@@ -1,7 +1,7 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
-    pageHead, emptyState, pager, formDialog, confirmDialog, todayIso, stackable
+    pageHead, emptyState, pager, collapsibleFilters, formDialog, confirmDialog, todayIso, stackable
 } from '../ui.js';
 
 const filters = { accountId: '', categoryId: '', type: '', from: '', to: '' };
@@ -144,7 +144,8 @@ export async function renderTransactions() {
     }
 
     function filterBar() {
-        return el('div', { class: 'filters' }, [
+        const active = Object.entries(filters).filter(([name, value]) => value && value !== '').length;
+        return collapsibleFilters('transactions', el('div', { class: 'filters' }, [
             selectField('Conta', 'accountId', accounts.map((a) => ({ value: a.id, label: a.name })), 'Todas'),
             selectField('Categoria', 'categoryId', categories.map((c) => ({ value: c.id, label: c.name })), 'Todas'),
             selectField('Tipo', 'type', Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label })), 'Todos'),
@@ -159,7 +160,7 @@ export async function renderTransactions() {
                     load();
                 }
             })
-        ]);
+        ]), active);
     }
 
     function head() {
@@ -238,7 +239,7 @@ export async function renderTransactions() {
 
     function table(rows) {
         return stackable(el('div', { class: 'table-wrap' }, [
-            el('table', {}, [
+            el('table', { class: 'compact-rows' }, [
                 el('thead', {}, el('tr', {}, [
                     el('th', { text: 'Data' }),
                     el('th', { text: 'Descrição' }),
@@ -251,11 +252,11 @@ export async function renderTransactions() {
                 el('tbody', {}, rows.map((transaction) => {
                     const isTransfer = Boolean(transaction.transferGroupId);
                     return el('tr', {}, [
-                        el('td', { text: fmtDate(transaction.date) }),
-                        el('td', { text: transaction.description || '—' }),
-                        el('td', { class: 'muted', text: transaction.categoryName || '—' }),
-                        el('td', { class: 'muted', text: transaction.accountName || '—' }),
-                        el('td', {}, typeBadge(transaction)),
+                        el('td', { class: 'due', text: fmtDate(transaction.date) }),
+                        el('td', { class: 'desc', text: transaction.description || '—' }),
+                        el('td', { class: 'muted cat', text: transaction.categoryName || '—' }),
+                        el('td', { class: 'muted acct', text: transaction.accountName || '—' }),
+                        el('td', { class: 'status' }, typeBadge(transaction)),
                         el('td', {
                             class: 'num',
                             style: `color: var(--${transaction.type === 'INCOME' ? 'income' : 'expense'})`,

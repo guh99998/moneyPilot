@@ -1,7 +1,7 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
-    pageHead, emptyState, pager, confirmDialog, todayIso, stackable
+    pageHead, emptyState, pager, collapsibleFilters, confirmDialog, todayIso, stackable
 } from '../ui.js';
 
 const EMPTY_FILTERS = { type: '', status: 'OPEN', categoryId: '', accountId: '', dueDateFrom: '', dueDateTo: '' };
@@ -376,7 +376,8 @@ export async function renderBills() {
     }
 
     function filterBar() {
-        return el('div', { class: 'filters' }, [
+        const active = Object.entries(filters).filter(([name, value]) => value && value !== EMPTY_FILTERS[name]).length;
+        return collapsibleFilters('bills', el('div', { class: 'filters' }, [
             selectField('Tipo', 'type', Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label })), 'Todos'),
             selectField('Status', 'status', Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })), 'Todos'),
             selectField('Categoria', 'categoryId', categories
@@ -390,7 +391,7 @@ export async function renderBills() {
                 text: 'Limpar',
                 onClick: () => { presetBillFilters({}); load(); }
             })
-        ]);
+        ]), active);
     }
 
     function head() {
@@ -513,8 +514,8 @@ export async function renderBills() {
         const tags = [];
         if (bill.installmentNumber) tags.push(`parcela ${bill.installmentNumber}/${bill.installmentTotal}`);
         if (bill.recurrenceId) tags.push('recorrente');
-        return el('td', {}, [
-            el('span', { text: label }),
+        return el('td', { class: 'desc' }, [
+            el('span', { class: 'desc-main', text: label }),
             tags.length ? el('span', { class: 'cell-tag', text: tags.join(' · ') }) : null
         ]);
     }
@@ -546,7 +547,7 @@ export async function renderBills() {
         headerCheck.indeterminate = !allChecked && openRows.some((bill) => selected.has(bill.id));
 
         return stackable(el('div', { class: 'table-wrap' }, [
-            el('table', { class: 'bills-table' }, [
+            el('table', { class: 'bills-table compact-rows' }, [
                 el('thead', {}, el('tr', {}, [
                     el('th', { class: 'check' }, headerCheck),
                     el('th', { text: 'Vencimento' }),
@@ -574,9 +575,9 @@ export async function renderBills() {
                         el('td', { class: 'check' }, checkbox),
                         el('td', { class: 'due', text: fmtDate(bill.dueDate) }),
                         descriptionCell(bill),
-                        el('td', { class: 'muted', text: bill.categoryName || '—' }),
-                        el('td', { class: 'muted', text: bill.accountName || '—' }),
-                        el('td', {}, billStatusBadge(bill)),
+                        el('td', { class: 'muted cat', text: bill.categoryName || '—' }),
+                        el('td', { class: `muted acct ${bill.accountName ? '' : 'is-empty'}`, text: bill.accountName || '—' }),
+                        el('td', { class: 'status' }, billStatusBadge(bill)),
                         amountCell(bill),
                         el('td', { class: 'actions' }, actions(bill))
                     ]);

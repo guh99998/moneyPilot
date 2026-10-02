@@ -79,7 +79,7 @@ export async function renderAccounts() {
                     el('th', { text: '' })
                 ])),
                 el('tbody', {}, rows.map((row) => el('tr', {}, [
-                    el('td', { text: row.name }),
+                    el('td', { class: 'desc', text: row.name }),
                     el('td', { class: 'muted', text: TYPE_LABEL[row.type] || row.type }),
                     el('td', { class: 'num muted', text: fmtMoney(row.initialBalance) }),
                     el('td', { class: 'num', text: row.currentBalance === null ? '—' : fmtMoney(row.currentBalance) }),

@@ -218,7 +218,7 @@ export function pageHead(title, subtitle, actions = []) {
             el('h1', { text: title }),
             subtitle ? el('p', { text: subtitle }) : null
         ]),
-        el('div', { style: 'display:flex; gap:.5rem; flex-wrap:wrap;' }, actions)
+        el('div', { class: 'page-actions' }, actions)
     ]);
 }
 
@@ -237,9 +237,9 @@ export function monthPicker({ month, year, onChange }) {
         onChange: () => onChange(Number(monthSelect.value), Number(yearInput.value))
     });
 
-    return el('div', { class: 'filters' }, [
+    return el('div', { class: 'month-picker' }, [
         el('div', { class: 'field' }, [el('label', { text: 'Mês' }), monthSelect]),
-        el('div', { class: 'field', style: 'max-width:110px' }, [el('label', { text: 'Ano' }), yearInput])
+        el('div', { class: 'field' }, [el('label', { text: 'Ano' }), yearInput])
     ]);
 }
 
@@ -256,4 +256,20 @@ export function stackable(wrap) {
     });
     wrap.classList.add('table-stack');
     return wrap;
+}
+
+const filtersOpen = new Map();
+
+/**
+ * Filtros recolhíveis: no celular viram um "Filtros (n)" que abre e fecha;
+ * no desktop ficam sempre abertos. O estado sobrevive ao re-render da tela.
+ */
+export function collapsibleFilters(key, filtersNode, activeCount) {
+    const desktop = window.matchMedia('(min-width: 900px)').matches;
+    const details = el('details', { class: 'filter-toggle', open: desktop || filtersOpen.get(key) }, [
+        el('summary', { text: activeCount ? `Filtros · ${activeCount} ativo${activeCount > 1 ? 's' : ''}` : 'Filtros' }),
+        filtersNode
+    ]);
+    details.addEventListener('toggle', () => filtersOpen.set(key, details.open));
+    return details;
 }

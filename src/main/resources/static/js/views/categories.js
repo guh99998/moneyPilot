@@ -59,7 +59,7 @@ export async function renderCategories() {
                 el('tbody', {}, rows.map((row) => {
                     const isDefault = row.userId === null || row.userId === undefined;
                     return el('tr', {}, [
-                        el('td', { text: row.name }),
+                        el('td', { class: 'desc', text: row.name }),
                         el('td', {}, row.type === 'INCOME' ? badge('income', 'Receita') : badge('expense', 'Despesa')),
                         el('td', { class: 'muted', text: isDefault ? 'Padrão do sistema' : 'Sua' }),
                         el('td', { class: 'actions' }, isDefault
