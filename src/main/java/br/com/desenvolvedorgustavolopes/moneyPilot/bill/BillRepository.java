@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,6 +59,8 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     List<Bill> findAllByInstallmentGroupIdAndUserIdOrderByInstallmentNumberAsc(UUID installmentGroupId, Long userId);
 
     boolean existsByTransactionId(Long transactionId);
+
+    List<Bill> findAllByTransactionIdIn(Collection<Long> transactionIds);
 
     boolean existsByRecurrenceId(Long recurrenceId);
 

@@ -1,5 +1,7 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.transaction;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.bill.Bill;
+import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -17,9 +19,16 @@ public record TransactionResponse(
         Instant createdAt,
         Instant updatedAt,
         String accountName,
-        String categoryName
+        String categoryName,
+        Long billId,
+        BillType billType
 ) {
         public TransactionResponse(Transaction transaction, String accountName, String categoryName) {
+                this(transaction, accountName, categoryName, null);
+        }
+
+        /** bill: o título cuja baixa gerou este lançamento, quando houver. */
+        public TransactionResponse(Transaction transaction, String accountName, String categoryName, Bill bill) {
                 this(
                         transaction.getId(),
                         transaction.getAccountId(),
@@ -32,7 +41,9 @@ public record TransactionResponse(
                         transaction.getCreatedAt(),
                         transaction.getUpdatedAt(),
                         accountName,
-                        categoryName
+                        categoryName,
+                        bill != null ? bill.getId() : null,
+                        bill != null ? bill.getType() : null
                 );
         }
 }
