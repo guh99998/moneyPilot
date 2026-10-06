@@ -183,7 +183,16 @@ export const api = {
         unsettle: (id) => request(`/bills/${id}/unsettle`, { method: 'POST' }),
         bulkSettle: (body) => request('/bills/settle', { method: 'POST', body }),
         createInstallments: (body) => request('/bills/installments', { method: 'POST', body }),
-        removeInstallments: (groupId) => request(`/bills/installments/${groupId}`, { method: 'DELETE' })
+        removeInstallments: (groupId) => request(`/bills/installments/${groupId}`, { method: 'DELETE' }),
+        materialize: (month) => request('/bills/materialize', { method: 'POST', query: { month } })
+    },
+
+    billRecurrences: {
+        list: (query) => request('/bill-recurrences', { query }),
+        create: (body) => request('/bill-recurrences', { method: 'POST', body }),
+        update: (id, body) => request(`/bill-recurrences/${id}`, { method: 'PUT', body }),
+        remove: (id) => request(`/bill-recurrences/${id}`, { method: 'DELETE' }),
+        deactivate: (id) => request(`/bill-recurrences/${id}/deactivate`, { method: 'POST' })
     },
 
     reports: {

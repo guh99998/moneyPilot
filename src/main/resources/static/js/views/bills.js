@@ -1,4 +1,4 @@
-import { api, fetchAll, normalizePage } from '../api.js';
+import { api, fetchAll, normalizePage, session } from '../api.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
     pageHead, emptyState, pager, collapsibleFilters, sortHeader, sortSelect, confirmDialog, todayIso, stackable
@@ -65,6 +65,40 @@ function installmentDueDate(firstIso, offset) {
     const targetMonth = target.getUTCMonth();
     const clampedDay = Math.min(day, daysInMonth(targetYear, targetMonth));
     return `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+}
+
+function nextDayIso(iso) {
+    const [year, month, day] = iso.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
+}
+
+/** Próximos vencimentos de uma recorrência — mesmo clamp do dueDateFor do backend (dia 31 vira o último dia do mês). */
+function recurrenceDueDates({ dayOfMonth, startDate, endDate }, count) {
+    const dates = [];
+    const startMonth = `${startDate.slice(0, 7)}-01`;
+    for (let offset = 0; dates.length < count && offset < count + 1; offset++) {
+        const monthStart = installmentDueDate(startMonth, offset);
+        const due = installmentDueDate(`${monthStart.slice(0, 8)}${String(dayOfMonth).padStart(2, '0')}`, 0);
+        if (due < startDate) continue;
+        if (endDate && due > endDate) break;
+        dates.push(due);
+    }
+    return dates;
+}
+
+// Recorrência só vira título quando um mês é pedido ao backend. O app pede o mês atual e o próximo
+// uma vez por sessão; a chamada é idempotente (o backend pula o que já existe), mas sequencial:
+// duas em paralelo para o mesmo mês esbarrariam no UNIQUE(recurrence_id, due_date).
+let materializedKey = null;
+
+export async function ensureRecurringBills({ force = false } = {}) {
+    const currentMonth = todayIso().slice(0, 7);
+    const key = `${session.email}|${currentMonth}`;
+    if (!force && materializedKey === key) return;
+    const nextMonth = installmentDueDate(`${currentMonth}-01`, 1).slice(0, 7);
+    await api.bills.materialize(currentMonth);
+    await api.bills.materialize(nextMonth);
+    materializedKey = key;
 }
 
 /** Divisão DOWN com o resíduo em centavos na primeira parcela — igual ao createInstallmentPlan. */
@@ -358,6 +392,206 @@ function bulkSettleDialog({ bills, accounts, onSaved }) {
     });
 }
 
+/** Como o confirmDialog, mas com mais de um caminho: cada escolha é um botão com sua própria ação. */
+function choiceDialog({ title, message, choices }) {
+    const dialog = el('dialog');
+    const buttons = choices.map((choice) => el('button', {
+        type: 'button',
+        class: choice.class || '',
+        text: choice.label,
+        onClick: async () => {
+            buttons.forEach((button) => { button.disabled = true; });
+            try {
+                await choice.run();
+            } catch (error) {
+                reportError(error);
+            }
+            dialog.close();
+        }
+    }));
+
+    dialog.append(el('div', { class: 'dialog-body' }, [
+        el('h2', { text: title }),
+        el('p', { class: 'dialog-lead', text: message }),
+        el('div', { class: 'dialog-actions dialog-actions-wrap' }, [
+            el('button', { type: 'button', text: 'Voltar', onClick: () => dialog.close() }),
+            ...buttons
+        ])
+    ]));
+
+    dialog.addEventListener('close', () => dialog.remove());
+    document.body.append(dialog);
+    dialog.showModal();
+}
+
+function recurrenceDialog({ recurrence, accounts, categories, onSaved }) {
+    const values = recurrence || {};
+    const { typeSelect, categorySelect } = typeAndCategory({ type: values.type, categoryId: values.categoryId, categories });
+    const descriptionInput = el('input', { type: 'text', maxlength: '255', required: true, placeholder: 'Ex.: Conta de telefone', value: values.description ?? '' });
+    const amountInput = el('input', { type: 'number', step: '0.01', min: '0.01', required: true, value: values.amount ?? '' });
+    const dayInput = el('input', { type: 'number', step: '1', min: '1', max: '31', required: true, value: values.dayOfMonth ?? '' });
+    const accountSelect = el('select', {}, accountOptions(accounts, values.accountId, { allowNone: true }));
+    const startInput = el('input', { type: 'date', required: true, value: values.startDate ?? todayIso() });
+    const endInput = el('input', { type: 'date', value: values.endDate ?? '' });
+    const preview = el('p', { class: 'preview-hint', 'aria-live': 'polite' });
+
+    function renderPreview() {
+        const day = Number(dayInput.value);
+        // O backend exige fim estritamente depois do início.
+        endInput.min = startInput.value ? nextDayIso(startInput.value) : '';
+        if (!Number.isInteger(day) || day < 1 || day > 31 || !startInput.value) {
+            preview.textContent = 'Todo mês, no dia escolhido. Em meses mais curtos, o dia 31 vence no último dia do mês.';
+            return;
+        }
+        const dates = recurrenceDueDates({ dayOfMonth: day, startDate: startInput.value, endDate: endInput.value || null }, 3);
+        preview.textContent = dates.length
+            ? `Próximos vencimentos: ${dates.map(fmtDate).join(', ')}${dates.length === 3 ? '…' : ''}`
+            : 'Nenhum vencimento entre o início e o fim escolhidos.';
+    }
+
+    [dayInput, startInput, endInput].forEach((input) => input.addEventListener('input', renderPreview));
+
+    openDialog({
+        title: recurrence ? 'Editar recorrência' : 'Nova recorrência',
+        submitLabel: recurrence ? 'Salvar' : 'Criar recorrência',
+        focus: descriptionInput,
+        body: [
+            field('Descrição', descriptionInput),
+            el('div', { class: 'form-row' }, [field('Tipo', typeSelect), field('Valor', amountInput)]),
+            el('div', { class: 'form-row' }, [field('Categoria', categorySelect), field('Vence todo dia', dayInput)]),
+            el('div', { class: 'form-row' }, [field('Começa em', startInput), field('Termina em (opcional)', endInput)]),
+            field('Conta prevista', accountSelect),
+            preview,
+            el('p', {
+                class: 'preview-hint',
+                text: recurrence
+                    ? 'Mudanças valem para os próximos títulos gerados. Os que já existem não mudam: edite-os direto na lista.'
+                    : 'Os títulos são gerados para o mês atual e o próximo. Meses anteriores ao atual não são criados.'
+            })
+        ],
+        onSubmit: async () => {
+            const payload = {
+                type: typeSelect.value,
+                categoryId: Number(categorySelect.value),
+                description: descriptionInput.value.trim(),
+                amount: amountInput.value,
+                dayOfMonth: Number(dayInput.value),
+                startDate: startInput.value,
+                endDate: endInput.value || null,
+                accountId: accountSelect.value ? Number(accountSelect.value) : null
+            };
+            if (recurrence) await api.billRecurrences.update(recurrence.id, payload);
+            else await api.billRecurrences.create(payload);
+            await ensureRecurringBills({ force: true });
+            toast(recurrence ? 'Recorrência atualizada.' : 'Recorrência criada — os títulos já aparecem na lista.', 'success');
+            onSaved();
+        }
+    });
+
+    renderPreview();
+}
+
+function recurrencesDialog({ accounts, categories, onChanged }) {
+    const dialog = el('dialog', { class: 'dialog-wide' });
+    const list = el('div', { class: 'recurrence-list' }, el('p', { class: 'preview-hint', text: 'Carregando…' }));
+
+    async function refresh() {
+        try {
+            const items = await fetchAll(api.billRecurrences.list);
+            // Ativas primeiro; dentro de cada grupo, pela ordem do dia de vencimento.
+            items.sort((a, b) => (b.active - a.active) || (a.dayOfMonth - b.dayOfMonth));
+            list.replaceChildren(...(items.length ? items.map(item) : [emptyState('Nenhuma recorrência. Cadastre contas fixas como aluguel, telefone ou salário.')]));
+        } catch (error) {
+            list.replaceChildren(emptyState(error?.message || 'Não foi possível carregar as recorrências.'));
+        }
+    }
+
+    function changed() {
+        refresh();
+        onChanged();
+    }
+
+    function item(recurrence) {
+        const sign = recurrence.type === 'PAYABLE' ? '−' : '+';
+        const period = recurrence.endDate
+            ? `de ${fmtDate(recurrence.startDate)} a ${fmtDate(recurrence.endDate)}`
+            : `desde ${fmtDate(recurrence.startDate)}`;
+
+        return el('div', { class: `recurrence-item ${recurrence.active ? '' : 'is-inactive'}` }, [
+            el('div', { class: 'recurrence-info' }, [
+                el('span', { class: 'desc-main', text: recurrence.description || recurrence.categoryName }),
+                el('span', { class: 'cell-tag', text: `todo dia ${recurrence.dayOfMonth} · ${recurrence.categoryName} · ${period}` })
+            ]),
+            el('span', {
+                class: `num amount-${recurrence.type === 'PAYABLE' ? 'out' : 'in'}`,
+                text: `${sign} ${fmtMoney(recurrence.amount)}`
+            }),
+            el('div', { class: 'recurrence-actions' }, recurrence.active
+                ? [
+                    el('button', {
+                        class: 'btn-ghost btn-sm',
+                        text: 'Editar',
+                        onClick: () => recurrenceDialog({ recurrence, accounts, categories, onSaved: changed })
+                    }),
+                    el('button', { class: 'btn-ghost btn-sm', text: 'Encerrar', onClick: () => askDeactivate(recurrence) }),
+                    el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askRemove(recurrence) })
+                ]
+                : [badge('canceled', 'Encerrada')])
+        ]);
+    }
+
+    function askDeactivate(recurrence) {
+        confirmDialog({
+            title: 'Encerrar recorrência',
+            message: `"${recurrence.description || recurrence.categoryName}" deixa de gerar títulos novos. Os que já foram gerados continuam na lista; cancele os que não vão acontecer.`,
+            confirmLabel: 'Encerrar',
+            onConfirm: async () => {
+                await api.billRecurrences.deactivate(recurrence.id);
+                toast('Recorrência encerrada.', 'success');
+                changed();
+            }
+        });
+    }
+
+    function askRemove(recurrence) {
+        confirmDialog({
+            title: 'Excluir recorrência',
+            message: `"${recurrence.description || recurrence.categoryName}" será removida. Só dá para excluir uma recorrência que ainda não gerou títulos; se já gerou, use Encerrar.`,
+            confirmLabel: 'Excluir',
+            onConfirm: async () => {
+                try {
+                    await api.billRecurrences.remove(recurrence.id);
+                } catch (error) {
+                    if (error?.status === 409) throw new Error('Essa recorrência já gerou títulos. Use Encerrar para parar de gerar novos.');
+                    throw error;
+                }
+                toast('Recorrência excluída.', 'success');
+                changed();
+            }
+        });
+    }
+
+    dialog.append(el('div', { class: 'dialog-body' }, [
+        el('h2', { text: 'Recorrências' }),
+        el('p', { class: 'dialog-lead', text: 'Contas que se repetem todo mês no mesmo dia. O app gera os títulos do mês atual e do próximo sozinho.' }),
+        list,
+        el('div', { class: 'dialog-actions' }, [
+            el('button', { type: 'button', text: 'Fechar', onClick: () => dialog.close() }),
+            el('button', {
+                type: 'button',
+                class: 'btn-primary',
+                text: 'Nova recorrência',
+                onClick: () => recurrenceDialog({ accounts, categories, onSaved: changed })
+            })
+        ])
+    ]));
+
+    dialog.addEventListener('close', () => dialog.remove());
+    document.body.append(dialog);
+    dialog.showModal();
+    refresh();
+}
+
 // ---- tela ----
 
 export async function renderBills() {
@@ -419,6 +653,11 @@ export async function renderBills() {
 
     function head() {
         return pageHead('A pagar e receber', 'Compromissos com data marcada: pague ou receba e o lançamento entra no extrato', [
+            el('button', {
+                text: 'Recorrências',
+                disabled: !categories.length,
+                onClick: () => recurrencesDialog({ accounts, categories, onChanged: load })
+            }),
             el('button', {
                 text: 'Parcelar',
                 disabled: !categories.length,
@@ -483,18 +722,37 @@ export async function renderBills() {
 
     function askDelete(bill) {
         if (bill.installmentGroupId) {
-            confirmDialog({
-                title: 'Excluir parcelamento',
-                message: `As ${bill.installmentTotal} parcelas deste parcelamento serão removidas juntas. Se alguma já foi baixada, nada é excluído.`,
-                confirmLabel: 'Excluir parcelas',
-                onConfirm: async () => {
-                    await api.bills.removeInstallments(bill.installmentGroupId);
-                    [...selected.values()]
-                        .filter((item) => item.installmentGroupId === bill.installmentGroupId)
-                        .forEach((item) => selected.delete(item.id));
-                    toast('Parcelamento excluído.', 'success');
-                    load();
-                }
+            // Só esta parcela: é o caminho de quem cadastra uma compra antiga e precisa tirar
+            // as parcelas que já pagou antes de usar o app. As demais mantêm a numeração (5/10…).
+            choiceDialog({
+                title: `Excluir parcela ${bill.installmentNumber}/${bill.installmentTotal}`,
+                message: `"${bill.description || bill.categoryName}" de ${fmtMoney(bill.amount)}, vence em ${fmtDate(bill.dueDate)}. `
+                    + 'Excluir só esta parcela mantém as outras como estão. Excluir o parcelamento remove todas as parcelas restantes '
+                    + '(se alguma já foi baixada, nada é excluído).',
+                choices: [
+                    {
+                        label: 'Excluir parcelamento',
+                        class: 'btn-danger',
+                        run: async () => {
+                            await api.bills.removeInstallments(bill.installmentGroupId);
+                            [...selected.values()]
+                                .filter((item) => item.installmentGroupId === bill.installmentGroupId)
+                                .forEach((item) => selected.delete(item.id));
+                            toast('Parcelamento excluído.', 'success');
+                            load();
+                        }
+                    },
+                    {
+                        label: 'Excluir só esta parcela',
+                        class: 'btn-primary',
+                        run: async () => {
+                            await api.bills.remove(bill.id);
+                            selected.delete(bill.id);
+                            toast(`Parcela ${bill.installmentNumber}/${bill.installmentTotal} excluída.`, 'success');
+                            load();
+                        }
+                    }
+                ]
             });
             return;
         }
@@ -526,7 +784,8 @@ export async function renderBills() {
         if (bill.status === 'SETTLED') {
             buttons.push(el('button', { class: 'btn-ghost btn-sm', text: 'Desfazer baixa', onClick: () => askUnsettle(bill) }));
         }
-        if (bill.status !== 'SETTLED') {
+        // Título de recorrência excluído seria gerado de novo na próxima sessão; para pular um mês, Cancelar.
+        if (bill.status !== 'SETTLED' && !bill.recurrenceId) {
             buttons.push(el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(bill) }));
         }
         return buttons;
