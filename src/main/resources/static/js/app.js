@@ -3,7 +3,7 @@ import { el, clear, toast } from './ui.js';
 import { renderAuth } from './views/auth.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderTransactions } from './views/transactions.js';
-import { renderBills } from './views/bills.js';
+import { renderBills, ensureRecurringBills } from './views/bills.js';
 import { renderAccounts } from './views/accounts.js';
 import { renderCategories } from './views/categories.js';
 import { renderBudgets } from './views/budgets.js';
@@ -94,6 +94,10 @@ async function render() {
     const main = el('main', { class: 'main' });
     root.append(el('div', { class: 'shell' }, [buildSidebar(route), main]));
     main.append(el('div', { class: 'empty', text: 'Carregando…' }));
+
+    // Antes da tela: dashboard e previsão já precisam ver os títulos das recorrências.
+    // Se falhar, segue sem eles — não vale travar o app por isso.
+    await ensureRecurringBills().catch(() => {});
 
     try {
         const view = await route.render();
