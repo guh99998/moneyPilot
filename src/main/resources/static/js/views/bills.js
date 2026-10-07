@@ -784,8 +784,9 @@ export async function renderBills() {
         if (bill.status === 'SETTLED') {
             buttons.push(el('button', { class: 'btn-ghost btn-sm', text: 'Desfazer baixa', onClick: () => askUnsettle(bill) }));
         }
+        // O backend só exclui título em aberto: cancelado é estado final.
         // Título de recorrência excluído seria gerado de novo na próxima sessão; para pular um mês, Cancelar.
-        if (bill.status !== 'SETTLED' && !bill.recurrenceId) {
+        if (bill.status === 'OPEN' && !bill.recurrenceId) {
             buttons.push(el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(bill) }));
         }
         return buttons;
