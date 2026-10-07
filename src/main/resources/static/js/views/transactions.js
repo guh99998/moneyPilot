@@ -1,7 +1,7 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
-    pageHead, emptyState, pager, collapsibleFilters, sortHeader, sortSelect, formDialog, confirmDialog, todayIso, stackable
+    pageHead, emptyState, pager, collapsibleFilters, sortHeader, sortSelect, formDialog, confirmDialog, todayIso, stackable, isCommittedDate
 } from '../ui.js';
 import { presetBillFilters } from './bills.js';
 
@@ -147,7 +147,12 @@ export async function renderTransactions() {
         const input = el('input', {
             type: 'date',
             value: filters[key],
-            onChange: () => { filters[key] = input.value; page = 0; load(); }
+            min: '1900-01-01',
+            max: '2200-12-31',
+            onChange: () => {
+                if (!isCommittedDate(input.value)) return;
+                filters[key] = input.value; page = 0; load();
+            }
         });
         return el('div', { class: 'field' }, [el('label', { text: label }), input]);
     }

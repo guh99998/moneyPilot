@@ -222,6 +222,16 @@ export function pageHead(title, subtitle, actions = []) {
     ]);
 }
 
+/**
+ * O input de data dispara `change` a cada dígito do ano (0002, 0020, 0202…). Só vale o campo
+ * vazio (limpar) ou uma data com ano de 4 dígitos plausível — antes disso, espera o fim da digitação.
+ */
+export function isCommittedDate(value) {
+    if (!value) return true;
+    const year = Number(String(value).slice(0, 4));
+    return year >= 1900 && year <= 2200;
+}
+
 /** Seletor de mês/ano usado pelo dashboard e pelos orçamentos. */
 export function monthPicker({ month, year, onChange }) {
     const monthSelect = el('select', {
