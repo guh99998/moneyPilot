@@ -4,6 +4,7 @@ import { renderAuth } from './views/auth.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderTransactions } from './views/transactions.js';
 import { renderBills, ensureRecurringBills } from './views/bills.js';
+import { renderForecast } from './views/forecast.js';
 import { renderAccounts } from './views/accounts.js';
 import { renderCategories } from './views/categories.js';
 import { renderBudgets } from './views/budgets.js';
@@ -12,6 +13,7 @@ const ROUTES = [
     { path: 'dashboard', label: 'Visão geral', render: renderDashboard },
     { path: 'transactions', label: 'Lançamentos', render: renderTransactions },
     { path: 'bills', label: 'A pagar e receber', render: renderBills },
+    { path: 'forecast', label: 'Previsão mensal', render: renderForecast },
     { path: 'accounts', label: 'Contas', render: renderAccounts },
     { path: 'categories', label: 'Categorias', render: renderCategories },
     { path: 'budgets', label: 'Orçamentos', render: renderBudgets }

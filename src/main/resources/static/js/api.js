@@ -200,6 +200,7 @@ export const api = {
         spendingByCategory: (month, year) => request('/reports/spending-by-category', { query: { month, year } }),
         budgetVsActual: (month, year) => request('/reports/budget-vs-actual', { query: { month, year } }),
         cashFlowForecast: (days) => request('/reports/cash-flow-forecast', { query: { days } }),
+        monthlyForecast: (months) => request('/reports/monthly-forecast', { query: { months } }),
         billsSummary: () => request('/reports/bills-summary')
     }
 };

@@ -41,6 +41,12 @@ public class ReportController {
         return service.getCashFlowForecast(days);
     }
 
+    @GetMapping("/monthly-forecast")
+    @ResponseStatus(HttpStatus.OK)
+    public MonthlyForecastResponse getMonthlyForecast(@RequestParam(defaultValue = "6") @Min(1) @Max(12) Integer months) {
+        return service.getMonthlyForecast(months);
+    }
+
     @GetMapping("/bills-summary")
     @ResponseStatus(HttpStatus.OK)
     public BillsSummaryResponse getBillsSummary() {

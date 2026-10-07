@@ -700,3 +700,9 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
     .dash .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .main { padding: 1.75rem 2.5rem 4rem; }
 }
+
+/* ---------- previsão mensal: tiles e tabela ocupam a largura toda ---------- */
+@media (min-width: 1200px) {
+    .dash .kpis.span-full { grid-column: span 12; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .dash .span-full { grid-column: span 12; }
+}

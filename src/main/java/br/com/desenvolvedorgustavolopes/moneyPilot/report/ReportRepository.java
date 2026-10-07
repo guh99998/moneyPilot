@@ -92,6 +92,19 @@ public interface ReportRepository extends Repository<Transaction, Long> {
     List<BillDueTotals> findOpenBillTotalsByDueDate(@Param("userId") Long userId,
                                                     @Param("to") LocalDate to);
 
+    // Qualquer status: baixada ou cancelada também ocupa a vaga da recorrência naquele mês.
+    @Query("""
+    SELECT b.recurrenceId AS recurrenceId, b.dueDate AS dueDate
+    FROM Bill b
+    WHERE b.userId = :userId
+        AND b.recurrenceId IS NOT NULL
+        AND b.dueDate >= :from
+        AND b.dueDate <= :to
+    """)
+    List<RecurrenceBillKey> findRecurrenceBillKeys(@Param("userId") Long userId,
+                                                   @Param("from") LocalDate from,
+                                                   @Param("to") LocalDate to);
+
     @Query("""
     SELECT COUNT(b) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE') AS payableCount,
         COALESCE(SUM(b.amount) FILTER (WHERE b.status = 'OPEN' AND b.type = 'PAYABLE'), 0) AS payableTotal,
