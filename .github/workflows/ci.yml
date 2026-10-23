@@ -1,27 +1,44 @@
-name: Test, Upload and Deploy
+name: CI
 
 on:
   push:
+    branches: [main, deploy]
   pull_request:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        java: [21]
-    name: Run tests with Java ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: ${{ matrix.java }}
-      - name: Setup node
-        uses: actions/setup-node@v4
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: sh mvnw -B verify
+
+  image:
+    # Publica a imagem só quando a main passa nos testes; a VPS apenas baixa.
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
-          node-version: 22
-      - name: Front-end tests
-        run: node --test "src/test/js/*.test.mjs"
-      - run: ./mvnw verify
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/guh99998/moneypilot:latest
+            ghcr.io/guh99998/moneypilot:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

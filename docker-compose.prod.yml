@@ -1,0 +1,55 @@
+# MoneyPilot em produção (VPS): Postgres + app. O HTTPS fica no Caddy compartilhado (/opt/proxy).
+# Pré-requisito: docker network create proxy
+# Uso: docker compose -f docker-compose.prod.yml up -d
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      POSTGRES_DB: moneypilot
+      POSTGRES_USER: moneypilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - pgdata:/var/lib/postgresql  # Postgres 18+: o dado fica em subpasta versionada
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moneypilot -d moneypilot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ghcr.io/guh99998/moneypilot:latest
+    build: .
+    restart: unless-stopped
+    mem_limit: 640m
+    environment:
+      SPRING_PROFILES_ACTIVE: prod  # o application.properties padrão ativa "local"
+      JDBC_DATABASE_URL: jdbc:postgresql://db:5432/moneypilot
+      JDBC_DATABASE_USERNAME: moneypilot
+      JDBC_DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+      CANONICAL_HOST: ${CANONICAL_HOST:-}
+      COOKIE_SECURE: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      default: {}
+      proxy:
+        aliases:
+          - moneypilot
+    healthcheck:
+      # saudável = o app responde HTTP (qualquer status); recusa de conexão = não saudável
+      test: ["CMD-SHELL", "curl -s -o /dev/null --max-time 4 http://127.0.0.1:8080/actuator/health"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 90s
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  pgdata:

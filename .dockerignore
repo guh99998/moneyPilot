@@ -1,0 +1,7 @@
+.git
+.idea
+target
+.env
+.env.*
+!.env.production.example
+docker-compose*.yml
