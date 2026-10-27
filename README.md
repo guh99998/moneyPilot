@@ -14,6 +14,7 @@ Aplicação de controle financeiro pessoal: contas, lançamentos, transferência
 | Documentação da API | springdoc-openapi 3.x (Swagger UI) |
 | Testes | JUnit 5, MockMvc e Testcontainers (Postgres real); `node --test` para o cliente web |
 | CI | GitHub Actions |
+| Deploy | Docker Compose em VPS, imagem publicada no GHCR, HTTPS pelo Caddy |
 | Build | Maven (wrapper incluso) |
 | Frontend | HTML, CSS e JavaScript puro com ES modules, sem build step e sem biblioteca de gráficos |
 
@@ -106,6 +107,7 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `GET` | `/reports/spending-by-category` | Gasto por categoria no mês |
 | `GET` | `/reports/budget-vs-actual` | Orçado contra realizado |
 | `GET` | `/reports/cash-flow-forecast?days=30` | Saldo projetado em blocos de 7 dias (`days` ∈ 30, 60, 90) |
+| `GET` | `/reports/monthly-forecast?months=6` | Saldo projetado mês a mês (`months` de 1 a 12), incluindo recorrências ainda não materializadas |
 | `GET` | `/reports/bills-summary` | A pagar, a receber, vencidos e baixados no mês |
 | `GET` | `/actuator/health` | Health check (público) |
 
@@ -115,6 +117,8 @@ Listagens aceitam `page`, `size` e `sort` (por exemplo `sort=date,asc`).
 - `/bills` filtra por `type`, `status` (incluindo `OVERDUE`), `categoryId`, `accountId`, `dueDateFrom` e `dueDateTo`.
 
 A previsão de fluxo de caixa parte do mesmo saldo que `/accounts/{id}/balance` mostra, soma os títulos em aberto bloco a bloco e joga os vencidos inteiros no primeiro bloco — dívida vencida não some da projeção por ser antiga. O último bloco pode ter menos de 7 dias (30 dias = quatro de 7 e um de 2).
+
+A previsão mensal segue a mesma base, agrupada por mês a partir do mês corrente, e vai além: **projeta as recorrências ativas que ainda não viraram título**, sem persistir nada. Uma ocorrência só entra se vence a partir de hoje, está dentro da vigência da recorrência e ainda não foi materializada naquele vencimento — assim um título já gerado nunca conta duas vezes. Os vencidos também caem inteiros no primeiro mês e vêm somados à parte em `overdue`.
 
 Erro sempre no mesmo formato, com `fieldErrors` preenchido quando a falha é de validação:
 
@@ -134,9 +138,14 @@ Servido em `/` pela própria aplicação, a partir de `src/main/resources/static
 
 - **Mobile-first**, com breakpoints em 600, 900, 1200 e 1440px. No celular a navegação vira uma barra no topo, tabelas viram cartões compactos e os filtros ficam recolhidos.
 - **Tema claro único** nas cores da marca (azul-marinho e verde da logo).
+- **Previsão mensal** com colunas de a pagar e a receber por mês, linha do saldo projetado e tabela mês a mês.
 - **Visão geral** com saldo em contas, projeção, títulos a pagar e a receber, próximos vencimentos e gráficos de previsão e de receitas × despesas — desenhados em SVG por `js/charts.js`, com tooltip e versão em tabela.
 - **A pagar e receber** com seleção em lote e prévia ao vivo da divisão das parcelas, calculada em centavos com a mesma regra do backend.
 - **Ordenação por coluna** em Lançamentos, A pagar e receber e Contas: clicar no cabeçalho ordena, clicar de novo inverte.
+
+## Desenvolvimento
+
+Novas features seguem Spec-Driven Development: cada uma tem uma pasta em [`specs/`](specs/README.md) com spec, plano técnico e tarefas, aprovados antes do código. As regras de trabalho, branches e commits estão no [`CLAUDE.md`](CLAUDE.md).
 
 ## Rodando localmente
 
@@ -156,31 +165,46 @@ O segredo JWT do profile `local` é um placeholder de desenvolvimento — ele n�
 | Variável | Observação |
 |---|---|
 | `SPRING_PROFILES_ACTIVE` | `prod` |
-| `JDBC_DATABASE_URL` | Derivada automaticamente pelo buildpack Java quando há Postgres provisionado |
-| `JDBC_DATABASE_USERNAME` | idem |
-| `JDBC_DATABASE_PASSWORD` | idem |
+| `JDBC_DATABASE_URL` | Obrigatória. No `docker-compose.prod.yml` aponta para o serviço `db` |
+| `JDBC_DATABASE_USERNAME` | Obrigatória |
+| `JDBC_DATABASE_PASSWORD` | Obrigatória. No compose vem de `POSTGRES_PASSWORD` do `.env` |
 | `JWT_SECRET` | Obrigatória. Mínimo de 32 caracteres; segredo vazio derruba a aplicação no boot |
 | `JWT_EXPIRATION_MS` | Opcional, default 900000 (15 minutos) |
 | `COOKIE_SECURE` | Opcional, default `true` |
 | `CANONICAL_HOST` | Opcional. Quando definida, requisições para outro host recebem `308` para `https://<CANONICAL_HOST>` |
-| `PORT` | Fornecida pela plataforma |
+| `PORT` | Opcional, default 8080 |
 
-As credenciais do banco e o `JWT_SECRET` não têm valor default no código: variável faltando é falha de boot, não comportamento silencioso. Em produção, `server.forward-headers-strategy=framework` faz o Spring enxergar o HTTPS do router do Heroku — sem isso o cookie `Secure` não é enviado.
+As credenciais do banco e o `JWT_SECRET` não têm valor default no código: variável faltando é falha de boot, não comportamento silencioso. Em produção, `server.forward-headers-strategy=framework` faz o Spring enxergar o HTTPS terminado no Caddy — sem isso o cookie `Secure` não é enviado.
 
 ## Deploy
 
-Hospedado no Heroku. `Procfile` e `system.properties` definem o processo web e o runtime Java 21; o jar sai com nome fixo (`target/moneyPilot.jar`), então trocar a `<version>` do `pom.xml` não quebra o boot.
+Hospedado em uma VPS com Docker Compose (`docker-compose.prod.yml`): Postgres 18 com volume nomeado e a aplicação, com limite de memória e heap da JVM fixados porque a VPS é compartilhada com outros apps. O HTTPS fica num Caddy compartilhado da VPS, que alcança a aplicação pela rede Docker externa `proxy`.
 
-Toda vez que houver migration nova:
+O `Dockerfile` é multi-stage: compila com o Maven wrapper e roda só com o JRE 21, com usuário sem privilégio. O jar sai com nome fixo (`target/moneyPilot.jar`), então trocar a `<version>` do `pom.xml` não quebra o boot.
+
+**Publicação:** todo push na `main` que passa nos testes publica a imagem `ghcr.io/guh99998/moneypilot` com as tags `latest` e o SHA do commit. A VPS mantém um clone do repositório na `main`, só para ter o compose e o `.env`, e baixa a imagem pronta; não compila nada.
+
+Primeira instalação:
 
 ```bash
-heroku pg:backups:capture   # antes do push: o plano essential-0 não tem rollback nem PITR
-git push heroku main
-heroku logs --tail          # conferir o Flyway aplicando as migrations
-heroku releases             # ter o número de rollback à mão
+docker network create proxy                           # uma vez por VPS, compartilhada com o Caddy
+cp .env.production.example .env                       # preencher POSTGRES_PASSWORD, JWT_SECRET e CANONICAL_HOST
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-O build do buildpack roda com `-DskipTests`, porque não há Docker disponível lá. Quem garante os testes é o CI.
+A cada versão nova:
+
+```bash
+git pull                                                # traz mudanças no compose, se houver
+docker compose -f docker-compose.prod.yml exec -T db pg_dump -U moneypilot moneypilot > backup-$(date +%F).sql   # antes, se houver migration nova
+docker compose -f docker-compose.prod.yml pull app
+docker compose -f docker-compose.prod.yml up -d app
+docker compose -f docker-compose.prod.yml logs -f app   # conferir o Flyway aplicando as migrations
+```
+
+Para voltar uma versão, use a tag com o SHA do commit anterior no lugar de `latest`. Migration já aplicada não é desfeita pela troca de imagem — por isso o dump antes.
+
+**Backup:** um cron diário na VPS faz o dump do Postgres e o envia, criptografado, para um armazenamento externo. O dump manual acima é a garantia extra para o momento exato antes de uma migration.
 
 ## Testes
 
@@ -189,7 +213,7 @@ O build do buildpack roda com `-DskipTests`, porque não há Docker disponível 
 node --test "src/test/js/*.test.mjs"   # testes do cliente web
 ```
 
-Os testes de integração estendem `AbstractIntegrationTest`, que sobe um Postgres 18 via Testcontainers. O Flyway aplica as migrations reais e o Hibernate só valida — o mesmo contrato de produção, sem schema gerado. A suíte cobre autenticação e rotação de refresh token, isolamento entre usuários, saldos e transferências, filtros e paginação, ciclo de vida dos títulos e baixa concorrente, arredondamento de parcelas, baixa em lote, recorrência, previsão de fluxo de caixa e os relatórios.
+Os testes de integração estendem `AbstractIntegrationTest`, que sobe um Postgres 18 via Testcontainers. O Flyway aplica as migrations reais e o Hibernate só valida — o mesmo contrato de produção, sem schema gerado. A suíte cobre autenticação e rotação de refresh token, isolamento entre usuários, saldos e transferências, filtros e paginação, ciclo de vida dos títulos e baixa concorrente, arredondamento de parcelas, baixa em lote, recorrência, previsões de fluxo de caixa semanal e mensal e os relatórios.
 
 O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e pull request.
 
