@@ -106,6 +106,7 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `GET` | `/reports/spending-by-category` | Gasto por categoria no mês |
 | `GET` | `/reports/budget-vs-actual` | Orçado contra realizado |
 | `GET` | `/reports/cash-flow-forecast?days=30` | Saldo projetado em blocos de 7 dias (`days` ∈ 30, 60, 90) |
+| `GET` | `/reports/monthly-forecast?months=6` | Saldo projetado mês a mês (`months` de 1 a 12), incluindo recorrências ainda não materializadas |
 | `GET` | `/reports/bills-summary` | A pagar, a receber, vencidos e baixados no mês |
 | `GET` | `/actuator/health` | Health check (público) |
 
@@ -115,6 +116,8 @@ Listagens aceitam `page`, `size` e `sort` (por exemplo `sort=date,asc`).
 - `/bills` filtra por `type`, `status` (incluindo `OVERDUE`), `categoryId`, `accountId`, `dueDateFrom` e `dueDateTo`.
 
 A previsão de fluxo de caixa parte do mesmo saldo que `/accounts/{id}/balance` mostra, soma os títulos em aberto bloco a bloco e joga os vencidos inteiros no primeiro bloco — dívida vencida não some da projeção por ser antiga. O último bloco pode ter menos de 7 dias (30 dias = quatro de 7 e um de 2).
+
+A previsão mensal segue a mesma base, agrupada por mês a partir do mês corrente, e vai além: **projeta as recorrências ativas que ainda não viraram título**, sem persistir nada. Uma ocorrência só entra se vence a partir de hoje, está dentro da vigência da recorrência e ainda não foi materializada naquele vencimento — assim um título já gerado nunca conta duas vezes. Os vencidos também caem inteiros no primeiro mês e vêm somados à parte em `overdue`.
 
 Erro sempre no mesmo formato, com `fieldErrors` preenchido quando a falha é de validação:
 
@@ -134,9 +137,14 @@ Servido em `/` pela própria aplicação, a partir de `src/main/resources/static
 
 - **Mobile-first**, com breakpoints em 600, 900, 1200 e 1440px. No celular a navegação vira uma barra no topo, tabelas viram cartões compactos e os filtros ficam recolhidos.
 - **Tema claro único** nas cores da marca (azul-marinho e verde da logo).
+- **Previsão mensal** com colunas de a pagar e a receber por mês, linha do saldo projetado e tabela mês a mês.
 - **Visão geral** com saldo em contas, projeção, títulos a pagar e a receber, próximos vencimentos e gráficos de previsão e de receitas × despesas — desenhados em SVG por `js/charts.js`, com tooltip e versão em tabela.
 - **A pagar e receber** com seleção em lote e prévia ao vivo da divisão das parcelas, calculada em centavos com a mesma regra do backend.
 - **Ordenação por coluna** em Lançamentos, A pagar e receber e Contas: clicar no cabeçalho ordena, clicar de novo inverte.
+
+## Desenvolvimento
+
+Novas features seguem Spec-Driven Development: cada uma tem uma pasta em [`specs/`](specs/README.md) com spec, plano técnico e tarefas, aprovados antes do código. As regras de trabalho, branches e commits estão no [`CLAUDE.md`](CLAUDE.md).
 
 ## Rodando localmente
 
@@ -189,7 +197,7 @@ O build do buildpack roda com `-DskipTests`, porque não há Docker disponível 
 node --test "src/test/js/*.test.mjs"   # testes do cliente web
 ```
 
-Os testes de integração estendem `AbstractIntegrationTest`, que sobe um Postgres 18 via Testcontainers. O Flyway aplica as migrations reais e o Hibernate só valida — o mesmo contrato de produção, sem schema gerado. A suíte cobre autenticação e rotação de refresh token, isolamento entre usuários, saldos e transferências, filtros e paginação, ciclo de vida dos títulos e baixa concorrente, arredondamento de parcelas, baixa em lote, recorrência, previsão de fluxo de caixa e os relatórios.
+Os testes de integração estendem `AbstractIntegrationTest`, que sobe um Postgres 18 via Testcontainers. O Flyway aplica as migrations reais e o Hibernate só valida — o mesmo contrato de produção, sem schema gerado. A suíte cobre autenticação e rotação de refresh token, isolamento entre usuários, saldos e transferências, filtros e paginação, ciclo de vida dos títulos e baixa concorrente, arredondamento de parcelas, baixa em lote, recorrência, previsões de fluxo de caixa semanal e mensal e os relatórios.
 
 O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e pull request.
 
