@@ -148,10 +148,11 @@ h3 { font-size: .92rem; }
     font-weight: 600;
     white-space: nowrap;
 }
-.nav a::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: transparent; flex: none; }
+.nav-icon { display: inline-flex; flex: none; color: #8fa3bd; }
 .nav a:hover { background: var(--navy-2); color: #fff; }
 .nav a.active { background: var(--navy-2); color: #fff; }
-.nav a.active::before { background: var(--green); }
+.nav a:hover .nav-icon { color: #fff; }
+.nav a.active .nav-icon { color: var(--green); }
 
 .sidebar-foot {
     display: flex;

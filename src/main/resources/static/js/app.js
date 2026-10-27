@@ -20,8 +20,23 @@ const ROUTES = [
     { path: 'budgets', label: 'Orçamentos', render: renderBudgets }
 ];
 
+/** Ícones de traço (24x24) herdam a cor do texto; sem biblioteca, como o resto do cliente. */
+const icon = (shapes) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" '
+    + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + shapes + '</svg>';
+
+const NAV_ICONS = {
+    dashboard: icon('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/>'
+        + '<rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>'),
+    transactions: icon('<path d="M7 7h13M16 3l4 4-4 4"/><path d="M17 17H4M8 13l-4 4 4 4"/>'),
+    bills: icon('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
+    forecast: icon('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
+    accounts: icon('<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>'),
+    categories: icon('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>'),
+    budgets: icon('<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>')
+};
+const USER_ICON = icon('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>');
+
 // Tela fora do menu: o acesso é pelo nome do usuário no rodapé.
-const USER_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
 const PROFILE_ROUTE = { path: 'profile', label: 'Perfil', render: renderProfile };
 
 // O app tem só o tema claro; limpa a preferência que versões antigas gravavam.
@@ -61,10 +76,12 @@ function buildSidebar(active) {
             el('nav', { class: 'nav' }, ROUTES.map((route) => el('a', {
                 href: `#/${route.path}`,
                 class: route.path === active.path ? 'active' : '',
-                text: route.label,
                 // Tocar na página atual não dispara hashchange, então fecha à mão.
                 onClick: () => sidebar.classList.remove('open')
-            }))),
+            }, [
+                el('span', { class: 'nav-icon', 'aria-hidden': 'true', html: NAV_ICONS[route.path] }),
+                el('span', { text: route.label })
+            ]))),
             el('div', { class: 'sidebar-foot' }, [
                 el('a', {
                     class: 'user-chip' + (active.path === PROFILE_ROUTE.path ? ' active' : ''),
@@ -96,6 +113,12 @@ function buildSidebar(active) {
 }
 
 async function render() {
+    // Sessões abertas antes do perfil existir não têm o nome guardado: busca uma vez. A espera vem antes
+    // de limpar a tela: duas renderizações concorrentes (login + hashchange) montariam o menu duas vezes.
+    if (session.active && !session.name) {
+        await api.profile.get().then((profile) => session.setName(profile.name)).catch(() => {});
+    }
+
     const root = document.getElementById('app');
     root.className = '';
     clear(root);
@@ -106,11 +129,6 @@ async function render() {
             render();
         }));
         return;
-    }
-
-    // Sessões abertas antes do perfil existir não têm o nome guardado: busca uma vez.
-    if (!session.name) {
-        await api.profile.get().then((profile) => session.setName(profile.name)).catch(() => {});
     }
 
     const route = currentRoute();
