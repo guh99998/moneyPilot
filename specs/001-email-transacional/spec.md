@@ -1,6 +1,6 @@
 # 001 — E-mail transacional
 
-**Status:** rascunho
+**Status:** aprovada
 
 **Branch:** feature/001-email-transacional
 
@@ -40,10 +40,10 @@ O sistema consegue enviar e-mails transacionais a partir do domínio do app, de 
 - Fila de reenvio automático
 - Templates editáveis pelo usuário
 
-## Perguntas em aberto
+## Decisões das perguntas em aberto
 
-- Qual domínio e endereço remetente? (precisa estar verificado no provedor — tarefa sua)
-- O envio deve ser síncrono (a tela mostra o erro na hora) ou assíncrono (o usuário segue e o e-mail é tentado depois)? A proposta acima é síncrona, por simplicidade.
+- Remetente: endereço e nome vêm de variáveis de ambiente (nome padrão "Money Pilot"). Verificar o domínio no provedor (SPF/DKIM) é tarefa do Gustavo e não bloqueia o código.
+- Envio **síncrono**, com timeout curto: a tela mostra o erro na hora e a feature que pediu o envio decide se desfaz o que gravou (ex.: 008).
 
 ## Notas para o plano
 
