@@ -468,6 +468,29 @@ public class GlobalExceptionHandler {
         return fieldError("newPassword", ex.getMessage());
     }
 
+    @ExceptionHandler(SameEmailException.class)
+    public ResponseEntity<ErrorResponse> handleSameEmail(SameEmailException ex) {
+        return fieldError("newEmail", ex.getMessage());
+    }
+
+    @ExceptionHandler(EmailAlreadyInUseException.class)
+    public ResponseEntity<ErrorResponse> handleEmailAlreadyInUse(EmailAlreadyInUseException ex) {
+        return fieldError("newEmail", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidEmailChangeTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidEmailChangeToken(InvalidEmailChangeTokenException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     private ResponseEntity<ErrorResponse> fieldError(String field, String message) {
         ErrorResponse body = new ErrorResponse(
                 Instant.now(),
