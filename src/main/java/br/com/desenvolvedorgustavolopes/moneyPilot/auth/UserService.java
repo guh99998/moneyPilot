@@ -13,8 +13,14 @@ public class UserService {
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final AttemptLimiter attemptLimiter;
+    private final RateLimitProperties rateLimit;
 
-    public UserDTO createUser(RegisterRequest request) {
+    public UserDTO createUser(RegisterRequest request, String clientIp) {
+        String ipKey = "register-ip:" + clientIp;
+        attemptLimiter.check(ipKey, rateLimit.registerPerIp());
+        attemptLimiter.record(ipKey, rateLimit.registerWindow());
+
         if(existByEmail(request.email())) {
             throw new EmailAlreadyRegistredException();
         }

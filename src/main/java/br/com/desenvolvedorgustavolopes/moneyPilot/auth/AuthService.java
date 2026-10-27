@@ -13,14 +13,25 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final AttemptLimiter attemptLimiter;
+    private final RateLimitProperties rateLimit;
 
-    public AuthTokens login(LoginRequest request) {
-        User user = repository.findUserByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+    public AuthTokens login(LoginRequest request, String clientIp) {
+        String ipKey = "login-ip:" + clientIp;
+        String emailKey = "login-email:" + request.email().trim().toLowerCase();
 
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        attemptLimiter.check(ipKey, rateLimit.loginPerIp());
+        attemptLimiter.check(emailKey, rateLimit.loginFailuresPerEmail());
+        attemptLimiter.record(ipKey, rateLimit.loginWindow());
+
+        User user = repository.findUserByEmail(request.email()).orElse(null);
+
+        if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            attemptLimiter.record(emailKey, rateLimit.loginWindow());
             throw new BadCredentialsException("Invalid credentials");
         }
+
+        attemptLimiter.reset(emailKey);
 
         String accessToken = jwtService.generateToken(user.getEmail());
 

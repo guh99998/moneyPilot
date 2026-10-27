@@ -170,3 +170,32 @@ test('two waves of expiry each get their own single refresh', async () => {
     await Promise.all([api.accounts.list(), api.accounts.list(), api.accounts.list()]);
     assert.equal(calls.refresh - before, 1);
 });
+
+function tooManyAttempts(retryAfter) {
+    globalThis.fetch = async () => new Response(JSON.stringify({ message: 'Too many attempts. Try again in 15 minutes.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', ...(retryAfter === undefined ? {} : { 'Retry-After': String(retryAfter) }) }
+    });
+}
+
+test('a 429 explains how long to wait, rounding the Retry-After up to whole minutes', async () => {
+    tooManyAttempts(900);
+    await assert.rejects(api.login({ email: 'a@b.com', password: 'x' }), (error) =>
+        error.status === 429 && error.message === 'Muitas tentativas. Tente de novo em 15 minutos.');
+
+    tooManyAttempts(61);
+    await assert.rejects(api.login({ email: 'a@b.com', password: 'x' }), (error) =>
+        error.message === 'Muitas tentativas. Tente de novo em 2 minutos.');
+});
+
+test('a 429 uses the singular for one minute and never reports zero', async () => {
+    tooManyAttempts(30);
+    await assert.rejects(api.register({}), (error) =>
+        error.message === 'Muitas tentativas. Tente de novo em 1 minuto.');
+});
+
+test('a 429 without Retry-After still gives a readable message', async () => {
+    tooManyAttempts();
+    await assert.rejects(api.login({}), (error) =>
+        error.status === 429 && error.message === 'Muitas tentativas. Tente de novo em instantes.');
+});

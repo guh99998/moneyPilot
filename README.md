@@ -66,6 +66,7 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Access token de 15 minutos, refresh token de 30 dias.** O refresh é opaco (256 bits), gravado como SHA-256, entregue em cookie `httpOnly` + `Secure` + `SameSite=Strict` (restrito a `/api/v1/auth`) e rotacionado a cada uso.
 - **Reuso de refresh token já rotacionado revoga a família inteira** daquele usuário — sinal de token vazado.
 - **O cliente faz uma única renovação compartilhada** quando várias chamadas recebem `401` ao mesmo tempo; uma renovação por chamada se autoinvalidaria pela detecção de reuso.
+- **Limite de tentativas no login e no cadastro**, em memória e por janela fixa (`AttemptLimiter`). Login: 10 tentativas por IP e 3 falhas por e-mail a cada 15 min — o bloqueio por e-mail vale de qualquer IP e recusa até a senha certa; login bem-sucedido zera as falhas. Cadastro: 3 por IP por hora, contando também e-mail já cadastrado. Excedido, responde `429` com `Retry-After`. O IP vem do `X-Forwarded-For` do Caddy (`server.forward-headers-strategy=framework`). Os contadores zeram no restart (uma instância só); limites em `app.rate-limit.*`.
 
 ### Modelo
 
@@ -77,8 +78,8 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 
 | Método | Rota | O que faz |
 |---|---|---|
-| `POST` | `/auth/register` | Cria usuário |
-| `POST` | `/auth/login` | Devolve o access token e grava o refresh token em cookie |
+| `POST` | `/auth/register` | Cria usuário (`429` acima de 3 por IP/hora) |
+| `POST` | `/auth/login` | Devolve o access token e grava o refresh token em cookie (`429` após muitas tentativas) |
 | `POST` | `/auth/refresh` | Rotaciona o refresh token e devolve um novo access token |
 | `POST` | `/auth/logout` | Revoga o refresh token e limpa o cookie |
 | `GET` `POST` | `/accounts` | Lista e cria contas |
@@ -220,6 +221,5 @@ O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e
 ## Próximos passos
 
 - E-mail transacional, verificação de conta, reset de senha e login com Google por ID token verificado no backend.
-- Rate limiting em `/auth/login`.
 - Ordenar títulos e lançamentos pelo nome da categoria e da conta (hoje a ordenação cobre data, descrição, valor e tipo).
 - Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), fatura de cartão de crédito, importação de extrato CSV, Redis e RabbitMQ.
