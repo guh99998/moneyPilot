@@ -10,6 +10,8 @@ public record RateLimitProperties(
         int loginFailuresPerEmail,
         Duration loginWindow,
         int registerPerIp,
-        Duration registerWindow
+        Duration registerWindow,
+        int passwordChangeFailures,
+        Duration passwordChangeWindow
 ) {
 }

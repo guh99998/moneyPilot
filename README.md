@@ -24,7 +24,7 @@ Aplicação de controle financeiro pessoal: contas, lançamentos, transferência
 
 ```
 br.com.desenvolvedorgustavolopes.moneyPilot
-├── auth          registro, login, refresh token, filtro JWT, usuário autenticado
+├── auth          registro, login, refresh token, filtro JWT, usuário autenticado, perfil e troca de senha
 ├── account       contas e saldo
 ├── category      categorias do usuário e do sistema
 ├── transaction   lançamentos e transferências
@@ -67,6 +67,9 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Reuso de refresh token já rotacionado revoga a família inteira** daquele usuário — sinal de token vazado.
 - **O cliente faz uma única renovação compartilhada** quando várias chamadas recebem `401` ao mesmo tempo; uma renovação por chamada se autoinvalidaria pela detecção de reuso.
 - **Limite de tentativas no login e no cadastro**, em memória e por janela fixa (`AttemptLimiter`). Login: 10 tentativas por IP e 3 falhas por e-mail a cada 15 min — o bloqueio por e-mail vale de qualquer IP e recusa até a senha certa; login bem-sucedido zera as falhas. Cadastro: 3 por IP por hora, contando também e-mail já cadastrado. Excedido, responde `429` com `Retry-After`. O IP vem do `X-Forwarded-For` do Caddy (`server.forward-headers-strategy=framework`). Os contadores zeram no restart (uma instância só); limites em `app.rate-limit.*`.
+- **Troca de senha encerra as outras sessões e mantém a atual.** O servidor identifica a sessão atual pelo cookie de refresh e **apaga** (não revoga) os refresh tokens ativos das demais: um token revogado que voltasse a ser usado acionaria a detecção de reuso acima e derrubaria também a sessão que trocou a senha. As outras sessões caem na próxima renovação, quando o access token de 15 minutos expira. A rota fica sob `/auth/` porque o cookie só é enviado a essa árvore.
+- **Senha atual errada na troca é `400` com erro no campo, nunca `401`** (o cliente trata `401` como sessão expirada). Mais de 5 erros em 15 min por usuário respondem `429` mesmo com a senha certa; acertar zera o contador. A nova senha precisa ter 8 caracteres ou mais e ser diferente da atual.
+- **Perfil:** nome obrigatório, sem espaços nas pontas, até 255 caracteres. O e-mail é só leitura (a troca é a spec 008).
 
 ### Modelo
 
@@ -82,6 +85,8 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `POST` | `/auth/login` | Devolve o access token e grava o refresh token em cookie (`429` após muitas tentativas) |
 | `POST` | `/auth/refresh` | Rotaciona o refresh token e devolve um novo access token |
 | `POST` | `/auth/logout` | Revoga o refresh token e limpa o cookie |
+| `POST` | `/auth/password` | Troca a senha (`currentPassword`, `newPassword`) e encerra as outras sessões (`204`; `400` com erro no campo; `429` após 5 erros) |
+| `GET` `PUT` | `/profile` | Nome, e-mail e data de cadastro do usuário autenticado; altera o nome |
 | `GET` `POST` | `/accounts` | Lista e cria contas |
 | `GET` `PUT` `DELETE` | `/accounts/{id}` | Detalha, altera e remove |
 | `GET` | `/accounts/{id}/balance` | Saldo inicial e saldo atual |

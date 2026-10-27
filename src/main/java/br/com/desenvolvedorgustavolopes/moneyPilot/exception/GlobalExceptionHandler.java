@@ -445,6 +445,28 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCurrentPassword(InvalidCurrentPasswordException ex) {
+        return fieldError("currentPassword", ex.getMessage());
+    }
+
+    @ExceptionHandler(SamePasswordException.class)
+    public ResponseEntity<ErrorResponse> handleSamePassword(SamePasswordException ex) {
+        return fieldError("newPassword", ex.getMessage());
+    }
+
+    private ResponseEntity<ErrorResponse> fieldError(String field, String message) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                message,
+                Map.of(field, message)
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(TooManyAttemptsException.class)
     public ResponseEntity<ErrorResponse> handleTooManyAttempts(TooManyAttemptsException ex) {
         ErrorResponse body = new ErrorResponse(

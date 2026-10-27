@@ -148,10 +148,11 @@ h3 { font-size: .92rem; }
     font-weight: 600;
     white-space: nowrap;
 }
-.nav a::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: transparent; flex: none; }
+.nav-icon { display: inline-flex; flex: none; color: #8fa3bd; }
 .nav a:hover { background: var(--navy-2); color: #fff; }
 .nav a.active { background: var(--navy-2); color: #fff; }
-.nav a.active::before { background: var(--green); }
+.nav a:hover .nav-icon { color: #fff; }
+.nav a.active .nav-icon { color: var(--green); }
 
 .sidebar-foot {
     display: flex;
@@ -162,7 +163,22 @@ h3 { font-size: .92rem; }
     border-top: 1px solid var(--navy-2);
     font-size: .85rem;
 }
-.user-chip { flex: 1 1 100%; color: #9fb0c6; overflow-wrap: anywhere; }
+.user-chip {
+    flex: 1 1 100%;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    min-width: 0;
+    max-width: 100%;
+    padding: .5rem .6rem;
+    border-radius: 9px;
+    color: #c3cfdf;
+    font-weight: 600;
+    text-decoration: none;
+}
+.user-chip-icon { display: inline-flex; flex: none; }
+.user-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-chip:hover, .user-chip.active { background: var(--navy-2); color: #fff; }
 .sidebar-foot button { color: #dbe4f0; border-color: var(--navy-3); background: transparent; }
 .sidebar-foot button:hover:not(:disabled) { background: var(--navy-2); color: #fff; }
 
@@ -181,6 +197,7 @@ h3 { font-size: .92rem; }
     box-shadow: var(--shadow);
     padding: 1rem;
     min-width: 0;
+    max-width: 100%;
 }
 .card + .card { margin-top: 1rem; }
 .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin-bottom: .85rem; }

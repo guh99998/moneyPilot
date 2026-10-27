@@ -1,6 +1,7 @@
 const BASE = '/api/v1';
 const TOKEN_KEY = 'moneypilot.token';
 const EMAIL_KEY = 'moneypilot.email';
+const NAME_KEY = 'moneypilot.name';
 
 export class ApiError extends Error {
     constructor(status, message, fieldErrors) {
@@ -17,6 +18,12 @@ export const session = {
     get email() {
         return localStorage.getItem(EMAIL_KEY);
     },
+    get name() {
+        return localStorage.getItem(NAME_KEY);
+    },
+    setName(name) {
+        if (name) localStorage.setItem(NAME_KEY, name);
+    },
     start(token, email) {
         localStorage.setItem(TOKEN_KEY, token);
         if (email) localStorage.setItem(EMAIL_KEY, email);
@@ -24,6 +31,7 @@ export const session = {
     clear() {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(EMAIL_KEY);
+        localStorage.removeItem(NAME_KEY);
     },
     get active() {
         return Boolean(localStorage.getItem(TOKEN_KEY));
@@ -153,6 +161,13 @@ export const api = {
     register: (body) => request('/auth/register', { method: 'POST', body, anonymous: true }),
     login: (body) => request('/auth/login', { method: 'POST', body, anonymous: true }),
     logout: () => request('/auth/logout', { method: 'POST', anonymous: true }),
+
+    profile: {
+        get: () => request('/profile'),
+        update: (name) => request('/profile', { method: 'PUT', body: { name } })
+    },
+    changePassword: (currentPassword, newPassword) =>
+        request('/auth/password', { method: 'POST', body: { currentPassword, newPassword } }),
 
     accounts: {
         list: (query) => request('/accounts', { query }),
