@@ -90,6 +90,13 @@ function expireSession() {
     return new ApiError(401, 'Sua sessão expirou. Entre novamente.');
 }
 
+function tooManyAttemptsMessage(retryAfter) {
+    const seconds = Number(retryAfter);
+    if (!Number.isFinite(seconds) || seconds <= 0) return 'Muitas tentativas. Tente de novo em instantes.';
+    const minutes = Math.max(1, Math.ceil(seconds / 60));
+    return `Muitas tentativas. Tente de novo em ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}.`;
+}
+
 async function request(path, { method = 'GET', body, query, anonymous = false } = {}) {
     const options = { method, body, query };
     const sentWith = anonymous ? null : session.token;
@@ -113,6 +120,10 @@ async function request(path, { method = 'GET', body, query, anonymous = false } 
     if (response.status === 204) return null;
 
     const payload = await response.json().catch(() => null);
+
+    if (response.status === 429) {
+        throw new ApiError(429, tooManyAttemptsMessage(response.headers.get('Retry-After')));
+    }
 
     if (!response.ok) {
         throw new ApiError(
