@@ -21,6 +21,7 @@ const ROUTES = [
 ];
 
 // Tela fora do menu: o acesso é pelo nome do usuário no rodapé.
+const USER_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
 const PROFILE_ROUTE = { path: 'profile', label: 'Perfil', render: renderProfile };
 
 // O app tem só o tema claro; limpa a preferência que versões antigas gravavam.
@@ -68,11 +69,14 @@ function buildSidebar(active) {
                 el('a', {
                     class: 'user-chip' + (active.path === PROFILE_ROUTE.path ? ' active' : ''),
                     href: '#/' + PROFILE_ROUTE.path,
-                    title: 'Meu perfil',
-                    text: session.name || session.email || '',
+                    title: session.email || 'Meu perfil',
+                    'aria-label': 'Meu perfil',
                     // Tocar na página atual não dispara hashchange, então fecha à mão.
                     onClick: () => sidebar.classList.remove('open')
-                }),
+                }, [
+                    el('span', { class: 'user-chip-icon', 'aria-hidden': 'true', html: USER_ICON }),
+                    el('span', { class: 'user-chip-name', text: session.name || session.email || '' })
+                ]),
                 el('button', {
                     class: 'btn-ghost btn-sm',
                     text: 'Sair',
@@ -127,6 +131,10 @@ async function render() {
 }
 
 window.addEventListener('hashchange', render);
+window.addEventListener('profile:updated', () => {
+    const chipName = document.querySelector('.user-chip-name');
+    if (chipName) chipName.textContent = session.name || session.email || '';
+});
 window.addEventListener('session:expired', () => {
     toast('Sua sessão expirou. Entre novamente.', 'error');
     window.location.hash = '';
