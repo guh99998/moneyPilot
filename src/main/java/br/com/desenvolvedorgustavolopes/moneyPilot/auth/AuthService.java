@@ -33,7 +33,7 @@ public class AuthService {
 
         attemptLimiter.reset(emailKey);
 
-        String accessToken = jwtService.generateToken(user.getEmail());
+        String accessToken = jwtService.generateToken(user.getId());
 
         String refreshToken = refreshTokenService.issue(user.getId());
 
@@ -43,7 +43,7 @@ public class AuthService {
     public AuthTokens refresh(String rawToken) {
         RefreshResult result = refreshTokenService.rotate(rawToken);
         User user = repository.findById(result.userId()).orElseThrow(() -> new BadCredentialsException("Bad Credentials"));
-        String accessToken = jwtService.generateToken(user.getEmail());
+        String accessToken = jwtService.generateToken(user.getId());
         return new AuthTokens(accessToken, result.refreshToken());
     }
 
