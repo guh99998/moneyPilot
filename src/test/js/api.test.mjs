@@ -199,3 +199,53 @@ test('a 429 without Retry-After still gives a readable message', async () => {
     await assert.rejects(api.login({}), (error) =>
         error.status === 429 && error.message === 'Muitas tentativas. Tente de novo em instantes.');
 });
+
+test('session keeps the user name and clears it on logout', () => {
+    session.start('token', 'user@example.com');
+    assert.equal(session.name, null);
+
+    session.setName('Maria Silva');
+    assert.equal(session.name, 'Maria Silva');
+
+    session.clear();
+    assert.equal(session.name, null);
+});
+
+test('a wrong current password is a 400 with the field error, not an expired session', async () => {
+    session.start('valid', 'user@example.com');
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({ path: new URL(url).pathname, method: options.method, body: options.body });
+        return new Response(JSON.stringify({
+            message: 'Current password is incorrect',
+            fieldErrors: { currentPassword: 'Current password is incorrect' }
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.changePassword('errada', 'nova-senha-123'), (error) =>
+        error instanceof ApiError
+        && error.status === 400
+        && error.fieldErrors.currentPassword === 'Current password is incorrect');
+
+    assert.deepEqual(requests, [{
+        path: '/api/v1/auth/password',
+        method: 'POST',
+        body: JSON.stringify({ currentPassword: 'errada', newPassword: 'nova-senha-123' })
+    }]);
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});
+
+test('updating the profile sends only the name', async () => {
+    session.start('valid', 'user@example.com');
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, method: options.method, body: options.body };
+        return Response.json({ name: 'Novo Nome', email: 'user@example.com', createdAt: '2026-10-27T15:00:00Z' });
+    };
+
+    const profile = await api.profile.update('Novo Nome');
+
+    assert.deepEqual(sent, { path: '/api/v1/profile', method: 'PUT', body: JSON.stringify({ name: 'Novo Nome' }) });
+    assert.equal(profile.name, 'Novo Nome');
+});
