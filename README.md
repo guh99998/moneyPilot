@@ -184,7 +184,12 @@ O segredo JWT do profile `local` é um placeholder de desenvolvimento — ele n�
 | `JWT_EXPIRATION_MS` | Opcional, default 900000 (15 minutos) |
 | `COOKIE_SECURE` | Opcional, default `true` |
 | `CANONICAL_HOST` | Opcional. Quando definida, requisições para outro host recebem `308` para `https://<CANONICAL_HOST>` |
+| `PUBLIC_URL` | Obrigatória. URL pública do app com `https://` e sem barra final; base dos links enviados por e-mail |
+| `MAIL_FROM_ADDRESS` | Obrigatória. Remetente dos e-mails, de um domínio verificado no Resend (SPF/DKIM) |
+| `RESEND_API_KEY` | Obrigatória. Chave da API do Resend |
 | `PORT` | Opcional, default 8080 |
+
+**E-mail transacional:** o pacote `mail` expõe `EmailSender`, e as features só pedem "envie esta mensagem para esta pessoa". Em `prod` o envio é **síncrono** via Resend (API HTTP com `RestClient`, timeouts de 3 s e 10 s, sem dependência nova); falha vira `502` no formato `ErrorResponse`, sem expor a chave no log. Fora de `prod` nada é enviado e o conteúdo aparece no log. Sem `PUBLIC_URL`, `MAIL_FROM_ADDRESS` ou `RESEND_API_KEY` em `prod`, o app não sobe.
 
 As credenciais do banco e o `JWT_SECRET` não têm valor default no código: variável faltando é falha de boot, não comportamento silencioso. Em produção, `server.forward-headers-strategy=framework` faz o Spring enxergar o HTTPS terminado no Caddy — sem isso o cookie `Secure` não é enviado.
 
@@ -200,7 +205,7 @@ Primeira instalação:
 
 ```bash
 docker network create proxy                           # uma vez por VPS, compartilhada com o Caddy
-cp .env.production.example .env                       # preencher POSTGRES_PASSWORD, JWT_SECRET e CANONICAL_HOST
+cp .env.production.example .env                       # preencher POSTGRES_PASSWORD, JWT_SECRET, CANONICAL_HOST, PUBLIC_URL, MAIL_FROM_ADDRESS e RESEND_API_KEY
 docker compose -f docker-compose.prod.yml up -d
 ```
 

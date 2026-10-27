@@ -30,6 +30,9 @@ services:
       JDBC_DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
       CANONICAL_HOST: ${CANONICAL_HOST:-}
+      PUBLIC_URL: ${PUBLIC_URL:?defina PUBLIC_URL no .env}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:?defina MAIL_FROM_ADDRESS no .env}
+      RESEND_API_KEY: ${RESEND_API_KEY:?defina RESEND_API_KEY no .env}
       COOKIE_SECURE: "true"
     depends_on:
       db:
