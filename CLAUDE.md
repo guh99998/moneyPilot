@@ -4,6 +4,14 @@ Guia de trabalho para o Claude neste repositório. O **README.md** é a referên
 
 O moneyPilot tem **usuários reais em produção**. Na dúvida entre rapidez e segurança dos dados, escolha segurança e pergunte.
 
+## Repositório público
+
+O repositório é **público** (portfólio). Tudo que entra no git — código, specs, planos, commits, PRs — é visível para qualquer um:
+
+- Nunca commitar segredos, `.env`, dumps, dados ou e-mails de usuários reais, nem detalhes de infraestrutura de produção (IPs, nomes de app, URLs de banco). Configuração sensível só como variável de ambiente com placeholder no exemplo.
+- Specs descrevem comportamento, não pessoas: exemplos com dados fictícios, sem citar usuários reais ou métricas internas.
+- Código, specs e mensagens de commit devem ser apresentáveis: claros, consistentes e sem lixo de depuração.
+
 ## Fluxo de desenvolvimento (SDD)
 
 Toda feature ou mudança de comportamento segue Spec-Driven Development, com uma pasta em `specs/` (ver `specs/README.md`):
