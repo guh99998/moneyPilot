@@ -5,14 +5,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 
 @Service
@@ -20,31 +14,13 @@ import java.util.Optional;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository repository;
-    private final SecureRandom secureRandom = new SecureRandom();
+    private final OpaqueTokens opaqueTokens;
     private static final String INVALID_TOKEN_MESSAGE = "Invalid refresh token";
     public static final Duration REFRESH_TTL = Duration.ofDays(30);
 
-    private String generateRawToken() {
-        byte[] rawToken = new byte[32];
-
-        secureRandom.nextBytes(rawToken);
-
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(rawToken);
-    }
-
-    private String hashToken(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] bytesToDigest = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(bytesToDigest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 algorithm is not available in this JVM", e);
-        }
-    }
-
     public String issue(Long userId) {
-        String value = this.generateRawToken();
-        String token = this.hashToken(value);
+        String value = opaqueTokens.generate();
+        String token = opaqueTokens.hash(value);
         Instant now = Instant.now();
 
         RefreshToken refreshToken = new RefreshToken();
@@ -62,7 +38,7 @@ public class RefreshTokenService {
     public RefreshResult rotate(String rawToken) {
         if(rawToken == null || rawToken.isBlank())
             throw new BadCredentialsException(INVALID_TOKEN_MESSAGE);
-        RefreshToken refreshToken = repository.findByTokenHash(hashToken(rawToken)).orElseThrow(() -> new BadCredentialsException(INVALID_TOKEN_MESSAGE));
+        RefreshToken refreshToken = repository.findByTokenHash(opaqueTokens.hash(rawToken)).orElseThrow(() -> new BadCredentialsException(INVALID_TOKEN_MESSAGE));
         Instant now = Instant.now();
 
         if (refreshToken.getRevokedAt() != null) {
@@ -85,7 +61,7 @@ public class RefreshTokenService {
     public void revoke(String token) {
         if (token == null || token.isBlank())
             return;
-        String hash = hashToken(token);
+        String hash = opaqueTokens.hash(token);
         Optional<RefreshToken> refreshToken = repository.findByTokenHash(hash);
         refreshToken.ifPresent(value -> repository.revokeIfActive(value.getId(), Instant.now()));
     }
@@ -100,7 +76,7 @@ public class RefreshTokenService {
         Long keepId = -1L;
 
         if (currentRawToken != null && !currentRawToken.isBlank()) {
-            keepId = repository.findByTokenHash(hashToken(currentRawToken))
+            keepId = repository.findByTokenHash(opaqueTokens.hash(currentRawToken))
                     .filter(token -> token.getUserId().equals(userId))
                     .filter(token -> token.getRevokedAt() == null && token.getExpiresAt().isAfter(now))
                     .map(RefreshToken::getId)
