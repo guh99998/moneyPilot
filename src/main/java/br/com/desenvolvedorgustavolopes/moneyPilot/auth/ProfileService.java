@@ -1,0 +1,63 @@
+package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
+
+import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidCurrentPasswordException;
+import br.com.desenvolvedorgustavolopes.moneyPilot.exception.SamePasswordException;
+import br.com.desenvolvedorgustavolopes.moneyPilot.exception.UnauthenticatedRequestException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class ProfileService {
+
+    private final UserRepository repository;
+    private final AuthenticatedUserProvider userProvider;
+    private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
+    private final AttemptLimiter attemptLimiter;
+    private final RateLimitProperties rateLimit;
+    private final EmailChangeService emailChangeService;
+
+    public ProfileResponse getProfile() {
+        User user = currentUser();
+        return new ProfileResponse(user, emailChangeService.pendingEmail(user.getId()));
+    }
+
+    @Transactional
+    public ProfileResponse updateName(UpdateProfileRequest request) {
+        User user = currentUser();
+        user.setName(request.name());
+        User saved = repository.save(user);
+        return new ProfileResponse(saved, emailChangeService.pendingEmail(saved.getId()));
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest request, String currentRefreshToken) {
+        User user = currentUser();
+        String key = "password-change:" + user.getId();
+
+        attemptLimiter.check(key, rateLimit.passwordChangeFailures());
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            attemptLimiter.record(key, rateLimit.passwordChangeWindow());
+            throw new InvalidCurrentPasswordException();
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new SamePasswordException();
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        repository.saveAndFlush(user);
+        attemptLimiter.reset(key);
+
+        refreshTokenService.endAllExcept(user.getId(), currentRefreshToken);
+    }
+
+    private User currentUser() {
+        return repository.findById(userProvider.getCurrentUserId())
+                .orElseThrow(UnauthenticatedRequestException::new);
+    }
+}

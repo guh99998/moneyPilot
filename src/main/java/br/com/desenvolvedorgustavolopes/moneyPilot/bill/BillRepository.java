@@ -65,4 +65,30 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     boolean existsByRecurrenceId(Long recurrenceId);
 
     boolean existsByRecurrenceIdAndDueDate(Long recurrenceId, LocalDate dueDate);
+
+    /** Títulos em aberto com vencimento de from até to (inclusive), agrupados por tipo. Base dos alertas. */
+    @Query("""
+    SELECT b.type AS type, COUNT(b) AS billCount, SUM(b.amount) AS total, MAX(b.dueDate) AS lastDueDate
+    FROM Bill b
+    WHERE b.userId = :userId
+        AND b.status = 'OPEN'
+        AND b.dueDate >= :from
+        AND b.dueDate <= :to
+    GROUP BY b.type
+    """)
+    List<BillAlertTotals> summarizeOpenDueBetween(@Param("userId") Long userId,
+                                                  @Param("from") LocalDate from,
+                                                  @Param("to") LocalDate to);
+
+    /** Títulos em aberto com vencimento antes de before, agrupados por tipo. Base dos alertas. */
+    @Query("""
+    SELECT b.type AS type, COUNT(b) AS billCount, SUM(b.amount) AS total, MAX(b.dueDate) AS lastDueDate
+    FROM Bill b
+    WHERE b.userId = :userId
+        AND b.status = 'OPEN'
+        AND b.dueDate < :before
+    GROUP BY b.type
+    """)
+    List<BillAlertTotals> summarizeOpenDueBefore(@Param("userId") Long userId,
+                                                 @Param("before") LocalDate before);
 }

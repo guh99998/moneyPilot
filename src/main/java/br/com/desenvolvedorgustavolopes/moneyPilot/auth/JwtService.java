@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,21 +23,31 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(String email){
+    public String generateToken(Long userId){
         return Jwts.builder()
-                .subject(email)
+                .subject(String.valueOf(userId))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key)
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return Jwts.parser()
+    /**
+     * Devolve o id do usuário do subject. Token emitido antes do subject virar id (subject é e-mail)
+     * é tratado como inválido.
+     */
+    public Long extractUserId(String token) {
+        String subject = Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+
+        try {
+            return Long.valueOf(subject);
+        } catch (NumberFormatException e) {
+            throw new MalformedJwtException("Token subject is not a user id");
+        }
     }
 }

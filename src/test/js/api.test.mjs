@@ -199,3 +199,147 @@ test('a 429 without Retry-After still gives a readable message', async () => {
     await assert.rejects(api.login({}), (error) =>
         error.status === 429 && error.message === 'Muitas tentativas. Tente de novo em instantes.');
 });
+
+test('session keeps the user name and clears it on logout', () => {
+    session.start('token', 'user@example.com');
+    assert.equal(session.name, null);
+
+    session.setName('Maria Silva');
+    assert.equal(session.name, 'Maria Silva');
+
+    session.clear();
+    assert.equal(session.name, null);
+});
+
+test('a wrong current password is a 400 with the field error, not an expired session', async () => {
+    session.start('valid', 'user@example.com');
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({ path: new URL(url).pathname, method: options.method, body: options.body });
+        return new Response(JSON.stringify({
+            message: 'Current password is incorrect',
+            fieldErrors: { currentPassword: 'Current password is incorrect' }
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.changePassword('errada', 'nova-senha-123'), (error) =>
+        error instanceof ApiError
+        && error.status === 400
+        && error.fieldErrors.currentPassword === 'Current password is incorrect');
+
+    assert.deepEqual(requests, [{
+        path: '/api/v1/auth/password',
+        method: 'POST',
+        body: JSON.stringify({ currentPassword: 'errada', newPassword: 'nova-senha-123' })
+    }]);
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});
+
+test('updating the profile sends only the name', async () => {
+    session.start('valid', 'user@example.com');
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, method: options.method, body: options.body };
+        return Response.json({ name: 'Novo Nome', email: 'user@example.com', createdAt: '2026-10-27T15:00:00Z' });
+    };
+
+    const profile = await api.profile.update('Novo Nome');
+
+    assert.deepEqual(sent, { path: '/api/v1/profile', method: 'PUT', body: JSON.stringify({ name: 'Novo Nome' }) });
+    assert.equal(profile.name, 'Novo Nome');
+});
+
+test('alerts use their own routes', async () => {
+    session.start('valid', 'user@example.com');
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({ path: new URL(url).pathname, method: options.method ?? 'GET', body: options.body });
+        return options.method === 'POST' ? new Response(null, { status: 204 }) : Response.json({ count: 0, alerts: [] });
+    };
+
+    await api.alerts.list();
+    await api.alerts.dismiss('PAYABLE_DUE_SOON');
+
+    assert.deepEqual(requests, [
+        { path: '/api/v1/alerts', method: 'GET', body: undefined },
+        { path: '/api/v1/alerts/dismiss', method: 'POST', body: JSON.stringify({ key: 'PAYABLE_DUE_SOON' }) }
+    ]);
+});
+
+test('a successful change announces api:changed; reads, failures and anonymous calls do not', async () => {
+    session.start('valid', 'user@example.com');
+
+    globalThis.fetch = async () => Response.json({ count: 0, alerts: [] });
+    await api.alerts.list();
+    assert.deepEqual(events, []);
+
+    globalThis.fetch = async () => new Response(null, { status: 204 });
+    await api.alerts.dismiss('PAYABLE_OVERDUE');
+    assert.deepEqual(events, ['api:changed']);
+
+    globalThis.fetch = async () => Response.json({ id: 1 }, { status: 201 });
+    await api.accounts.create({ name: 'Conta' });
+    assert.deepEqual(events, ['api:changed', 'api:changed']);
+
+    events.length = 0;
+    globalThis.fetch = async () => new Response(JSON.stringify({ message: 'nope' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    await assert.rejects(api.accounts.create({ name: '' }));
+    assert.deepEqual(events, []);
+
+    globalThis.fetch = async () => Response.json({ token: 't' });
+    await api.login({ email: 'a@b.com', password: 'x' });
+    assert.deepEqual(events, []);
+});
+
+test('requesting an email change posts the new address and the current password', async () => {
+    session.start('valid', 'user@example.com');
+    events.length = 0;
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, method: options.method, body: options.body };
+        return new Response(null, { status: 204 });
+    };
+
+    await api.requestEmailChange('novo@example.com', 'senha12345');
+
+    assert.deepEqual(sent, {
+        path: '/api/v1/profile/email',
+        method: 'POST',
+        body: JSON.stringify({ newEmail: 'novo@example.com', currentPassword: 'senha12345' })
+    });
+});
+
+test('an email already in use is a 400 with the field error, not an expired session', async () => {
+    session.start('valid', 'user@example.com');
+    events.length = 0;
+    globalThis.fetch = async () => new Response(JSON.stringify({
+        message: 'E-mail already in use',
+        fieldErrors: { newEmail: 'E-mail already in use' }
+    }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+    await assert.rejects(api.requestEmailChange('x@example.com', 'senha12345'), (error) =>
+        error instanceof ApiError && error.status === 400 && error.fieldErrors.newEmail === 'E-mail already in use');
+
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});
+
+test('confirming an email change is anonymous: a 400 never fires session:expired nor refreshes', async () => {
+    session.clear();
+    events.length = 0;
+    const paths = [];
+    let authorization;
+    globalThis.fetch = async (url, options = {}) => {
+        paths.push(new URL(url).pathname);
+        authorization = options.headers?.Authorization;
+        return new Response(JSON.stringify({ message: 'Invalid or expired e-mail change link' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.confirmEmailChange('token-ruim'), (error) => error instanceof ApiError && error.status === 400);
+
+    assert.deepEqual(paths, ['/api/v1/auth/email/confirm']);
+    assert.equal(authorization, undefined);
+    assert.deepEqual(events, []);
+});

@@ -1,8 +1,8 @@
 # 008 — Troca de e-mail
 
-**Status:** rascunho
+**Status:** entregue
 **Branch:** feature/008-troca-de-email
-**Depende de:** 001, 006
+**Depende de:** 001 (precisa estar entregue antes do envio, T5 em diante), 006
 
 ## Problema
 
@@ -21,6 +21,12 @@ O usuário troca o e-mail da conta com segurança, sem risco de perder o acesso 
 - Depois da troca, o **e-mail antigo recebe um aviso** de que o e-mail da conta foi alterado.
 - O e-mail novo não pode estar em uso por outra conta.
 - Depois da troca, as outras sessões são encerradas, como na troca de senha (006).
+- O e-mail novo é gravado com `strip()` e em minúsculas. As checagens de "em uso" e "é o atual" ignoram maiúsculas. Nenhum dado existente muda (a normalização geral fica com a 002).
+- O link confirma **sem precisar estar logado**. Se o navegador tiver uma sessão da conta, ela continua aberta e as outras são encerradas.
+- O perfil mostra o pedido pendente e permite reenviar o link.
+- Senha atual errada conta no mesmo limite da troca de senha (5 a cada 15 min). Fora isso, no máximo 3 pedidos por usuário por hora.
+- Se o aviso ao e-mail antigo falhar, a troca continua valendo e o erro vai para o log. Se o envio do link falhar, nada é gravado e a tela mostra o erro.
+- O token de acesso passa a identificar o usuário pelo id, não pelo e-mail, para que a troca não deixe tokens órfãos.
 
 ## Critérios de aceite
 
@@ -33,17 +39,17 @@ O usuário troca o e-mail da conta com segurança, sem risco de perder o acesso 
 
 ## Casos de borda
 
-- Pedir a troca para o próprio e-mail atual
-- E-mail novo igual ao atual com maiúsculas diferentes
-- Outra pessoa se cadastrar com o e-mail novo entre o pedido e a confirmação
-- Conta vinculada ao Google (004) trocando de e-mail
+- Pedir a troca para o próprio e-mail atual → erro no campo do e-mail novo
+- E-mail novo igual ao atual com maiúsculas diferentes → mesmo erro
+- Outra pessoa se cadastrar com o e-mail novo entre o pedido e a confirmação → a confirmação falha com erro de e-mail em uso
+- Conta vinculada ao Google (004) trocando de e-mail → nada muda na 008; a 004 deve vincular pelo `sub` do Google, não pelo e-mail
 
 ## Fora de escopo
 
 - Ter mais de um e-mail por conta
 - Desfazer a troca pelo e-mail antigo (link de "não fui eu")
 
-## Perguntas em aberto
+## Decisões das perguntas em aberto
 
-- Quando o e-mail novo já pertence a outra conta, a tela diz isso claramente ou responde de forma genérica para não revelar quem tem conta? (a pessoa está logada e informou a senha, então o risco de revelar é baixo)
-- Incluir no aviso ao e-mail antigo um link de "não fui eu" que desfaz a troca? Proposto como fora de escopo por enquanto.
+- E-mail novo de outra conta: a tela diz isso claramente, no campo (a pessoa está logada e informou a senha).
+- Link de "não fui eu" no aviso: segue fora de escopo.

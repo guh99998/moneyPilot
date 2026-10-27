@@ -29,4 +29,16 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     """)
     int revokeIfActive(@Param("id") Long id,
                        @Param("now") Instant now);
+
+    /**
+     * Apaga (em vez de revogar) as sessões ativas: um token revogado que volta a ser usado é tratado
+     * como roubo e derruba todas as sessões, inclusive a que deve continuar aberta.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("""
+    DELETE FROM RefreshToken rt
+    WHERE rt.userId = :userId AND rt.id <> :keepId AND rt.revokedAt IS NULL
+    """)
+    int deleteAllActiveByUserIdExcept(@Param("userId") Long userId,
+                                      @Param("keepId") Long keepId);
 }

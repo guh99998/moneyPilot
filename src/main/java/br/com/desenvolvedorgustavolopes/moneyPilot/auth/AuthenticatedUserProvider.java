@@ -21,8 +21,17 @@ public class AuthenticatedUserProvider {
             throw new UnauthenticatedRequestException();
         }
 
-        String email = authentication.getName();
+        Long userId;
+        try {
+            userId = Long.valueOf(authentication.getName());
+        } catch (NumberFormatException e) {
+            throw new UnauthenticatedRequestException();
+        }
 
-        return repository.findUserByEmail(email).orElseThrow(() -> new UnauthenticatedRequestException()).getId();
+        if (!repository.existsById(userId)) {
+            throw new UnauthenticatedRequestException();
+        }
+
+        return userId;
     }
 }

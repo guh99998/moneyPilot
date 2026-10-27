@@ -24,13 +24,14 @@ Aplicação de controle financeiro pessoal: contas, lançamentos, transferência
 
 ```
 br.com.desenvolvedorgustavolopes.moneyPilot
-├── auth          registro, login, refresh token, filtro JWT, usuário autenticado
+├── auth          registro, login, refresh token, filtro JWT, usuário autenticado, perfil e troca de senha e de e-mail
 ├── account       contas e saldo
 ├── category      categorias do usuário e do sistema
 ├── transaction   lançamentos e transferências
 ├── budget        orçamento por categoria e mês
 ├── bill          títulos a pagar/receber, parcelamento, baixa e recorrência
 ├── report        consultas agregadas, previsão de fluxo de caixa
+├── notification  alertas calculados (vencimentos e orçamento) e dispensa
 ├── config        Spring Security, Clock, host canônico
 └── exception     exceções de domínio e handler global
 ```
@@ -67,14 +68,22 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Reuso de refresh token já rotacionado revoga a família inteira** daquele usuário — sinal de token vazado.
 - **O cliente faz uma única renovação compartilhada** quando várias chamadas recebem `401` ao mesmo tempo; uma renovação por chamada se autoinvalidaria pela detecção de reuso.
 - **Limite de tentativas no login e no cadastro**, em memória e por janela fixa (`AttemptLimiter`). Login: 10 tentativas por IP e 3 falhas por e-mail a cada 15 min — o bloqueio por e-mail vale de qualquer IP e recusa até a senha certa; login bem-sucedido zera as falhas. Cadastro: 3 por IP por hora, contando também e-mail já cadastrado. Excedido, responde `429` com `Retry-After`. O IP vem do `X-Forwarded-For` do Caddy (`server.forward-headers-strategy=framework`). Os contadores zeram no restart (uma instância só); limites em `app.rate-limit.*`.
+- **O access token identifica o usuário pelo id, não pelo e-mail** (`sub` = id). Assim a troca de e-mail não deixa tokens órfãos nem os faz apontar para outra conta. Tokens antigos, com e-mail no `sub`, são recusados (`401`) e o cliente renova sozinho.
+- **Troca de e-mail em duas etapas.** O pedido exige a senha atual e manda um link ao e-mail novo; até o clique, o e-mail antigo segue valendo para login e recuperação. O token (256 bits, só o SHA-256 vai ao banco) vale 24 horas, é de uso único e há no máximo um pedido por usuário: pedir de novo invalida o link anterior. O link usa `#` (`/#/confirmar-email?token=…`), então o token não chega a log de servidor ou proxy. Confirmar não exige login: grava o e-mail novo (minúsculas, sem espaços), apaga o pedido, encerra as outras sessões como na troca de senha e avisa o e-mail antigo (falha no aviso só vai para o log). Limites: senha errada divide o contador da troca de senha; no máximo 3 pedidos por hora por usuário.
+- **Troca de senha encerra as outras sessões e mantém a atual.** O servidor identifica a sessão atual pelo cookie de refresh e **apaga** (não revoga) os refresh tokens ativos das demais: um token revogado que voltasse a ser usado acionaria a detecção de reuso acima e derrubaria também a sessão que trocou a senha. As outras sessões caem na próxima renovação, quando o access token de 15 minutos expira. A rota fica sob `/auth/` porque o cookie só é enviado a essa árvore.
+- **Senha atual errada na troca é `400` com erro no campo, nunca `401`** (o cliente trata `401` como sessão expirada). Mais de 5 erros em 15 min por usuário respondem `429` mesmo com a senha certa; acertar zera o contador. A nova senha precisa ter 8 caracteres ou mais e ser diferente da atual.
+- **Perfil:** nome obrigatório, sem espaços nas pontas, até 255 caracteres. O e-mail é só leitura (a troca é a spec 008).
+- **Alertas são calculados, não armazenados.** `GET /alerts` recalcula a situação atual do usuário a cada chamada; só a dispensa fica gravada (`dismissed_alerts`). Seis tipos: títulos a pagar e a receber a vencer (de hoje até hoje + 7 dias; o que vence hoje ainda é "a vencer"), títulos vencidos (antes de hoje), orçamento em 80% (de 80,00% até 100,00% do orçado) e orçamento estourado (acima de 100,00%). Títulos entram num alerta por tipo (quantidade, total e, nos a vencer, o maior vencimento); orçamento gera um por categoria no mês corrente, com o mesmo gasto da tela Orçamentos (despesas sem transferências). "Hoje" vem do `Clock`.
+- **Dispensar vale para a conta, em todos os aparelhos.** Cada alerta tem uma chave (`PAYABLE_OVERDUE`, `BUDGET_WARNING:<categoria>:<aaaa-mm>`...) e uma impressão digital do conteúdo (`quantidade|total` nos títulos). O alerta dispensado volta se a impressão mudar; o de orçamento só volta ao mudar de faixa ou de mês, porque a faixa e o mês fazem parte da chave. Quando o alerta deixa de existir, a dispensa é esquecida na listagem seguinte.
+- **O sino se atualiza no cliente** a cada troca de tela, ao voltar para a aba e após qualquer requisição de escrita bem-sucedida (evento `api:changed`), sem polling.
 
 ### Modelo
 
-`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` — migrations `V1` a `V9` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais.
+`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `email_change_tokens` — migrations `V1` a `V11` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais.
 
 ## API
 
-Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh e logout. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
+Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
 
 | Método | Rota | O que faz |
 |---|---|---|
@@ -82,6 +91,12 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `POST` | `/auth/login` | Devolve o access token e grava o refresh token em cookie (`429` após muitas tentativas) |
 | `POST` | `/auth/refresh` | Rotaciona o refresh token e devolve um novo access token |
 | `POST` | `/auth/logout` | Revoga o refresh token e limpa o cookie |
+| `POST` | `/auth/password` | Troca a senha (`currentPassword`, `newPassword`) e encerra as outras sessões (`204`; `400` com erro no campo; `429` após 5 erros) |
+| `POST` | `/profile/email` | Pede a troca de e-mail (`newEmail`, `currentPassword`): envia o link ao e-mail novo (`204`; `400` com erro no campo; `429`; `502` se o envio falhar) |
+| `POST` | `/auth/email/confirm` | Confirma a troca com o `token` do link, sem exigir login (`204`; `400` link inválido, expirado ou e-mail em uso) |
+| `GET` `PUT` | `/profile` | Nome, e-mail, data de cadastro e `pendingEmail` (troca aguardando confirmação) do usuário autenticado; altera o nome |
+| `GET` | `/alerts` | Alertas ativos do usuário (`count` e `alerts[]`); os dispensados ficam de fora |
+| `POST` | `/alerts/dismiss` | Dispensa um alerta pela chave (`204`; `404` se não há alerta ativo com ela) |
 | `GET` `POST` | `/accounts` | Lista e cria contas |
 | `GET` `PUT` `DELETE` | `/accounts/{id}` | Detalha, altera e remove |
 | `GET` | `/accounts/{id}/balance` | Saldo inicial e saldo atual |
@@ -173,7 +188,12 @@ O segredo JWT do profile `local` é um placeholder de desenvolvimento — ele n�
 | `JWT_EXPIRATION_MS` | Opcional, default 900000 (15 minutos) |
 | `COOKIE_SECURE` | Opcional, default `true` |
 | `CANONICAL_HOST` | Opcional. Quando definida, requisições para outro host recebem `308` para `https://<CANONICAL_HOST>` |
+| `PUBLIC_URL` | Obrigatória. URL pública do app com `https://` e sem barra final; base dos links enviados por e-mail |
+| `MAIL_FROM_ADDRESS` | Obrigatória. Remetente dos e-mails, de um domínio verificado no Resend (SPF/DKIM) |
+| `RESEND_API_KEY` | Obrigatória. Chave da API do Resend |
 | `PORT` | Opcional, default 8080 |
+
+**E-mail transacional:** o pacote `mail` expõe `EmailSender`, e as features só pedem "envie esta mensagem para esta pessoa". Em `prod` o envio é **síncrono** via Resend (API HTTP com `RestClient`, timeouts de 3 s e 10 s, sem dependência nova); falha vira `502` no formato `ErrorResponse`, sem expor a chave no log. Fora de `prod` nada é enviado e o conteúdo aparece no log. Sem `PUBLIC_URL`, `MAIL_FROM_ADDRESS` ou `RESEND_API_KEY` em `prod`, o app não sobe.
 
 As credenciais do banco e o `JWT_SECRET` não têm valor default no código: variável faltando é falha de boot, não comportamento silencioso. Em produção, `server.forward-headers-strategy=framework` faz o Spring enxergar o HTTPS terminado no Caddy — sem isso o cookie `Secure` não é enviado.
 
@@ -189,7 +209,7 @@ Primeira instalação:
 
 ```bash
 docker network create proxy                           # uma vez por VPS, compartilhada com o Caddy
-cp .env.production.example .env                       # preencher POSTGRES_PASSWORD, JWT_SECRET e CANONICAL_HOST
+cp .env.production.example .env                       # preencher POSTGRES_PASSWORD, JWT_SECRET, CANONICAL_HOST, PUBLIC_URL, MAIL_FROM_ADDRESS e RESEND_API_KEY
 docker compose -f docker-compose.prod.yml up -d
 ```
 

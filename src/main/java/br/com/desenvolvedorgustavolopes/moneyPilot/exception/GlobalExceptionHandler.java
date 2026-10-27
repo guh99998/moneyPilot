@@ -227,6 +227,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(AlertNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAlertNotFound(AlertNotFoundException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
     @ExceptionHandler(BudgetNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleBudgetNotFound(BudgetNotFoundException ex) {
         ErrorResponse body = new ErrorResponse(
@@ -445,6 +458,51 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCurrentPassword(InvalidCurrentPasswordException ex) {
+        return fieldError("currentPassword", ex.getMessage());
+    }
+
+    @ExceptionHandler(SamePasswordException.class)
+    public ResponseEntity<ErrorResponse> handleSamePassword(SamePasswordException ex) {
+        return fieldError("newPassword", ex.getMessage());
+    }
+
+    @ExceptionHandler(SameEmailException.class)
+    public ResponseEntity<ErrorResponse> handleSameEmail(SameEmailException ex) {
+        return fieldError("newEmail", ex.getMessage());
+    }
+
+    @ExceptionHandler(EmailAlreadyInUseException.class)
+    public ResponseEntity<ErrorResponse> handleEmailAlreadyInUse(EmailAlreadyInUseException ex) {
+        return fieldError("newEmail", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidEmailChangeTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidEmailChangeToken(InvalidEmailChangeTokenException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    private ResponseEntity<ErrorResponse> fieldError(String field, String message) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                message,
+                Map.of(field, message)
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(TooManyAttemptsException.class)
     public ResponseEntity<ErrorResponse> handleTooManyAttempts(TooManyAttemptsException ex) {
         ErrorResponse body = new ErrorResponse(
@@ -460,5 +518,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .header(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds))
                 .body(body);
+    }
+
+    @ExceptionHandler(EmailSendException.class)
+    public ResponseEntity<ErrorResponse> handleEmailSend(EmailSendException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_GATEWAY.value(),
+                "Bad Gateway",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
     }
 }

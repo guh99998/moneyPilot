@@ -1,6 +1,7 @@
 const BASE = '/api/v1';
 const TOKEN_KEY = 'moneypilot.token';
 const EMAIL_KEY = 'moneypilot.email';
+const NAME_KEY = 'moneypilot.name';
 
 export class ApiError extends Error {
     constructor(status, message, fieldErrors) {
@@ -17,6 +18,12 @@ export const session = {
     get email() {
         return localStorage.getItem(EMAIL_KEY);
     },
+    get name() {
+        return localStorage.getItem(NAME_KEY);
+    },
+    setName(name) {
+        if (name) localStorage.setItem(NAME_KEY, name);
+    },
     start(token, email) {
         localStorage.setItem(TOKEN_KEY, token);
         if (email) localStorage.setItem(EMAIL_KEY, email);
@@ -24,6 +31,7 @@ export const session = {
     clear() {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(EMAIL_KEY);
+        localStorage.removeItem(NAME_KEY);
     },
     get active() {
         return Boolean(localStorage.getItem(TOKEN_KEY));
@@ -97,6 +105,11 @@ function tooManyAttemptsMessage(retryAfter) {
     return `Muitas tentativas. Tente de novo em ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}.`;
 }
 
+/** Depois de qualquer alteração do usuário, quem mostra situação calculada (o sino) recarrega. */
+function announceChange(method, anonymous) {
+    if (method !== 'GET' && !anonymous) window.dispatchEvent(new CustomEvent('api:changed'));
+}
+
 async function request(path, { method = 'GET', body, query, anonymous = false } = {}) {
     const options = { method, body, query };
     const sentWith = anonymous ? null : session.token;
@@ -117,7 +130,10 @@ async function request(path, { method = 'GET', body, query, anonymous = false } 
         if (response.status === 401) throw expireSession();
     }
 
-    if (response.status === 204) return null;
+    if (response.status === 204) {
+        announceChange(method, anonymous);
+        return null;
+    }
 
     const payload = await response.json().catch(() => null);
 
@@ -133,6 +149,7 @@ async function request(path, { method = 'GET', body, query, anonymous = false } 
         );
     }
 
+    announceChange(method, anonymous);
     return payload;
 }
 
@@ -153,6 +170,23 @@ export const api = {
     register: (body) => request('/auth/register', { method: 'POST', body, anonymous: true }),
     login: (body) => request('/auth/login', { method: 'POST', body, anonymous: true }),
     logout: () => request('/auth/logout', { method: 'POST', anonymous: true }),
+
+    alerts: {
+        list: () => request('/alerts'),
+        dismiss: (key) => request('/alerts/dismiss', { method: 'POST', body: { key } })
+    },
+
+    profile: {
+        get: () => request('/profile'),
+        update: (name) => request('/profile', { method: 'PUT', body: { name } })
+    },
+    changePassword: (currentPassword, newPassword) =>
+        request('/auth/password', { method: 'POST', body: { currentPassword, newPassword } }),
+    requestEmailChange: (newEmail, currentPassword) =>
+        request('/profile/email', { method: 'POST', body: { newEmail, currentPassword } }),
+    // Anônima: o link do e-mail funciona sem login, e um 400 (link inválido) não pode derrubar a sessão.
+    confirmEmailChange: (token) =>
+        request('/auth/email/confirm', { method: 'POST', body: { token }, anonymous: true }),
 
     accounts: {
         list: (query) => request('/accounts', { query }),

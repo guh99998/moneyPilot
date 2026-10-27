@@ -1,6 +1,6 @@
 # 006 — Perfil do usuário
 
-**Status:** rascunho
+**Status:** entregue
 **Branch:** feature/006-perfil-do-usuario
 
 ## Problema
@@ -15,7 +15,9 @@ O usuário tem uma tela de perfil onde vê os seus dados, corrige o nome e troca
 
 - A tela de perfil mostra nome, e-mail e data de cadastro. O e-mail aparece só para leitura; a troca dele é a spec 008.
 - **Nome:** obrigatório, sem espaços nas pontas, até 255 caracteres. Não existe apelido único; o login continua pelo e-mail.
-- **Senha:** para trocar, a pessoa informa a senha atual e a nova. A nova segue as regras do cadastro (mínimo de 8 caracteres).
+- **Senha:** para trocar, a pessoa informa a senha atual e a nova. A nova segue as regras do cadastro (mínimo de 8 caracteres) e **não pode ser igual à atual**.
+- **Limite:** 5 senhas atuais erradas em 15 minutos por usuário; a partir daí a troca é recusada com `429` e o tempo de espera, mesmo com a senha certa. Acertar zera o contador. Não desloga.
+- **Acesso:** o nome do usuário aparece no rodapé do menu (no lugar do e-mail) e leva ao perfil.
 - Depois de trocar a senha, **todas as outras sessões são encerradas** e a sessão atual continua aberta.
 - Senha atual errada não altera nada e mostra um erro claro.
 - Cada pessoa só vê e altera o próprio perfil.
@@ -31,9 +33,9 @@ O usuário tem uma tela de perfil onde vê os seus dados, corrige o nome e troca
 
 ## Casos de borda
 
-- Nova senha igual à atual
+- Nova senha igual à atual: recusada, nada muda e as outras sessões continuam abertas
 - Nova senha com menos de 8 caracteres
-- Tentativas repetidas de senha atual errada (limitadas pela 005)
+- Tentativas repetidas de senha atual errada (limite acima, mesmo mecanismo da 005)
 - Duas abas do mesmo navegador: a outra aba compartilha a sessão atual e continua logada
 
 ## Fora de escopo
@@ -44,7 +46,11 @@ O usuário tem uma tela de perfil onde vê os seus dados, corrige o nome e troca
 - Excluir a conta e exportar os dados (Etapa 2, C4)
 - Definir senha para conta criada pelo Google (tratado na 003 e na 004)
 
-## Perguntas em aberto
+## Perguntas resolvidas
 
-- Recusar a nova senha quando for igual à atual? (recomendado: sim, com mensagem clara)
-- Onde fica o acesso ao perfil: um item no menu de navegação ou o nome do usuário no topo, clicável?
+Decisões de 27/10/2026:
+
+- Nova senha igual à atual é recusada, com erro no campo.
+- O acesso ao perfil é o nome no rodapé do menu, clicável. O menu de navegação não ganha item novo.
+- A troca de senha tem limite próprio (5 falhas em 15 min por usuário), pois a 005 não cobre esse endpoint.
+- A regra do nome vale só no perfil; o cadastro não muda nesta spec.
