@@ -2,7 +2,7 @@
 
 **Plano:** [plan.md](plan.md)
 
-- [ ] **T1** — Spec aprovada, plano e tarefas
+- [x] **T1** — Spec aprovada, plano e tarefas
 - [ ] **T2** — Migration `V10__create_dismissed_alerts_table.sql`, entidade `DismissedAlert` e repositório
 - [ ] **T3** — Queries de títulos em aberto por tipo (a vencer e vencidos) em `BillRepository` (CA1, CA3)
 - [ ] **T4** — `AlertService` e `GET /api/v1/alerts`: alertas de títulos (CA1, CA2, CA3, CA7, CA8)
