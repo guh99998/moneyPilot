@@ -1,7 +1,9 @@
 # 001 — E-mail transacional
 
 **Status:** rascunho
+
 **Branch:** feature/001-email-transacional
+
 **Roteiro:** D2
 
 ## Problema

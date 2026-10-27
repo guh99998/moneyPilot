@@ -37,7 +37,7 @@ Só entra no app quem provou ser dono do e-mail cadastrado.
 
 ## Fora de escopo
 
-- Trocar o e-mail da conta
+- Trocar o e-mail da conta (spec 008)
 - Excluir automaticamente contas que nunca verificaram
 - Verificação por código numérico em vez de link
 
