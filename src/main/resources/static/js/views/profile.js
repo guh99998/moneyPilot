@@ -1,0 +1,115 @@
+import { api, ApiError, session } from '../api.js';
+import { el, toast, pageHead } from '../ui.js';
+
+const CREATED_AT_FORMAT = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'America/Sao_Paulo' });
+
+function fieldRow(label, input, errorNode, hint) {
+    return el('div', { class: 'field' }, [
+        el('label', { text: label }),
+        input,
+        hint ? el('span', { class: 'meter-foot', text: hint }) : null,
+        errorNode
+    ]);
+}
+
+/** Mostra os erros por campo vindos da API e a mensagem geral. */
+function showErrors(error, fieldErrors, errorBox) {
+    if (error instanceof ApiError && error.fieldErrors) {
+        Object.entries(error.fieldErrors).forEach(([field, message]) => {
+            if (fieldErrors[field]) fieldErrors[field].textContent = message;
+        });
+    }
+    errorBox.textContent = error?.message || 'Não foi possível salvar.';
+    errorBox.hidden = false;
+}
+
+function resetErrors(fieldErrors, errorBox) {
+    Object.values(fieldErrors).forEach((node) => { node.textContent = ''; });
+    errorBox.hidden = true;
+}
+
+export async function renderProfile() {
+    const profile = await api.profile.get();
+    session.setName(profile.name);
+
+    const view = el('div');
+    view.append(pageHead('Perfil', 'Seus dados e a segurança da conta'));
+
+    // Dados
+    const nameInput = el('input', { type: 'text', autocomplete: 'name', required: true, maxlength: '255', value: profile.name });
+    const nameErrors = { name: el('span', { class: 'error' }) };
+    const nameBox = el('p', { class: 'dialog-error', hidden: true });
+    const nameBtn = el('button', { class: 'btn-primary', type: 'submit', text: 'Salvar nome' });
+
+    const nameForm = el('form', {
+        onSubmit: async (event) => {
+            event.preventDefault();
+            nameBtn.disabled = true;
+            resetErrors(nameErrors, nameBox);
+            try {
+                const updated = await api.profile.update(nameInput.value.trim());
+                session.setName(updated.name);
+                toast('Nome atualizado.', 'success');
+                // Renderiza de novo para o rodapé do menu mostrar o nome novo.
+                window.dispatchEvent(new HashChangeEvent('hashchange'));
+            } catch (error) {
+                showErrors(error, nameErrors, nameBox);
+                nameBtn.disabled = false;
+            }
+        }
+    }, [
+        nameBox,
+        fieldRow('Nome', nameInput, nameErrors.name),
+        fieldRow('E-mail', el('input', { type: 'email', value: profile.email, disabled: true }), null,
+            'O e-mail não pode ser alterado por aqui.'),
+        fieldRow('Conta criada em', el('input', {
+            type: 'text', value: CREATED_AT_FORMAT.format(new Date(profile.createdAt)), disabled: true
+        })),
+        nameBtn
+    ]);
+
+    // Senha
+    const currentInput = el('input', { type: 'password', autocomplete: 'current-password', required: true });
+    const newInput = el('input', { type: 'password', autocomplete: 'new-password', required: true, minlength: '8' });
+    const passwordErrors = { currentPassword: el('span', { class: 'error' }), newPassword: el('span', { class: 'error' }) };
+    const passwordBox = el('p', { class: 'dialog-error', hidden: true });
+    const passwordBtn = el('button', { class: 'btn-primary', type: 'submit', text: 'Trocar senha' });
+
+    const passwordForm = el('form', {
+        onSubmit: async (event) => {
+            event.preventDefault();
+            passwordBtn.disabled = true;
+            resetErrors(passwordErrors, passwordBox);
+            try {
+                await api.changePassword(currentInput.value, newInput.value);
+                currentInput.value = '';
+                newInput.value = '';
+                toast('Senha alterada. Os outros aparelhos foram desconectados.', 'success');
+            } catch (error) {
+                showErrors(error, passwordErrors, passwordBox);
+            }
+            passwordBtn.disabled = false;
+        }
+    }, [
+        passwordBox,
+        fieldRow('Senha atual', currentInput, passwordErrors.currentPassword),
+        fieldRow('Nova senha', newInput, passwordErrors.newPassword, 'Mínimo de 8 caracteres, diferente da atual.'),
+        passwordBtn
+    ]);
+
+    view.append(
+        el('div', { class: 'card profile-card' }, [
+            el('div', { class: 'card-head' }, [el('h2', { text: 'Dados' })]),
+            nameForm
+        ]),
+        el('div', { class: 'card profile-card' }, [
+            el('div', { class: 'card-head' }, [
+                el('h2', { text: 'Senha' }),
+                el('span', { class: 'sub', text: 'Ao trocar, os outros aparelhos saem da conta.' })
+            ]),
+            passwordForm
+        ])
+    );
+
+    return view;
+}

@@ -8,6 +8,7 @@ import { renderForecast } from './views/forecast.js';
 import { renderAccounts } from './views/accounts.js';
 import { renderCategories } from './views/categories.js';
 import { renderBudgets } from './views/budgets.js';
+import { renderProfile } from './views/profile.js';
 
 const ROUTES = [
     { path: 'dashboard', label: 'Visão geral', render: renderDashboard },
@@ -19,11 +20,15 @@ const ROUTES = [
     { path: 'budgets', label: 'Orçamentos', render: renderBudgets }
 ];
 
+// Tela fora do menu: o acesso é pelo nome do usuário no rodapé.
+const PROFILE_ROUTE = { path: 'profile', label: 'Perfil', render: renderProfile };
+
 // O app tem só o tema claro; limpa a preferência que versões antigas gravavam.
 localStorage.removeItem('moneypilot.theme');
 
 function currentRoute() {
     const path = window.location.hash.replace(/^#\/?/, '');
+    if (path === PROFILE_ROUTE.path) return PROFILE_ROUTE;
     return ROUTES.find((route) => route.path === path) || ROUTES[0];
 }
 
@@ -60,7 +65,14 @@ function buildSidebar(active) {
                 onClick: () => sidebar.classList.remove('open')
             }))),
             el('div', { class: 'sidebar-foot' }, [
-                el('span', { class: 'user-chip', text: session.email || '' }),
+                el('a', {
+                    class: 'user-chip' + (active.path === PROFILE_ROUTE.path ? ' active' : ''),
+                    href: '#/' + PROFILE_ROUTE.path,
+                    title: 'Meu perfil',
+                    text: session.name || session.email || '',
+                    // Tocar na página atual não dispara hashchange, então fecha à mão.
+                    onClick: () => sidebar.classList.remove('open')
+                }),
                 el('button', {
                     class: 'btn-ghost btn-sm',
                     text: 'Sair',
@@ -90,6 +102,11 @@ async function render() {
             render();
         }));
         return;
+    }
+
+    // Sessões abertas antes do perfil existir não têm o nome guardado: busca uma vez.
+    if (!session.name) {
+        await api.profile.get().then((profile) => session.setName(profile.name)).catch(() => {});
     }
 
     const route = currentRoute();
