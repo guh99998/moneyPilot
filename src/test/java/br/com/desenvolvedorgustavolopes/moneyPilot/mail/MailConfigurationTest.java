@@ -4,16 +4,15 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.config.AppProperties;
 import br.com.desenvolvedorgustavolopes.moneyPilot.config.PropertiesConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// CA2: em prod, sem a configuração de envio o contexto não sobe.
+// CA2: em prod, sem a configuração de envio o contexto não sobe. O contexto aqui não tem RestClient.Builder
+// (como o app real), para o sender não depender de um bean que não existe.
 class MailConfigurationTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(PropertiesConfig.class, ResendEmailSender.class)
-            .withBean(RestClient.Builder.class, RestClient::builder)
             .withPropertyValues("spring.profiles.active=prod");
 
     @Test
