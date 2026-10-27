@@ -14,6 +14,7 @@ Aplicação de controle financeiro pessoal: contas, lançamentos, transferência
 | Documentação da API | springdoc-openapi 3.x (Swagger UI) |
 | Testes | JUnit 5, MockMvc e Testcontainers (Postgres real); `node --test` para o cliente web |
 | CI | GitHub Actions |
+| Deploy | Docker Compose em VPS, imagem publicada no GHCR, HTTPS pelo Caddy |
 | Build | Maven (wrapper incluso) |
 | Frontend | HTML, CSS e JavaScript puro com ES modules, sem build step e sem biblioteca de gráficos |
 
@@ -164,31 +165,43 @@ O segredo JWT do profile `local` é um placeholder de desenvolvimento — ele n�
 | Variável | Observação |
 |---|---|
 | `SPRING_PROFILES_ACTIVE` | `prod` |
-| `JDBC_DATABASE_URL` | Derivada automaticamente pelo buildpack Java quando há Postgres provisionado |
-| `JDBC_DATABASE_USERNAME` | idem |
-| `JDBC_DATABASE_PASSWORD` | idem |
+| `JDBC_DATABASE_URL` | Obrigatória. No `docker-compose.prod.yml` aponta para o serviço `db` |
+| `JDBC_DATABASE_USERNAME` | Obrigatória |
+| `JDBC_DATABASE_PASSWORD` | Obrigatória. No compose vem de `POSTGRES_PASSWORD` do `.env` |
 | `JWT_SECRET` | Obrigatória. Mínimo de 32 caracteres; segredo vazio derruba a aplicação no boot |
 | `JWT_EXPIRATION_MS` | Opcional, default 900000 (15 minutos) |
 | `COOKIE_SECURE` | Opcional, default `true` |
 | `CANONICAL_HOST` | Opcional. Quando definida, requisições para outro host recebem `308` para `https://<CANONICAL_HOST>` |
-| `PORT` | Fornecida pela plataforma |
+| `PORT` | Opcional, default 8080 |
 
-As credenciais do banco e o `JWT_SECRET` não têm valor default no código: variável faltando é falha de boot, não comportamento silencioso. Em produção, `server.forward-headers-strategy=framework` faz o Spring enxergar o HTTPS do router do Heroku — sem isso o cookie `Secure` não é enviado.
+As credenciais do banco e o `JWT_SECRET` não têm valor default no código: variável faltando é falha de boot, não comportamento silencioso. Em produção, `server.forward-headers-strategy=framework` faz o Spring enxergar o HTTPS terminado no Caddy — sem isso o cookie `Secure` não é enviado.
 
 ## Deploy
 
-Hospedado no Heroku. `Procfile` e `system.properties` definem o processo web e o runtime Java 21; o jar sai com nome fixo (`target/moneyPilot.jar`), então trocar a `<version>` do `pom.xml` não quebra o boot.
+Hospedado em uma VPS com Docker Compose (`docker-compose.prod.yml`): Postgres 18 com volume nomeado e a aplicação, com limite de memória e heap da JVM fixados porque a VPS é compartilhada com outros apps. O HTTPS fica num Caddy compartilhado da VPS, que alcança a aplicação pela rede Docker externa `proxy`.
 
-Toda vez que houver migration nova:
+O `Dockerfile` é multi-stage: compila com o Maven wrapper e roda só com o JRE 21, com usuário sem privilégio. O jar sai com nome fixo (`target/moneyPilot.jar`), então trocar a `<version>` do `pom.xml` não quebra o boot.
+
+**Publicação:** todo push na `main` que passa nos testes publica a imagem `ghcr.io/guh99998/moneypilot` com as tags `latest` e o SHA do commit. A VPS só baixa a imagem; não compila nada.
+
+Primeira instalação:
 
 ```bash
-heroku pg:backups:capture   # antes do push: o plano essential-0 não tem rollback nem PITR
-git push heroku main
-heroku logs --tail          # conferir o Flyway aplicando as migrations
-heroku releases             # ter o número de rollback à mão
+docker network create proxy                           # uma vez por VPS, compartilhada com o Caddy
+cp .env.production.example .env                       # preencher POSTGRES_PASSWORD, JWT_SECRET e CANONICAL_HOST
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-O build do buildpack roda com `-DskipTests`, porque não há Docker disponível lá. Quem garante os testes é o CI.
+A cada versão nova:
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T db pg_dump -U moneypilot moneypilot > backup-$(date +%F).sql   # antes, se houver migration nova
+docker compose -f docker-compose.prod.yml pull app
+docker compose -f docker-compose.prod.yml up -d app
+docker compose -f docker-compose.prod.yml logs -f app   # conferir o Flyway aplicando as migrations
+```
+
+Para voltar uma versão, use a tag com o SHA do commit anterior no lugar de `latest`. Migration já aplicada não é desfeita pela troca de imagem — por isso o dump antes.
 
 ## Testes
 

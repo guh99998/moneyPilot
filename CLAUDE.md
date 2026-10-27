@@ -32,6 +32,7 @@ Regras:
 ## Branches e commits
 
 - Fluxo: `feature/*` ou `fix/*` → `develop` → `main` → `deploy`. Nunca commitar direto em `main` ou `deploy`.
+- **Push na `main` publica em produção**: o CI gera a imagem no GHCR e a VPS a baixa. Merge em `main` só com ok explícito do Gustavo.
 - Uma branch por spec, criada a partir da `develop` atualizada, com o mesmo slug da pasta da spec (`feature/007-orcamento-recorrente`).
 - Merges com `--no-ff` e mensagem `merge: branch 'x' into y`, como no histórico.
 - Commits em inglês, Conventional Commits com escopo do domínio: `feat(bill): ...`, `fix(web): ...`, `test(report): ...`, `docs: ...`. Commits pequenos e separados entre código e testes quando fizer sentido.
