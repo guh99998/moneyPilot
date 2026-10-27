@@ -1,5 +1,5 @@
 import { api, session } from './api.js';
-import { el, clear, toast } from './ui.js';
+import { el, clear, toast, svgIcon } from './ui.js';
 import { renderAuth } from './views/auth.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderTransactions } from './views/transactions.js';
@@ -9,6 +9,7 @@ import { renderAccounts } from './views/accounts.js';
 import { renderCategories } from './views/categories.js';
 import { renderBudgets } from './views/budgets.js';
 import { renderProfile } from './views/profile.js';
+import { renderBell, refreshAlerts, resetAlerts } from './alerts.js';
 
 const ROUTES = [
     { path: 'dashboard', label: 'Visão geral', render: renderDashboard },
@@ -20,21 +21,17 @@ const ROUTES = [
     { path: 'budgets', label: 'Orçamentos', render: renderBudgets }
 ];
 
-/** Ícones de traço (24x24) herdam a cor do texto; sem biblioteca, como o resto do cliente. */
-const icon = (shapes) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" '
-    + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + shapes + '</svg>';
-
 const NAV_ICONS = {
-    dashboard: icon('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/>'
+    dashboard: svgIcon('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/>'
         + '<rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>'),
-    transactions: icon('<path d="M7 7h13M16 3l4 4-4 4"/><path d="M17 17H4M8 13l-4 4 4 4"/>'),
-    bills: icon('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
-    forecast: icon('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
-    accounts: icon('<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>'),
-    categories: icon('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>'),
-    budgets: icon('<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>')
+    transactions: svgIcon('<path d="M7 7h13M16 3l4 4-4 4"/><path d="M17 17H4M8 13l-4 4 4 4"/>'),
+    bills: svgIcon('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
+    forecast: svgIcon('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
+    accounts: svgIcon('<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>'),
+    categories: svgIcon('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>'),
+    budgets: svgIcon('<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>')
 };
-const USER_ICON = icon('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>');
+const USER_ICON = svgIcon('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>');
 
 // Tela fora do menu: o acesso é pelo nome do usuário no rodapé.
 const PROFILE_ROUTE = { path: 'profile', label: 'Perfil', render: renderProfile };
@@ -70,7 +67,7 @@ function buildSidebar(active) {
                 el('span', { class: 'brand-mark' }, el('img', { src: 'image/money-pilot-logo.png', alt: '' })),
                 el('span', {}, ['money', el('span', { class: 'pilot', text: 'Pilot' })])
             ]),
-            menuToggle
+            el('div', { class: 'sidebar-actions' }, [renderBell(), menuToggle])
         ]),
         el('div', { class: 'sidebar-body', id: 'sidebar-menu' }, [
             el('nav', { class: 'nav' }, ROUTES.map((route) => el('a', {
@@ -101,6 +98,7 @@ function buildSidebar(active) {
                         // Revoga o refresh token no servidor; se falhar, sai mesmo assim.
                         await api.logout().catch(() => {});
                         session.clear();
+                        resetAlerts();
                         window.location.hash = '';
                         render();
                     }
@@ -134,6 +132,7 @@ async function render() {
     const route = currentRoute();
     const main = el('main', { class: 'main' });
     root.append(el('div', { class: 'shell' }, [buildSidebar(route), main]));
+    refreshAlerts();
     main.append(el('div', { class: 'empty', text: 'Carregando…' }));
 
     // Antes da tela: dashboard e previsão já precisam ver os títulos das recorrências.
@@ -155,6 +154,7 @@ window.addEventListener('profile:updated', () => {
 });
 window.addEventListener('session:expired', () => {
     toast('Sua sessão expirou. Entre novamente.', 'error');
+    resetAlerts();
     window.location.hash = '';
     render();
 });

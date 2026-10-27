@@ -13,6 +13,12 @@ const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
     label: monthName(index + 1).charAt(0).toUpperCase() + monthName(index + 1).slice(1)
 }));
 
+/** Usado pelos alertas: a próxima abertura da tela já vem no mês do alerta (o router não tem parâmetros). */
+export function presetBudgetPeriod(nextMonth, nextYear) {
+    month = nextMonth;
+    year = nextYear;
+}
+
 export async function renderBudgets() {
     const view = el('div');
     const categories = await fetchAll(api.categories.list);

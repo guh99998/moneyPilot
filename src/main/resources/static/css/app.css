@@ -98,6 +98,36 @@ h3 { font-size: .92rem; }
 }
 .brand-mark img { position: absolute; width: 244%; left: -73%; top: -47.5%; }
 
+.sidebar-actions { display: flex; align-items: center; gap: .15rem; }
+
+.bell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+}
+.sidebar .bell { color: #dbe4f0; }
+.sidebar .bell:hover:not(:disabled) { background: var(--navy-2); color: #fff; }
+.bell-icon { display: inline-flex; }
+.bell-count {
+    position: absolute;
+    top: 3px;
+    right: 1px;
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--critical);
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 800;
+    line-height: 18px;
+    text-align: center;
+}
+.bell-count[hidden] { display: none; }
+
 .menu-toggle {
     display: inline-flex;
     flex-direction: column;
@@ -723,3 +753,48 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
     .dash .kpis.span-full { grid-column: span 12; grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .dash .span-full { grid-column: span 12; }
 }
+
+/* ---------- alertas (painel do sino) ---------- */
+.alerts-panel {
+    position: fixed;
+    z-index: 50;
+    width: min(380px, calc(100vw - 24px));
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+    padding: .85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+}
+.alerts-title { margin-bottom: .6rem; }
+.alerts-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.alerts-empty { margin: .25rem 0; color: var(--text-secondary); font-size: .9rem; }
+.alert-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem .35rem .35rem .75rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--warning);
+    border-radius: 10px;
+}
+.alert-item.critical { border-left-color: var(--critical); }
+.alert-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .1rem;
+    min-width: 0;
+    padding: .25rem 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    color: var(--text);
+}
+.alert-main:hover:not(:disabled) { background: transparent; }
+.alert-main:hover strong { text-decoration: underline; }
+.alert-main strong { font-size: .88rem; }
+.alert-main span { font-size: .8rem; color: var(--text-secondary); }
+.alert-dismiss { flex: none; }
