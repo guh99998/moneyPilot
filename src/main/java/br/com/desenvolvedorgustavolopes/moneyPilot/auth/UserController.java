@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +25,14 @@ public class UserController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDTO createUser(@Valid @RequestBody RegisterRequest request) {
-        return service.createUser(request);
+    public UserDTO createUser(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        return service.createUser(request, httpRequest.getRemoteAddr());
     }
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-        AuthTokens authTokens = authService.login(request);
+    public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
+        AuthTokens authTokens = authService.login(request, httpRequest.getRemoteAddr());
         ResponseCookie cookie = this.buildRefreshCookie(authTokens.refreshToken(), RefreshTokenService.REFRESH_TTL);
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return new AuthResponse(authTokens.accessToken());

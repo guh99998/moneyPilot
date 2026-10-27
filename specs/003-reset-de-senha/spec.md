@@ -36,7 +36,7 @@ A pessoa recupera o acesso pelo e-mail cadastrado, e qualquer sessão antiga dei
 
 ## Fora de escopo
 
-- Trocar a senha estando logado (tela de perfil)
+- Trocar a senha estando logado (spec 006)
 - Perguntas de segurança, SMS ou 2FA
 
 ## Perguntas em aberto
