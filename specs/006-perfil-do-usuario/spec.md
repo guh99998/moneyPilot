@@ -1,6 +1,6 @@
 # 006 — Perfil do usuário
 
-**Status:** aprovada
+**Status:** entregue
 **Branch:** feature/006-perfil-do-usuario
 
 ## Problema
