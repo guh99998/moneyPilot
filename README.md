@@ -182,7 +182,7 @@ Hospedado em uma VPS com Docker Compose (`docker-compose.prod.yml`): Postgres 18
 
 O `Dockerfile` é multi-stage: compila com o Maven wrapper e roda só com o JRE 21, com usuário sem privilégio. O jar sai com nome fixo (`target/moneyPilot.jar`), então trocar a `<version>` do `pom.xml` não quebra o boot.
 
-**Publicação:** todo push na `main` que passa nos testes publica a imagem `ghcr.io/guh99998/moneypilot` com as tags `latest` e o SHA do commit. A VPS só baixa a imagem; não compila nada.
+**Publicação:** todo push na `main` que passa nos testes publica a imagem `ghcr.io/guh99998/moneypilot` com as tags `latest` e o SHA do commit. A VPS mantém um clone do repositório na `main`, só para ter o compose e o `.env`, e baixa a imagem pronta; não compila nada.
 
 Primeira instalação:
 
@@ -195,6 +195,7 @@ docker compose -f docker-compose.prod.yml up -d
 A cada versão nova:
 
 ```bash
+git pull                                                # traz mudanças no compose, se houver
 docker compose -f docker-compose.prod.yml exec -T db pg_dump -U moneypilot moneypilot > backup-$(date +%F).sql   # antes, se houver migration nova
 docker compose -f docker-compose.prod.yml pull app
 docker compose -f docker-compose.prod.yml up -d app
@@ -202,6 +203,8 @@ docker compose -f docker-compose.prod.yml logs -f app   # conferir o Flyway apli
 ```
 
 Para voltar uma versão, use a tag com o SHA do commit anterior no lugar de `latest`. Migration já aplicada não é desfeita pela troca de imagem — por isso o dump antes.
+
+**Backup:** um cron diário na VPS faz o dump do Postgres e o envia, criptografado, para um armazenamento externo. O dump manual acima é a garantia extra para o momento exato antes de uma migration.
 
 ## Testes
 
