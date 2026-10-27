@@ -10,7 +10,7 @@ Tudo no pacote `auth` (onde vivem `User`, `UserRepository` e `RefreshTokenServic
 - **Nome:** `UpdateProfileRequest(@NotBlank @Size(max = 255) String name)`, com compact constructor que faz `strip()` antes da validação. Só espaços vira vazio e é recusado pelo `@NotBlank`.
 - **Senha:** `ChangePasswordRequest(@NotBlank currentPassword, @NotBlank @Size(min = 8) newPassword)`, mesma regra do `RegisterRequest`.
 - **Ordem em `ProfileService.changePassword`:** `attemptLimiter.check("password-change:<userId>")` → confere a senha atual (errada: `record` + `InvalidCurrentPasswordException`) → nova igual à atual (`SamePasswordException`) → grava o hash BCrypt → `reset` do contador → revoga as outras sessões.
-- **Outras sessões:** nova query `RefreshTokenRepository.revokeAllActiveByUserIdExcept(userId, keepTokenId, now)`, exposta por `RefreshTokenService.revokeAllExcept(userId, rawCurrentToken)`. Se o cookie faltar ou for inválido, revoga todas. O access token (15 min) das outras sessões vale até expirar; elas caem na próxima renovação, como pede o CA6. Duas abas compartilham o cookie e seguem logadas.
+- **Outras sessões:** nova query `RefreshTokenRepository.deleteAllActiveByUserIdExcept(userId, keepTokenId)`, exposta por `RefreshTokenService.endAllExcept(userId, rawCurrentToken)`. Os tokens são **apagados, não revogados**: um token revogado que volta a ser usado aciona a detecção de reuso do `rotate` e revoga todas as sessões do usuário, inclusive a que trocou a senha (quebraria o CA6). Se o cookie faltar ou for inválido, encerra todas. O access token (15 min) das outras sessões vale até expirar; elas caem na próxima renovação, como pede o CA6. Duas abas compartilham o cookie e seguem logadas.
 - **Rota da troca de senha sob `/api/v1/auth/`:** o cookie `refresh_token` tem `path=/api/v1/auth`, então só chega ao servidor nessa árvore, e é ele que identifica a sessão a preservar. A rota exige access token (não entra no `permitAll`).
 - **Senha atual errada responde `400`, não `401`:** o `api.js` trata `401` como sessão expirada (tenta refresh e desloga).
 - **Limites:** `app.rate-limit.password-change-failures=5` e `password-change-window=15m` em `RateLimitProperties` e `application.properties`.
@@ -56,6 +56,7 @@ Mudanças incompatíveis com o cliente atual: nenhuma.
 ## Riscos e alternativas descartadas
 
 - Contadores em memória zeram no restart (mesma limitação aceita na 005).
+- Revogar (em vez de apagar) os tokens das outras sessões: descartado, ver "Outras sessões". Alternativa seria uma coluna de motivo da revogação, o que exigiria migration.
 - `401` para senha atual errada: descartado, deslogaria o usuário no cliente.
 - Rota `/api/v1/profile/password`: descartada, o cookie de refresh não chegaria a ela.
 
