@@ -20,6 +20,11 @@ function fieldMessage(field, message) {
             ? 'A nova senha deve ser diferente da atual.'
             : 'A nova senha deve ter no mínimo 8 caracteres.';
     }
+    if (field === 'newEmail') {
+        if (message.includes('different')) return 'Esse já é o e-mail atual da conta.';
+        if (message.includes('in use')) return 'Este e-mail já está em uso por outra conta.';
+        return 'Informe um e-mail válido.';
+    }
     if (field === 'name') {
         return message.includes('blank') ? 'Informe o nome.' : 'O nome deve ter até 255 caracteres.';
     }
@@ -80,7 +85,7 @@ export async function renderProfile() {
         nameBox,
         fieldRow('Nome', nameInput, nameErrors.name),
         fieldRow('E-mail', el('input', { type: 'email', value: profile.email, disabled: true }), null,
-            'O e-mail não pode ser alterado por aqui.'),
+            'Para trocar o e-mail, use o cartão abaixo.'),
         fieldRow('Conta criada em', el('input', {
             type: 'text', value: CREATED_AT_FORMAT.format(new Date(profile.createdAt)), disabled: true
         })),
@@ -116,10 +121,60 @@ export async function renderProfile() {
         passwordBtn
     ]);
 
+    // E-mail
+    const emailInput = el('input', { type: 'email', autocomplete: 'email', required: true, maxlength: '255', value: profile.pendingEmail || '' });
+    const emailPasswordInput = el('input', { type: 'password', autocomplete: 'current-password', required: true });
+    const emailErrors = { newEmail: el('span', { class: 'error' }), currentPassword: el('span', { class: 'error' }) };
+    const emailBox = el('p', { class: 'dialog-error', hidden: true });
+    const pendingNote = el('p', { class: 'meter-foot' });
+    const emailBtn = el('button', { class: 'btn-primary', type: 'submit' });
+
+    function showPending(pendingEmail) {
+        pendingNote.textContent = pendingEmail
+            ? `Aguardando confirmação em ${pendingEmail}. Até lá, o e-mail atual continua valendo.`
+            : '';
+        pendingNote.hidden = !pendingEmail;
+        emailBtn.textContent = pendingEmail ? 'Reenviar link' : 'Enviar link de confirmação';
+    }
+    showPending(profile.pendingEmail);
+
+    const emailForm = el('form', {
+        onSubmit: async (event) => {
+            event.preventDefault();
+            emailBtn.disabled = true;
+            resetErrors(emailErrors, emailBox);
+            const newEmail = emailInput.value.trim().toLowerCase();
+            try {
+                await api.requestEmailChange(newEmail, emailPasswordInput.value);
+                emailInput.value = newEmail;
+                emailPasswordInput.value = '';
+                showPending(newEmail);
+                toast(`Enviamos um link de confirmação para ${newEmail}.`, 'success');
+            } catch (error) {
+                showErrors(error, emailErrors, emailBox);
+            }
+            emailBtn.disabled = false;
+        }
+    }, [
+        emailBox,
+        pendingNote,
+        fieldRow('Novo e-mail', emailInput, emailErrors.newEmail,
+            'Enviaremos um link para este endereço. A troca só vale depois que você abri-lo.'),
+        fieldRow('Senha atual', emailPasswordInput, emailErrors.currentPassword),
+        emailBtn
+    ]);
+
     view.append(
         el('div', { class: 'card profile-card' }, [
             el('div', { class: 'card-head' }, [el('h2', { text: 'Dados' })]),
             nameForm
+        ]),
+        el('div', { class: 'card profile-card' }, [
+            el('div', { class: 'card-head' }, [
+                el('h2', { text: 'E-mail' }),
+                el('span', { class: 'sub', text: 'O link vale por 24 horas e só pode ser usado uma vez.' })
+            ]),
+            emailForm
         ]),
         el('div', { class: 'card profile-card' }, [
             el('div', { class: 'card-head' }, [
