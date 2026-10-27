@@ -14,5 +14,4 @@
 
 - `AttemptLimiter.check(key, limit)` não recebe a janela (o plano previa `check(key, limit, window)`): a duração fica gravada na janela, passada em `record`.
 - Os commits 3 e 4 do plano (login e cadastro) saíram juntos.
-- Testes Java escritos mas ainda não executados: Docker Desktop estava desligado.
 
