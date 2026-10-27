@@ -9,6 +9,7 @@ import { renderAccounts } from './views/accounts.js';
 import { renderCategories } from './views/categories.js';
 import { renderBudgets } from './views/budgets.js';
 import { renderProfile } from './views/profile.js';
+import { renderConfirmEmail } from './views/confirm-email.js';
 import { renderBell, refreshAlerts, resetAlerts } from './alerts.js';
 
 const ROUTES = [
@@ -120,6 +121,12 @@ async function render() {
     const root = document.getElementById('app');
     root.className = '';
     clear(root);
+
+    // Rota pública: o link do e-mail confirma a troca mesmo sem sessão aberta.
+    if (window.location.hash.startsWith('#/confirmar-email')) {
+        root.append(renderConfirmEmail());
+        return;
+    }
 
     if (!session.active) {
         root.append(renderAuth(() => {

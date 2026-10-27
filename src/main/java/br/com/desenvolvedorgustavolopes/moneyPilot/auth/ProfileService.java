@@ -18,16 +18,19 @@ public class ProfileService {
     private final RefreshTokenService refreshTokenService;
     private final AttemptLimiter attemptLimiter;
     private final RateLimitProperties rateLimit;
+    private final EmailChangeService emailChangeService;
 
     public ProfileResponse getProfile() {
-        return new ProfileResponse(currentUser());
+        User user = currentUser();
+        return new ProfileResponse(user, emailChangeService.pendingEmail(user.getId()));
     }
 
     @Transactional
     public ProfileResponse updateName(UpdateProfileRequest request) {
         User user = currentUser();
         user.setName(request.name());
-        return new ProfileResponse(repository.save(user));
+        User saved = repository.save(user);
+        return new ProfileResponse(saved, emailChangeService.pendingEmail(saved.getId()));
     }
 
     @Transactional

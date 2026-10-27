@@ -1,6 +1,6 @@
 # 008 — Troca de e-mail
 
-**Status:** em implementação
+**Status:** entregue
 **Branch:** feature/008-troca-de-email
 **Depende de:** 001 (precisa estar entregue antes do envio, T5 em diante), 006
 

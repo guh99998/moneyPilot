@@ -182,6 +182,11 @@ export const api = {
     },
     changePassword: (currentPassword, newPassword) =>
         request('/auth/password', { method: 'POST', body: { currentPassword, newPassword } }),
+    requestEmailChange: (newEmail, currentPassword) =>
+        request('/profile/email', { method: 'POST', body: { newEmail, currentPassword } }),
+    // Anônima: o link do e-mail funciona sem login, e um 400 (link inválido) não pode derrubar a sessão.
+    confirmEmailChange: (token) =>
+        request('/auth/email/confirm', { method: 'POST', body: { token }, anonymous: true }),
 
     accounts: {
         list: (query) => request('/accounts', { query }),
