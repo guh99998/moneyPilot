@@ -1,6 +1,6 @@
 # 007 — Notificações
 
-**Status:** em implementação
+**Status:** entregue
 **Branch:** feature/007-notificacoes
 
 ## Problema
