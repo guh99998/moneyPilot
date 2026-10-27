@@ -89,4 +89,24 @@ public class RefreshTokenService {
         Optional<RefreshToken> refreshToken = repository.findByTokenHash(hash);
         refreshToken.ifPresent(value -> repository.revokeIfActive(value.getId(), Instant.now()));
     }
+
+    /**
+     * Encerra as sessões ativas do usuário, exceto a do token informado. Se o token não for um refresh
+     * token ativo desse usuário, encerra todas.
+     */
+    @Transactional
+    public void endAllExcept(Long userId, String currentRawToken) {
+        Instant now = Instant.now();
+        Long keepId = -1L;
+
+        if (currentRawToken != null && !currentRawToken.isBlank()) {
+            keepId = repository.findByTokenHash(hashToken(currentRawToken))
+                    .filter(token -> token.getUserId().equals(userId))
+                    .filter(token -> token.getRevokedAt() == null && token.getExpiresAt().isAfter(now))
+                    .map(RefreshToken::getId)
+                    .orElse(-1L);
+        }
+
+        repository.deleteAllActiveByUserIdExcept(userId, keepId);
+    }
 }
