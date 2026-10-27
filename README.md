@@ -31,6 +31,7 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 ├── budget        orçamento por categoria e mês
 ├── bill          títulos a pagar/receber, parcelamento, baixa e recorrência
 ├── report        consultas agregadas, previsão de fluxo de caixa
+├── notification  alertas calculados (vencimentos e orçamento) e dispensa
 ├── config        Spring Security, Clock, host canônico
 └── exception     exceções de domínio e handler global
 ```
@@ -70,10 +71,13 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Troca de senha encerra as outras sessões e mantém a atual.** O servidor identifica a sessão atual pelo cookie de refresh e **apaga** (não revoga) os refresh tokens ativos das demais: um token revogado que voltasse a ser usado acionaria a detecção de reuso acima e derrubaria também a sessão que trocou a senha. As outras sessões caem na próxima renovação, quando o access token de 15 minutos expira. A rota fica sob `/auth/` porque o cookie só é enviado a essa árvore.
 - **Senha atual errada na troca é `400` com erro no campo, nunca `401`** (o cliente trata `401` como sessão expirada). Mais de 5 erros em 15 min por usuário respondem `429` mesmo com a senha certa; acertar zera o contador. A nova senha precisa ter 8 caracteres ou mais e ser diferente da atual.
 - **Perfil:** nome obrigatório, sem espaços nas pontas, até 255 caracteres. O e-mail é só leitura (a troca é a spec 008).
+- **Alertas são calculados, não armazenados.** `GET /alerts` recalcula a situação atual do usuário a cada chamada; só a dispensa fica gravada (`dismissed_alerts`). Seis tipos: títulos a pagar e a receber a vencer (de hoje até hoje + 7 dias; o que vence hoje ainda é "a vencer"), títulos vencidos (antes de hoje), orçamento em 80% (de 80,00% até 100,00% do orçado) e orçamento estourado (acima de 100,00%). Títulos entram num alerta por tipo (quantidade, total e, nos a vencer, o maior vencimento); orçamento gera um por categoria no mês corrente, com o mesmo gasto da tela Orçamentos (despesas sem transferências). "Hoje" vem do `Clock`.
+- **Dispensar vale para a conta, em todos os aparelhos.** Cada alerta tem uma chave (`PAYABLE_OVERDUE`, `BUDGET_WARNING:<categoria>:<aaaa-mm>`...) e uma impressão digital do conteúdo (`quantidade|total` nos títulos). O alerta dispensado volta se a impressão mudar; o de orçamento só volta ao mudar de faixa ou de mês, porque a faixa e o mês fazem parte da chave. Quando o alerta deixa de existir, a dispensa é esquecida na listagem seguinte.
+- **O sino se atualiza no cliente** a cada troca de tela, ao voltar para a aba e após qualquer requisição de escrita bem-sucedida (evento `api:changed`), sem polling.
 
 ### Modelo
 
-`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` — migrations `V1` a `V9` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais.
+`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` — migrations `V1` a `V10` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais.
 
 ## API
 
@@ -87,6 +91,8 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `POST` | `/auth/logout` | Revoga o refresh token e limpa o cookie |
 | `POST` | `/auth/password` | Troca a senha (`currentPassword`, `newPassword`) e encerra as outras sessões (`204`; `400` com erro no campo; `429` após 5 erros) |
 | `GET` `PUT` | `/profile` | Nome, e-mail e data de cadastro do usuário autenticado; altera o nome |
+| `GET` | `/alerts` | Alertas ativos do usuário (`count` e `alerts[]`); os dispensados ficam de fora |
+| `POST` | `/alerts/dismiss` | Dispensa um alerta pela chave (`204`; `404` se não há alerta ativo com ela) |
 | `GET` `POST` | `/accounts` | Lista e cria contas |
 | `GET` `PUT` `DELETE` | `/accounts/{id}` | Detalha, altera e remove |
 | `GET` | `/accounts/{id}/balance` | Saldo inicial e saldo atual |

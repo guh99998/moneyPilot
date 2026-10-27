@@ -249,3 +249,45 @@ test('updating the profile sends only the name', async () => {
     assert.deepEqual(sent, { path: '/api/v1/profile', method: 'PUT', body: JSON.stringify({ name: 'Novo Nome' }) });
     assert.equal(profile.name, 'Novo Nome');
 });
+
+test('alerts use their own routes', async () => {
+    session.start('valid', 'user@example.com');
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({ path: new URL(url).pathname, method: options.method ?? 'GET', body: options.body });
+        return options.method === 'POST' ? new Response(null, { status: 204 }) : Response.json({ count: 0, alerts: [] });
+    };
+
+    await api.alerts.list();
+    await api.alerts.dismiss('PAYABLE_DUE_SOON');
+
+    assert.deepEqual(requests, [
+        { path: '/api/v1/alerts', method: 'GET', body: undefined },
+        { path: '/api/v1/alerts/dismiss', method: 'POST', body: JSON.stringify({ key: 'PAYABLE_DUE_SOON' }) }
+    ]);
+});
+
+test('a successful change announces api:changed; reads, failures and anonymous calls do not', async () => {
+    session.start('valid', 'user@example.com');
+
+    globalThis.fetch = async () => Response.json({ count: 0, alerts: [] });
+    await api.alerts.list();
+    assert.deepEqual(events, []);
+
+    globalThis.fetch = async () => new Response(null, { status: 204 });
+    await api.alerts.dismiss('PAYABLE_OVERDUE');
+    assert.deepEqual(events, ['api:changed']);
+
+    globalThis.fetch = async () => Response.json({ id: 1 }, { status: 201 });
+    await api.accounts.create({ name: 'Conta' });
+    assert.deepEqual(events, ['api:changed', 'api:changed']);
+
+    events.length = 0;
+    globalThis.fetch = async () => new Response(JSON.stringify({ message: 'nope' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    await assert.rejects(api.accounts.create({ name: '' }));
+    assert.deepEqual(events, []);
+
+    globalThis.fetch = async () => Response.json({ token: 't' });
+    await api.login({ email: 'a@b.com', password: 'x' });
+    assert.deepEqual(events, []);
+});

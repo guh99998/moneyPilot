@@ -1,6 +1,6 @@
 # 007 — Notificações
 
-**Status:** rascunho
+**Status:** entregue
 **Branch:** feature/007-notificacoes
 
 ## Problema
@@ -15,17 +15,18 @@ Em qualquer tela do app, o usuário vê de relance se algo precisa de atenção 
 
 **Formato**
 
-- Um sino no topo, visível em todas as telas, com o número de alertas ativos. Sem alertas, o sino aparece sem número.
+- Um sino ao lado do logo, visível em todas as telas (na sidebar no desktop e na barra do topo no celular), com o número de alertas ativos. Sem alertas, o sino aparece sem número.
 - Clicar no sino abre a lista de alertas. Clicar num alerta leva para a tela já filtrada (por exemplo, A pagar e receber com os vencidos).
 - Alertas são **calculados a partir da situação atual**: quando o problema é resolvido (a conta é paga, o orçamento é ajustado), o alerta some sozinho. Não há histórico nem "lida/não lida".
 - "Hoje" segue o fuso de São Paulo, como no resto do app.
+- Os alertas se atualizam a cada troca de tela, ao voltar para a aba do app e depois de qualquer alteração feita pelo próprio usuário (baixar um título, ajustar um orçamento).
 
 **Alertas desta versão**
 
 | Alerta | Quando aparece | Mostra |
 |---|---|---|
-| Contas a pagar a vencer | Títulos a pagar em aberto com vencimento de hoje até hoje + 7 dias | Quantidade, total e a data limite |
-| Contas a receber a vencer | Títulos a receber em aberto com vencimento de hoje até hoje + 7 dias | Quantidade, total e a data limite |
+| Contas a pagar a vencer | Títulos a pagar em aberto com vencimento de hoje até hoje + 7 dias | Quantidade, total e a data limite (o maior vencimento entre os títulos do alerta) |
+| Contas a receber a vencer | Títulos a receber em aberto com vencimento de hoje até hoje + 7 dias | Quantidade, total e a data limite (o maior vencimento entre os títulos do alerta) |
 | Contas a pagar vencidas | Títulos a pagar em aberto com vencimento antes de hoje | Quantidade e total |
 | Contas a receber atrasadas | Títulos a receber em aberto com vencimento antes de hoje | Quantidade e total |
 | Orçamento em 80% | Categoria com orçamento no mês corrente e gasto entre 80% e 100% | Categoria, gasto e orçado |
@@ -33,11 +34,16 @@ Em qualquer tela do app, o usuário vê de relance se algo precisa de atenção 
 
 - Título que vence hoje conta como "a vencer", não como "vencido".
 - Títulos são agrupados num único alerta por tipo; orçamento gera um alerta por categoria.
+- O gasto do orçamento é o mesmo da tela Orçamentos: despesas do mês corrente na categoria, sem transferências.
+- Faixas do orçamento: de 80,00% até 100,00% do orçado é "em 80%"; só acima de 100,00% é "estourado".
 
 **Dispensar**
 
 - Cada alerta tem um botão "dispensar", que o esconde da lista e do contador.
 - O alerta dispensado **volta se a situação mudar**: muda a quantidade ou o total dos títulos, ou o orçamento passa de 80% para estourado. Enquanto o conteúdo for o mesmo, ele continua escondido.
+- Dispensar vale para a conta inteira, em todos os aparelhos.
+- Alerta de orçamento dispensado só volta ao mudar de faixa (80% para estourado) ou na virada do mês; gasto maior dentro da mesma faixa não o traz de volta.
+- Quando o problema some (título baixado, orçamento ajustado), a dispensa é esquecida: se o mesmo alerta reaparecer depois, ele aparece de novo.
 
 ## Critérios de aceite
 
@@ -65,7 +71,12 @@ Em qualquer tela do app, o usuário vê de relance se algo precisa de atenção 
 - Janela de "a vencer" configurável por usuário (fixa em 7 dias)
 - Histórico de notificações e "lida/não lida"
 
-## Perguntas em aberto
+## Perguntas resolvidas
 
-- Um alerta dispensado deve ficar dispensado em todos os aparelhos do usuário, ou só no navegador onde foi dispensado? (recomendado: em todos, porque o usuário espera que "dispensar" valha para a conta)
-- O limite do orçamento é "a partir de 80%" (inclui 80,00%) e "acima de 100%" (100,00% exato ainda não estourou)? (proposto acima)
+Decisões de 27/10/2026:
+
+- Dispensar vale em todos os aparelhos (guardado no servidor).
+- 80,00% já entra na faixa de 80%; 100,00% exato ainda não estourou.
+- O sino fica ao lado do logo, na sidebar e na barra do celular.
+- A "data limite" é o maior vencimento entre os títulos do alerta.
+- Alerta de orçamento dispensado só volta ao mudar de faixa.
