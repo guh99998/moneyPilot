@@ -30,8 +30,9 @@ public class ResendEmailSender implements EmailSender {
     private final String from;
 
     @Autowired
-    public ResendEmailSender(MailProperties properties, RestClient.Builder builder) {
-        this(properties, builder
+    public ResendEmailSender(MailProperties properties) {
+        // RestClient.Builder não é um bean neste projeto: o cliente é montado aqui, com os timeouts.
+        this(properties, RestClient.builder()
                 .requestFactory(timeoutFactory())
                 .build());
     }
