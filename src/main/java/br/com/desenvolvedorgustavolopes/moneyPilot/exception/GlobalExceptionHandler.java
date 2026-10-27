@@ -496,4 +496,17 @@ public class GlobalExceptionHandler {
                 .header(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds))
                 .body(body);
     }
+
+    @ExceptionHandler(EmailSendException.class)
+    public ResponseEntity<ErrorResponse> handleEmailSend(EmailSendException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_GATEWAY.value(),
+                "Bad Gateway",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
+    }
 }
