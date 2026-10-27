@@ -12,13 +12,31 @@ function fieldRow(label, input, errorNode, hint) {
     ]);
 }
 
-/** Mostra os erros por campo vindos da API e a mensagem geral. */
+/** A API responde em inglês; a tela mostra a mensagem em português para cada campo. */
+function fieldMessage(field, message) {
+    if (field === 'currentPassword') return 'Senha atual incorreta.';
+    if (field === 'newPassword') {
+        return message.includes('different')
+            ? 'A nova senha deve ser diferente da atual.'
+            : 'A nova senha deve ter no mínimo 8 caracteres.';
+    }
+    if (field === 'name') {
+        return message.includes('blank') ? 'Informe o nome.' : 'O nome deve ter até 255 caracteres.';
+    }
+    return message;
+}
+
+/** Erro de campo vai embaixo do campo; a caixa geral só aparece quando não há campo (ex.: 429). */
 function showErrors(error, fieldErrors, errorBox) {
+    let shownOnField = false;
     if (error instanceof ApiError && error.fieldErrors) {
         Object.entries(error.fieldErrors).forEach(([field, message]) => {
-            if (fieldErrors[field]) fieldErrors[field].textContent = message;
+            if (!fieldErrors[field]) return;
+            fieldErrors[field].textContent = fieldMessage(field, message);
+            shownOnField = true;
         });
     }
+    if (shownOnField) return;
     errorBox.textContent = error?.message || 'Não foi possível salvar.';
     errorBox.hidden = false;
 }
@@ -49,13 +67,14 @@ export async function renderProfile() {
             try {
                 const updated = await api.profile.update(nameInput.value.trim());
                 session.setName(updated.name);
+                nameInput.value = updated.name;
                 toast('Nome atualizado.', 'success');
-                // Renderiza de novo para o rodapé do menu mostrar o nome novo.
-                window.dispatchEvent(new HashChangeEvent('hashchange'));
+                // O rodapé do menu mostra o nome; só ele precisa ser atualizado.
+                window.dispatchEvent(new CustomEvent('profile:updated'));
             } catch (error) {
                 showErrors(error, nameErrors, nameBox);
-                nameBtn.disabled = false;
             }
+            nameBtn.disabled = false;
         }
     }, [
         nameBox,
