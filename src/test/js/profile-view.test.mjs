@@ -8,7 +8,8 @@ installFakeDom();
 const { renderProfile } = await import('../../main/resources/static/js/views/profile.js');
 
 const PROFILE = {
-    name: 'Ana Paula', email: 'ana@example.com', createdAt: '2026-01-10T12:00:00Z', pendingEmail: null
+    name: 'Ana Paula', email: 'ana@example.com', createdAt: '2026-01-10T12:00:00Z', pendingEmail: null,
+    hasPassword: true, googleEmail: null, avatarUrl: null, avatarHidden: false
 };
 const LEAKED = 'Essa senha aparece em listas públicas de senhas vazadas na internet. Escolha outra, de preferência uma frase.';
 
@@ -27,11 +28,11 @@ const byId = (view, id) => findAll(view, (node) => node.getAttribute('id') === i
 const byClass = (view, name) => findAll(view, (node) => node.className === name);
 const passwordForm = (view) => findByTag(view, 'form')[2];
 
-test('the three password fields of the profile have the eye and their labels point to them', async () => {
+test('the four password fields of the profile have the eye and their labels point to them', async () => {
     startServer();
     const view = await renderProfile();
 
-    assert.equal(byClass(view, 'password-toggle').length, 3);
+    assert.equal(byClass(view, 'password-toggle').length, 4);
 
     const labelled = findByTag(view, 'label')
         .filter((label) => label.getAttribute('for')?.startsWith('profile-'))
@@ -39,7 +40,8 @@ test('the three password fields of the profile have the eye and their labels poi
     assert.deepEqual(labelled.sort(), [
         ['Nova senha', 'profile-new-password'],
         ['Senha atual', 'profile-current-password'],
-        ['Senha atual', 'profile-email-password']
+        ['Senha atual', 'profile-email-password'],
+        ['Senha atual', 'profile-google-password']
     ].sort());
     labelled.forEach(([, id]) => assert.ok(byId(view, id), id));
 });

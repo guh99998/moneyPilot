@@ -5,6 +5,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties({AppProperties.class, MailProperties.class})
+@EnableConfigurationProperties({AppProperties.class, MailProperties.class, GoogleProperties.class})
 public class PropertiesConfig {
 }

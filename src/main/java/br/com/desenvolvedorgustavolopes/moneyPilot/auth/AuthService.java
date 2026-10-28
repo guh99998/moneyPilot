@@ -27,7 +27,7 @@ public class AuthService {
 
         User user = repository.findUserByEmail(request.email()).orElse(null);
 
-        if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        if (user == null || !user.hasPassword() || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             attemptLimiter.record(emailKey, rateLimit.loginWindow());
             throw new BadCredentialsException("Invalid credentials");
         }

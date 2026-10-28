@@ -6,14 +6,22 @@ public record ProfileResponse(
         String name,
         String email,
         Instant createdAt,
-        String pendingEmail
+        String pendingEmail,
+        boolean hasPassword,
+        String googleEmail,
+        String avatarUrl,
+        boolean avatarHidden
 ) {
     public ProfileResponse(User user, String pendingEmail) {
         this(
                 user.getName(),
                 user.getEmail(),
                 user.getCreatedAt(),
-                pendingEmail
+                pendingEmail,
+                user.hasPassword(),
+                user.getGoogleEmail(),
+                user.isAvatarHidden() ? null : user.getAvatarUrl(),
+                user.isAvatarHidden()
         );
     }
 }

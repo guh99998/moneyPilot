@@ -463,6 +463,37 @@ public class GlobalExceptionHandler {
         return fieldError("currentPassword", ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidGoogleCredentialException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidGoogleCredential(InvalidGoogleCredentialException ex) {
+        return fieldError("credential", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidGoogleTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidGoogleToken(InvalidGoogleTokenException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    @ExceptionHandler(GoogleAccountConflictException.class)
+    public ResponseEntity<ErrorResponse> handleGoogleAccountConflict(GoogleAccountConflictException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     @ExceptionHandler(SamePasswordException.class)
     public ResponseEntity<ErrorResponse> handleSamePassword(SamePasswordException ex) {
         return fieldError("newPassword", ex.getMessage());

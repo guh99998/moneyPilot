@@ -1,5 +1,5 @@
 import { api, session } from './api.js';
-import { el, clear, toast, svgIcon } from './ui.js';
+import { el, clear, toast, svgIcon, avatar } from './ui.js';
 import { renderAuth } from './views/auth.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderTransactions } from './views/transactions.js';
@@ -34,7 +34,6 @@ const NAV_ICONS = {
     categories: svgIcon('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>'),
     budgets: svgIcon('<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>')
 };
-const USER_ICON = svgIcon('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>');
 
 // Tela fora do menu: o acesso é pelo nome do usuário no rodapé.
 const PROFILE_ROUTE = { path: 'profile', label: 'Perfil', render: renderProfile };
@@ -46,6 +45,11 @@ function currentRoute() {
     const path = window.location.hash.replace(/^#\/?/, '');
     if (path === PROFILE_ROUTE.path) return PROFILE_ROUTE;
     return ROUTES.find((route) => route.path === path) || ROUTES[0];
+}
+
+/** Foto do Google ou, sem ela, as iniciais; o nome ao lado é quem identifica a conta para leitores de tela. */
+function userAvatar() {
+    return avatar({ url: session.avatar, name: session.name || session.email });
 }
 
 function buildSidebar(active) {
@@ -91,7 +95,7 @@ function buildSidebar(active) {
                     // Tocar na página atual não dispara hashchange, então fecha à mão.
                     onClick: () => sidebar.classList.remove('open')
                 }, [
-                    el('span', { class: 'user-chip-icon', 'aria-hidden': 'true', html: USER_ICON }),
+                    el('span', { class: 'user-chip-avatar' }, userAvatar()),
                     el('span', { class: 'user-chip-name', text: session.name || session.email || '' })
                 ]),
                 el('button', {
@@ -114,10 +118,14 @@ function buildSidebar(active) {
 }
 
 async function render() {
-    // Sessões abertas antes do perfil existir não têm o nome guardado: busca uma vez. A espera vem antes
-    // de limpar a tela: duas renderizações concorrentes (login + hashchange) montariam o menu duas vezes.
-    if (session.active && !session.name) {
-        await api.profile.get().then((profile) => session.setName(profile.name)).catch(() => {});
+    // Sessões abertas antes do perfil existir (ou do login com Google) não têm o nome e a foto guardados:
+    // busca uma vez. A espera vem antes de limpar a tela: duas renderizações concorrentes (login + hashchange)
+    // montariam o menu duas vezes.
+    if (session.active && (!session.name || session.avatar === null)) {
+        await api.profile.get().then((profile) => {
+            session.setName(profile.name);
+            session.setAvatar(profile.avatarUrl);
+        }).catch(() => {});
     }
 
     const root = document.getElementById('app');
@@ -172,6 +180,7 @@ window.addEventListener('hashchange', render);
 window.addEventListener('profile:updated', () => {
     const chipName = document.querySelector('.user-chip-name');
     if (chipName) chipName.textContent = session.name || session.email || '';
+    document.querySelector('.user-chip-avatar')?.replaceChildren(userAvatar());
 });
 window.addEventListener('session:expired', () => {
     toast('Sua sessão expirou. Entre novamente.', 'error');

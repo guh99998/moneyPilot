@@ -1,6 +1,7 @@
 import { api, ApiError, session } from '../api.js';
-import { el, toast, pageHead } from '../ui.js';
+import { el, toast, pageHead, avatar } from '../ui.js';
 import { HINT, passwordInput as passwordField } from '../password.js';
+import { googleButton, googleErrorMessage } from '../google.js';
 
 const CREATED_AT_FORMAT = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'America/Sao_Paulo' });
 
@@ -25,6 +26,7 @@ function fieldMessage(field, message) {
         if (message.includes('in use')) return 'Este e-mail já está em uso por outra conta.';
         return 'Informe um e-mail válido.';
     }
+    if (field === 'credential') return 'Não foi possível validar a conta Google. Tente de novo.';
     if (field === 'name') {
         return message.includes('blank') ? 'Informe o nome.' : 'O nome deve ter até 255 caracteres.';
     }
@@ -52,13 +54,97 @@ function resetErrors(fieldErrors, errorBox) {
 }
 
 export async function renderProfile() {
+    const view = el('div');
+    await load(view);
+    return view;
+}
+
+/**
+ * Busca o perfil e desenha a tela dentro de `view`. Depois de uma ação que muda o que a tela mostra (vincular,
+ * foto, criar senha), `reload` desenha de novo e leva o foco para `focusKey`, já que o botão clicado sumiu.
+ */
+async function load(view, focusKey) {
     const profile = await api.profile.get();
     session.setName(profile.name);
+    session.setAvatar(profile.avatarUrl);
 
-    const view = el('div');
-    view.append(pageHead('Perfil', 'Seus dados e a segurança da conta'));
+    const focus = {};
+    const reload = async (key) => {
+        try {
+            await load(view, key);
+            window.dispatchEvent(new CustomEvent('profile:updated'));
+        } catch (error) {
+            toast(error?.message || 'Não foi possível atualizar a tela.', 'error');
+        }
+    };
 
-    // Dados
+    view.replaceChildren(
+        pageHead('Perfil', 'Seus dados e a segurança da conta'),
+        dataCard(profile, reload, focus),
+        emailCard(profile, focus),
+        passwordCard(profile, focus),
+        googleCard(profile, reload, focus)
+    );
+    focus[focusKey]?.focus();
+}
+
+function card(title, sub, body, heading) {
+    return el('div', { class: 'card profile-card' }, [
+        el('div', { class: 'card-head' }, [
+            heading || el('h2', { text: title }),
+            sub ? el('span', { class: 'sub', text: sub }) : null
+        ]),
+        body
+    ]);
+}
+
+/** Título que recebe o foco quando a tela é redesenhada depois de uma ação. */
+function focusableHeading(title, focus, key) {
+    const heading = el('h2', { text: title, tabindex: '-1' });
+    focus[key] = heading;
+    return heading;
+}
+
+function photoBlock(profile, reload) {
+    let hint = 'Sem foto, aparecem as suas iniciais. Vincule o Google para usar a sua foto.';
+    if (profile.googleEmail) hint = 'Sem foto, aparecem as suas iniciais.';
+    if (profile.avatarUrl) hint = 'A foto vem da sua conta Google.';
+    if (profile.googleEmail && profile.avatarHidden) hint = 'Você removeu a foto: aparecem as suas iniciais.';
+
+    const act = (button, action, done) => async () => {
+        button.disabled = true;
+        try {
+            await action();
+            toast(done, 'success');
+            await reload('data');
+        } catch (error) {
+            toast(error?.message || 'Não foi possível salvar.', 'error');
+            button.disabled = false;
+        }
+    };
+
+    const buttons = [];
+    if (profile.avatarUrl) {
+        const remove = el('button', { class: 'btn-ghost', type: 'button', text: 'Remover foto' });
+        remove.addEventListener('click', act(remove, () => api.profile.hideAvatar(), 'Foto removida.'));
+        buttons.push(remove);
+    }
+    if (profile.googleEmail && profile.avatarHidden) {
+        const restore = el('button', { class: 'btn-ghost', type: 'button', text: 'Usar foto do Google' });
+        restore.addEventListener('click', act(restore, () => api.profile.useGoogleAvatar(), 'Foto do Google de volta.'));
+        buttons.push(restore);
+    }
+
+    return el('div', { class: 'profile-photo' }, [
+        avatar({ url: profile.avatarUrl, name: profile.name, size: 64 }),
+        el('div', { class: 'profile-photo-body' }, [
+            el('span', { class: 'meter-foot', text: hint }),
+            buttons.length ? el('div', { class: 'profile-photo-actions' }, buttons) : null
+        ])
+    ]);
+}
+
+function dataCard(profile, reload, focus) {
     const nameInput = el('input', { type: 'text', autocomplete: 'name', required: true, maxlength: '255', value: profile.name });
     const nameErrors = { name: el('span', { class: 'error' }) };
     const nameBox = el('p', { class: 'dialog-error', hidden: true });
@@ -86,14 +172,19 @@ export async function renderProfile() {
         nameBox,
         fieldRow('Nome', nameInput, nameErrors.name),
         fieldRow('E-mail', el('input', { type: 'email', value: profile.email, disabled: true }), null,
-            'Para trocar o e-mail, use o cartão abaixo.'),
+            profile.hasPassword ? 'Para trocar o e-mail, use o cartão abaixo.' : 'Para trocar o e-mail, crie uma senha antes.'),
         fieldRow('Conta criada em', el('input', {
             type: 'text', value: CREATED_AT_FORMAT.format(new Date(profile.createdAt)), disabled: true
         })),
         nameBtn
     ]);
 
-    // Senha
+    return card('Dados', null, el('div', {}, [photoBlock(profile, reload), nameForm]), focusableHeading('Dados', focus, 'data'));
+}
+
+function passwordCard(profile, focus) {
+    if (!profile.hasPassword) return createPasswordCard(profile);
+
     const currentField = passwordField({ id: 'profile-current-password', autocomplete: 'current-password' });
     const currentInput = currentField.input;
     const newField = passwordField({
@@ -139,7 +230,46 @@ export async function renderProfile() {
         passwordBtn
     ]);
 
-    // E-mail
+    return card('Senha', 'Ao trocar, os outros aparelhos saem da conta.', passwordForm);
+}
+
+/** Conta criada pelo Google: a senha nasce pelo mesmo link do "esqueci a senha". */
+function createPasswordCard(profile) {
+    const status = el('p', { class: 'meter-foot', role: 'status', tabindex: '-1' });
+    const errorBox = el('p', { class: 'dialog-error', hidden: true, role: 'alert' });
+    const button = el('button', { class: 'btn-primary', type: 'button', text: 'Criar senha' });
+
+    button.addEventListener('click', async () => {
+        button.disabled = true;
+        button.textContent = 'Enviando…';
+        errorBox.hidden = true;
+        try {
+            await api.forgotPassword(profile.email);
+            status.textContent = `Enviamos um link para ${profile.email}. Ele vale por 30 minutos; confira também a caixa de spam.`;
+            status.focus();
+        } catch (error) {
+            errorBox.textContent = error?.message || 'Não foi possível enviar agora.';
+            errorBox.hidden = false;
+        }
+        button.disabled = false;
+        button.textContent = 'Criar senha';
+    });
+
+    return card('Senha', null, el('div', {}, [
+        el('p', { text: 'Sua conta ainda não tem senha: você entra pelo Google. Crie uma para também entrar com e-mail e senha, trocar o e-mail e poder desvincular o Google.' }),
+        errorBox,
+        status,
+        button
+    ]));
+}
+
+function emailCard(profile) {
+    if (!profile.hasPassword) {
+        return card('E-mail', null, el('p', {
+            text: 'Para trocar o e-mail da conta, crie uma senha antes, no cartão Senha.'
+        }));
+    }
+
     const emailInput = el('input', { type: 'email', autocomplete: 'email', required: true, maxlength: '255', value: profile.pendingEmail || '' });
     const emailPasswordField = passwordField({ id: 'profile-email-password', autocomplete: 'current-password' });
     const emailPasswordInput = emailPasswordField.input;
@@ -183,26 +313,114 @@ export async function renderProfile() {
         emailBtn
     ]);
 
-    view.append(
-        el('div', { class: 'card profile-card' }, [
-            el('div', { class: 'card-head' }, [el('h2', { text: 'Dados' })]),
-            nameForm
-        ]),
-        el('div', { class: 'card profile-card' }, [
-            el('div', { class: 'card-head' }, [
-                el('h2', { text: 'E-mail' }),
-                el('span', { class: 'sub', text: 'O link vale por 24 horas e só pode ser usado uma vez.' })
-            ]),
-            emailForm
-        ]),
-        el('div', { class: 'card profile-card' }, [
-            el('div', { class: 'card-head' }, [
-                el('h2', { text: 'Senha' }),
-                el('span', { class: 'sub', text: 'Ao trocar, os outros aparelhos saem da conta.' })
-            ]),
-            passwordForm
-        ])
-    );
+    return card('E-mail', 'O link vale por 24 horas e só pode ser usado uma vez.', emailForm);
+}
 
-    return view;
+function googleCard(profile, reload, focus) {
+    const errorBox = el('p', { class: 'dialog-error', hidden: true, role: 'alert' });
+    const fieldErrors = {
+        currentPassword: el('span', { class: 'error', id: 'profile-google-password-error' }),
+        credential: el('span', { class: 'error' })
+    };
+    const heading = focusableHeading('Google', focus, 'google');
+
+    function fail(error) {
+        resetErrors(fieldErrors, errorBox);
+        if (error instanceof ApiError && error.fieldErrors) showErrors(error, fieldErrors, errorBox);
+        else {
+            errorBox.textContent = googleErrorMessage(error);
+            errorBox.hidden = false;
+        }
+    }
+
+    if (profile.googleEmail) {
+        return card('Google', null, linkedGoogle(profile, errorBox, fieldErrors, fail, reload), heading);
+    }
+
+    if (!profile.hasPassword) {
+        return card('Google', null, el('p', {
+            text: 'Para vincular uma conta Google, crie uma senha antes, no cartão Senha.'
+        }), heading);
+    }
+
+    const passwordControl = passwordField({
+        id: 'profile-google-password', autocomplete: 'current-password', describedBy: 'profile-google-password-error'
+    });
+    const google = googleButton({
+        text: 'continue_with',
+        // Sem Google (desligado ou bloqueado) não há o que vincular: o cartão inteiro fica escondido.
+        onReady: () => { unlinked.hidden = false; },
+        onCredential: async (credential) => {
+            resetErrors(fieldErrors, errorBox);
+            if (!passwordControl.input.value) {
+                fieldErrors.currentPassword.textContent = 'Informe a senha atual para vincular.';
+                passwordControl.input.focus();
+                return;
+            }
+            try {
+                await api.profile.linkGoogle(credential, passwordControl.input.value);
+                toast('Google vinculado.', 'success');
+                await reload('google');
+            } catch (error) {
+                fail(error);
+            }
+        }
+    });
+
+    const unlinked = card('Google', 'Entre com um clique.', el('div', {}, [
+        errorBox,
+        el('p', { class: 'meter-foot', text: 'Informe a senha atual para confirmar que é você e escolha a conta Google. Ela pode ter um e-mail diferente do da conta.' }),
+        fieldRow('Senha atual', passwordControl.control, fieldErrors.currentPassword, null, 'profile-google-password'),
+        google,
+        fieldErrors.credential
+    ]), heading);
+    unlinked.hidden = true;
+    return unlinked;
+}
+
+function linkedGoogle(profile, errorBox, fieldErrors, fail, reload) {
+    const connected = el('p', {}, ['Conectado como ', el('strong', { text: profile.googleEmail })]);
+
+    if (!profile.hasPassword) {
+        const note = el('p', {
+            class: 'meter-foot',
+            id: 'profile-google-unlink-note',
+            text: 'Para desvincular, crie uma senha antes: é ela que garante o seu acesso sem o Google.'
+        });
+        return el('div', {}, [
+            connected,
+            note,
+            el('button', {
+                class: 'btn-ghost btn-danger', type: 'button', text: 'Desvincular', disabled: true,
+                'aria-describedby': 'profile-google-unlink-note'
+            })
+        ]);
+    }
+
+    const passwordControl = passwordField({
+        id: 'profile-google-password', autocomplete: 'current-password', describedBy: 'profile-google-password-error'
+    });
+    const button = el('button', { class: 'btn-ghost btn-danger', type: 'submit', text: 'Desvincular' });
+
+    return el('form', {
+        onSubmit: async (event) => {
+            event.preventDefault();
+            button.disabled = true;
+            resetErrors(fieldErrors, errorBox);
+            try {
+                await api.profile.unlinkGoogle(passwordControl.input.value);
+                toast('Google desvinculado.', 'success');
+                await reload('google');
+                return;
+            } catch (error) {
+                fail(error);
+            }
+            button.disabled = false;
+        }
+    }, [
+        errorBox,
+        connected,
+        fieldRow('Senha atual', passwordControl.control, fieldErrors.currentPassword, 'Pedimos a senha para confirmar que é você.', 'profile-google-password'),
+        button
+    ]);
 }

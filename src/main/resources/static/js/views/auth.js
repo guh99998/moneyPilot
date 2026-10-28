@@ -1,6 +1,7 @@
 import { api, ApiError, session } from '../api.js';
 import { el, toast } from '../ui.js';
 import { HINT, passwordInput as passwordField } from '../password.js';
+import { googleButton, googleErrorMessage } from '../google.js';
 
 /** Pede um link de ativação novo. A resposta do servidor é a mesma exista ou não a conta. */
 export async function resendVerification(email, button) {
@@ -257,9 +258,28 @@ export function renderAuth(onAuthenticated) {
             submitBtn
         ]);
 
+        // O Google já confirmou o e-mail; o sucesso segue o caminho do login por senha.
+        const google = googleButton({
+            text: isLogin ? 'signin_with' : 'signup_with',
+            separator: true,
+            onCredential: async (credential) => {
+                errorBox.hidden = true;
+                try {
+                    const auth = await api.loginWithGoogle(credential);
+                    session.start(auth.token, auth.email);
+                    onAuthenticated();
+                } catch (error) {
+                    errorBox.textContent = googleErrorMessage(error);
+                    errorBox.hidden = false;
+                }
+            }
+        });
+
         const card = el('div', { class: 'card auth-card' }, [
             el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
             form,
+            google,
+            isLogin ? el('p', { class: 'auth-note', text: 'Criou a conta com o Google? Use Entrar com Google.' }) : null,
             el('p', { class: 'auth-switch' }, [
                 el('span', { text: isLogin ? 'Ainda não tem conta?' : 'Já tem conta?' }),
                 el('button', {

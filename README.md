@@ -74,6 +74,11 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Reset de senha por link, sem revelar quem tem conta.** "Esqueci a senha" responde sempre `202`; só e-mail cadastrado recebe o link (`/#/redefinir-senha?token=…`, 256 bits, só o SHA-256 no banco, **30 minutos**, uso único, uma linha por usuário: pedir de novo invalida o anterior). Redefinir grava a senha nova (mesmas regras do cadastro, inclusive a política de senha; igual à atual é aceita), verifica a conta se ainda não estava, apaga **todos** os refresh tokens, zera o bloqueio de login por falhas daquele e-mail e avisa o e-mail da conta (falha no aviso só vai para o log). O link não abre sessão. Limites: 3 pedidos por e-mail e 5 por IP por hora.
 - **Política de senha nova** (spec 009), igual no cadastro, na troca e no reset: de **10 a 64 caracteres**, sem regra de composição (frases com espaço e acento valem). É recusada, com `400` e erro no campo dizendo o motivo, a senha que: está na lista de senhas de vazamentos públicos (`static/data/common-passwords.txt`, sem diferença de maiúsculas, só a senha inteira); é só uma repetição, sequência ou linha de teclado (`1234567890`, `aaaaaaaaaa`, `qwertyuiop`); ou contém o e-mail, a parte antes do `@` ou uma parte do nome com 4+ letras, sem diferença de maiúsculas e acentos (`PasswordPolicy`; no cadastro vale com os dados do formulário e é checada antes de procurar a conta, para a resposta continuar igual exista ou não a conta). Tamanho, lista e sequência estão em `NewPasswordValidator`/`CommonPasswords`. O bcrypt só aceita até 72 bytes, então acentos e emoji, que ocupam mais de um byte, também contam; acima disso a resposta é `400`, não `500`. Quem já tem senha mais curta ou comum continua entrando: a regra vale só ao criar ou trocar. Senha informada só para conferir (login, senha atual) não tem limite: se for longa demais, apenas não confere.
 - **A lista de senhas vazadas é uma só, servida ao cliente.** `static/data/common-passwords.txt` (uma por linha, minúsculas, 10+ caracteres, `#` para comentário) vem das 10 mil senhas mais usadas do [SecLists](https://github.com/danielmiessler/SecLists) (licença MIT, Copyright (c) 2018 Daniel Miessler), filtradas para 10+ caracteres, mais uma lista curta em português. O Java a lê do classpath e o medidor de força a baixa de `/data/common-passwords.txt` (`permitAll`): servidor e tela usam a mesma fonte. O texto da recusa diz que a senha aparece em "listas públicas de senhas vazadas na internet", não que é comum no app.
+- **Login com Google por ID token validado no backend, sem dependência nova** (spec 004). O cliente carrega o script oficial (`accounts.google.com/gsi/client`) e manda o `credential`; o backend confere assinatura (JWK Set do Google, em cache pelo `max-age`), audience (`GOOGLE_CLIENT_ID`), emissor, expiração (pelo `Clock`) e `email_verified` com o jjwt que já existia. Qualquer falha é `401`. `GOOGLE_CLIENT_ID` vazio desliga o recurso.
+- **A conta é achada pelo `sub` do Google, não pelo e-mail.** Quem muda o e-mail no Google continua entrando. Sem `sub` conhecido, o e-mail normalizado decide: conta existente é vinculada (os dados continuam os mesmos), conta de outro `sub` responde `409`, e e-mail novo cria a conta já verificada e **sem senha** (`password_hash` nulo).
+- **Conta não verificada que entra pelo Google fica verificada e perde a senha.** Alguém pode ter se cadastrado com o e-mail de outra pessoa; se a senha ficasse, essa pessoa manteria o acesso.
+- **Conta sem senha usa o reset (003) para criar uma.** Login por senha numa conta sem senha é o mesmo `401` de senha errada; trocar senha e e-mail tratam a senha atual como errada. Vincular e desvincular o Google pedem a senha atual, e desvincular só é permitido a quem tem senha. O contador é o mesmo da troca de senha (`password-change:<id>`).
+- **Foto: só a URL do Google**, atualizada a cada entrada com o Google. "Remover" liga `avatar_hidden` (a URL deixa de ser exposta e de ser atualizada) até a pessoa pedir "Usar foto do Google". Desvincular apaga a URL.
 - **O access token identifica o usuário pelo id, não pelo e-mail** (`sub` = id). Assim a troca de e-mail não deixa tokens órfãos nem os faz apontar para outra conta. Tokens antigos, com e-mail no `sub`, são recusados (`401`) e o cliente renova sozinho.
 - **Troca de e-mail em duas etapas.** O pedido exige a senha atual e manda um link ao e-mail novo; até o clique, o e-mail antigo segue valendo para login e recuperação. O token (256 bits, só o SHA-256 vai ao banco) vale 24 horas, é de uso único e há no máximo um pedido por usuário: pedir de novo invalida o link anterior. O link usa `#` (`/#/confirmar-email?token=…`), então o token não chega a log de servidor ou proxy. Confirmar não exige login: grava o e-mail novo (minúsculas, sem espaços), apaga o pedido, encerra as outras sessões como na troca de senha e avisa o e-mail antigo (falha no aviso só vai para o log). Limites: senha errada divide o contador da troca de senha; no máximo 3 pedidos por hora por usuário.
 - **Troca de senha encerra as outras sessões e mantém a atual.** O servidor identifica a sessão atual pelo cookie de refresh e **apaga** (não revoga) os refresh tokens ativos das demais: um token revogado que voltasse a ser usado acionaria a detecção de reuso acima e derrubaria também a sessão que trocou a senha. As outras sessões caem na próxima renovação, quando o access token de 15 minutos expira. A rota fica sob `/auth/` porque o cookie só é enviado a essa árvore.
@@ -85,11 +90,11 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 
 ### Modelo
 
-`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `email_change_tokens` · `email_verification_tokens` · `password_reset_tokens` — migrations `V1` a `V13` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas.
+`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `email_change_tokens` · `email_verification_tokens` · `password_reset_tokens` — migrations `V1` a `V14` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas; `V14` torna `password_hash` opcional e acrescenta as colunas do Google e da foto em `users`.
 
 ## API
 
-Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout, verificação de conta, reset de senha e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
+Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout, verificação de conta, reset de senha, o login com Google (`/auth/google`, `/auth/google/config`) e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
 
 | Método | Rota | O que faz |
 |---|---|---|
@@ -99,12 +104,18 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `POST` | `/auth/verification/resend` | Reenvia o link para o `email` (sempre `202`; `429` acima de 3 por e-mail ou 10 por IP por hora) |
 | `POST` | `/auth/refresh` | Rotaciona o refresh token e devolve um novo access token |
 | `POST` | `/auth/logout` | Revoga o refresh token e limpa o cookie |
+| `GET` | `/auth/google/config` | `{clientId}` do Google (vazio = login com Google desligado); público |
+| `POST` | `/auth/google` | Entra com o ID token do Google (`credential`): devolve `{token, email}` e grava o cookie de refresh (`401` token inválido; `409` e-mail de conta vinculada a outro Google; `429` por IP); público |
 | `POST` | `/auth/password/forgot` | Pede o link de reset para o `email` (sempre `202`; `429` acima de 3 por e-mail ou 5 por IP por hora) |
 | `POST` | `/auth/password/reset` | Define a senha nova com o `token` do link e `newPassword` (`204`; `400` link inválido ou expirado, ou senha fora da política de senha, com erro no campo) |
 | `POST` | `/auth/password` | Troca a senha (`currentPassword`, `newPassword`) e encerra as outras sessões (`204`; `400` com erro no campo, inclusive senha fora da política; `429` após 5 erros) |
 | `POST` | `/profile/email` | Pede a troca de e-mail (`newEmail`, `currentPassword`): envia o link ao e-mail novo (`204`; `400` com erro no campo; `429`; `502` se o envio falhar) |
 | `POST` | `/auth/email/confirm` | Confirma a troca com o `token` do link, sem exigir login (`204`; `400` link inválido, expirado ou e-mail em uso) |
-| `GET` `PUT` | `/profile` | Nome, e-mail, data de cadastro e `pendingEmail` (troca aguardando confirmação) do usuário autenticado; altera o nome |
+| `GET` `PUT` | `/profile` | Nome, e-mail, data de cadastro, `pendingEmail` (troca aguardando confirmação), `hasPassword`, `googleEmail` (nulo = não vinculado), `avatarUrl` e `avatarHidden` do usuário autenticado; altera o nome |
+| `POST` | `/profile/google` | Vincula o Google (`credential`, `currentPassword`) (`204`; `400` senha errada ou token recusado, com erro no campo; `409` Google já usado ou conta já vinculada; `429` após 5 erros de senha) |
+| `POST` | `/profile/google/unlink` | Desvincula o Google (`currentPassword`) (`204`; `400` senha errada; `409` conta sem senha ou sem vínculo) |
+| `DELETE` | `/profile/avatar` | Oculta a foto: as iniciais aparecem no lugar (`204`) |
+| `POST` | `/profile/avatar/google` | Volta a usar a foto do Google (`204`; `409` sem vínculo) |
 | `GET` | `/alerts` | Alertas ativos do usuário (`count` e `alerts[]`); os dispensados ficam de fora |
 | `POST` | `/alerts/dismiss` | Dispensa um alerta pela chave (`204`; `404` se não há alerta ativo com ela) |
 | `GET` `POST` | `/accounts` | Lista e cria contas |
@@ -168,6 +179,7 @@ Servido em `/` pela própria aplicação, a partir de `src/main/resources/static
 - **Visão geral** com saldo em contas, projeção, títulos a pagar e a receber, próximos vencimentos e gráficos de previsão e de receitas × despesas — desenhados em SVG por `js/charts.js`, com tooltip e versão em tabela.
 - **A pagar e receber** com seleção em lote e prévia ao vivo da divisão das parcelas, calculada em centavos com a mesma regra do backend.
 - **Campo de senha** (`js/password.js`): botão de olho dentro do campo (login, cadastro, reset e perfil) e, nas senhas novas, medidor de força (fraca, razoável, forte) com dica, que avisa senha vazada enquanto a pessoa digita. O medidor só informa, não bloqueia o envio: quem recusa é o servidor.
+- **Login com Google** (`js/google.js`): carrega o script oficial só quando vai desenhar o botão, que aparece no login e no cadastro (e no cartão Google do perfil). Sem client ID ou com o script bloqueado, o botão simplesmente não aparece. O perfil mostra a foto do Google (ou as iniciais, também no rodapé do menu), vincula e desvincula o Google e oferece "Criar senha" a quem não tem uma.
 - **Ordenação por coluna** em Lançamentos, A pagar e receber e Contas: clicar no cabeçalho ordena, clicar de novo inverte.
 
 ## Desenvolvimento
@@ -202,6 +214,7 @@ O segredo JWT do profile `local` é um placeholder de desenvolvimento — ele n�
 | `PUBLIC_URL` | Obrigatória. URL pública do app com `https://` e sem barra final; base dos links enviados por e-mail |
 | `MAIL_FROM_ADDRESS` | Obrigatória. Remetente dos e-mails, de um domínio verificado no Resend (SPF/DKIM) |
 | `RESEND_API_KEY` | Obrigatória. Chave da API do Resend |
+| `GOOGLE_CLIENT_ID` | Opcional. Client ID OAuth (Web) do Google, que não é segredo; vazio desliga o login com Google. A origem pública do app precisa estar autorizada no Google Cloud |
 | `PORT` | Opcional, default 8080 |
 
 **E-mail transacional:** o pacote `mail` expõe `EmailSender`, e as features só pedem "envie esta mensagem para esta pessoa". Em `prod` o envio é **síncrono** via Resend (API HTTP com `RestClient`, timeouts de 3 s e 10 s, sem dependência nova); falha vira `502` no formato `ErrorResponse`, sem expor a chave no log. Fora de `prod` nada é enviado e o conteúdo aparece no log. Sem `PUBLIC_URL`, `MAIL_FROM_ADDRESS` ou `RESEND_API_KEY` em `prod`, o app não sobe.
@@ -220,7 +233,7 @@ Primeira instalação:
 
 ```bash
 docker network create proxy                           # uma vez por VPS, compartilhada com o Caddy
-cp .env.production.example .env                       # preencher POSTGRES_PASSWORD, JWT_SECRET, CANONICAL_HOST, PUBLIC_URL, MAIL_FROM_ADDRESS e RESEND_API_KEY
+cp .env.production.example .env                       # preencher POSTGRES_PASSWORD, JWT_SECRET, CANONICAL_HOST, PUBLIC_URL, MAIL_FROM_ADDRESS, RESEND_API_KEY e (opcional) GOOGLE_CLIENT_ID
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -251,6 +264,6 @@ O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e
 
 ## Próximos passos
 
-- E-mail transacional e login com Google por ID token verificado no backend.
+- Exclusão de conta (spec própria): quem só tem Google confirma entrando de novo com o Google.
 - Ordenar títulos e lançamentos pelo nome da categoria e da conta (hoje a ordenação cobre data, descrição, valor e tipo).
 - Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), fatura de cartão de crédito, importação de extrato CSV, Redis e RabbitMQ.

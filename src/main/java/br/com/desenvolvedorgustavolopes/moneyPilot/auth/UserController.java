@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -19,9 +18,7 @@ public class UserController {
 
     private final UserService service;
     private final AuthService authService;
-
-    @Value("${app.cookie-secure}")
-    private boolean cookieSecure;
+    private final RefreshCookies refreshCookies;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -33,7 +30,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
         AuthTokens authTokens = authService.login(request, httpRequest.getRemoteAddr());
-        ResponseCookie cookie = this.buildRefreshCookie(authTokens.refreshToken(), RefreshTokenService.REFRESH_TTL);
+        ResponseCookie cookie = refreshCookies.build(authTokens.refreshToken(), RefreshTokenService.REFRESH_TTL);
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return new AuthResponse(authTokens.accessToken());
     }
@@ -42,7 +39,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public AuthResponse refresh(@CookieValue(name = "refresh_token", required = false) String refreshToken, HttpServletResponse response) {
         AuthTokens authTokens = authService.refresh(refreshToken);
-        ResponseCookie cookie = this.buildRefreshCookie(authTokens.refreshToken(), RefreshTokenService.REFRESH_TTL);
+        ResponseCookie cookie = refreshCookies.build(authTokens.refreshToken(), RefreshTokenService.REFRESH_TTL);
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return new AuthResponse(authTokens.accessToken());
     }
@@ -51,18 +48,8 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(@CookieValue(name = "refresh_token", required = false) String refreshToken, HttpServletResponse response) {
         authService.logout(refreshToken);
-        ResponseCookie cookie = this.buildRefreshCookie("", Duration.ZERO);
+        ResponseCookie cookie = refreshCookies.build("", Duration.ZERO);
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-    }
-
-    private ResponseCookie buildRefreshCookie(String value, Duration maxAge) {
-        return ResponseCookie.from("refresh_token", value)
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .sameSite("Strict")
-                .path("/api/v1/auth")
-                .maxAge(maxAge)
-                .build();
     }
 
 }
