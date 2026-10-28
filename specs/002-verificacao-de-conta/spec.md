@@ -1,6 +1,6 @@
 # 002 — Verificação de conta
 
-**Status:** rascunho
+**Status:** aprovada
 **Branch:** feature/002-verificacao-de-conta
 **Roteiro:** D3 · **Depende de:** 001
 
