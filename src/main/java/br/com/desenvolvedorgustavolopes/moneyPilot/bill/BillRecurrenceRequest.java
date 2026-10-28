@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.bill;
 
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +13,7 @@ public record BillRecurrenceRequest(
         Long accountId,
         @NotNull Long categoryId,
         String description,
-        @NotNull @Positive BigDecimal amount,
+        @NotNull @Positive @Digits(integer = 17, fraction = 2) BigDecimal amount,
         @NotNull BillType type,
         @NotNull @Min(1) @Max(31) Integer dayOfMonth,
         @NotNull LocalDate startDate,
