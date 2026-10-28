@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { installFakeDom, findAll } from './fake-dom.mjs';
 
@@ -58,4 +59,24 @@ test('rendering again without a token reuses the result and does not spend the l
 
     assert.deepEqual(confirmed, ['token-c']);
     assert.match(statusOf(again).textContent, /Conta verificada/);
+});
+
+test('the activation result is announced to screen readers', async () => {
+    startServer(['token-d']);
+
+    const view = await openLink('#/verificar-email?token=token-d');
+
+    assert.equal(statusOf(view).getAttribute('role'), 'status');
+    assert.equal(statusOf(view).getAttribute('aria-live'), 'polite');
+    assert.match(statusOf(view).textContent, /Conta verificada/);
+});
+
+test('a failed activation is marked as an error and the stylesheet gives it a look', async () => {
+    startServer([]);
+
+    const view = await openLink('#/verificar-email?token=token-e');
+
+    assert.equal(statusOf(view).classList.contains('error'), true);
+    const css = readFileSync(new URL('../../main/resources/static/css/app.css', import.meta.url), 'utf8');
+    assert.match(css, /\.auth-tagline\.error\s*\{/);
 });

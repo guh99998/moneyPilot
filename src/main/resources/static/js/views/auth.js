@@ -51,7 +51,7 @@ export function renderAuth(onAuthenticated) {
         }
 
         const isLogin = mode === 'login';
-        const errorBox = el('p', { class: 'dialog-error', hidden: true });
+        const errorBox = el('p', { class: 'dialog-error', hidden: true, role: 'alert' });
         const resendBtn = el('button', {
             class: 'btn-ghost',
             type: 'button',
@@ -59,20 +59,29 @@ export function renderAuth(onAuthenticated) {
             text: 'Reenviar link de ativação',
             onClick: () => resendVerification(emailInput.value.trim(), resendBtn)
         });
+        const errorId = (field) => `f-${field}-error-${Math.random().toString(36).slice(2, 7)}`;
+        const errorIds = { name: errorId('name'), email: errorId('email'), password: errorId('password') };
+        const hintId = errorId('password-hint');
         const fieldErrors = {
-            name: el('span', { class: 'error' }),
-            email: el('span', { class: 'error' }),
-            password: el('span', { class: 'error' })
+            name: el('span', { class: 'error', id: errorIds.name }),
+            email: el('span', { class: 'error', id: errorIds.email }),
+            password: el('span', { class: 'error', id: errorIds.password })
         };
 
-        const nameInput = el('input', { type: 'text', autocomplete: 'name', required: true });
-        const emailInput = el('input', { type: 'email', autocomplete: 'email', required: true, value: pendingEmail });
+        const nameInput = el('input', {
+            type: 'text', autocomplete: 'name', required: true, 'aria-describedby': errorIds.name
+        });
+        const emailInput = el('input', {
+            type: 'email', autocomplete: 'email', required: true, value: pendingEmail, 'aria-describedby': errorIds.email
+        });
         const passwordInput = el('input', {
             type: 'password',
             autocomplete: isLogin ? 'current-password' : 'new-password',
             required: true,
-            minlength: isLogin ? null : '8'
+            minlength: isLogin ? null : '8',
+            'aria-describedby': isLogin ? errorIds.password : `${hintId} ${errorIds.password}`
         });
+        const inputs = { name: nameInput, email: emailInput, password: passwordInput };
 
         const submitBtn = el('button', {
             class: 'btn-primary',
@@ -88,6 +97,7 @@ export function renderAuth(onAuthenticated) {
                 errorBox.hidden = true;
                 resendBtn.remove();
                 Object.values(fieldErrors).forEach((node) => { node.textContent = ''; });
+                Object.values(inputs).forEach((input) => input.removeAttribute('aria-invalid'));
 
                 const email = emailInput.value.trim();
                 const password = passwordInput.value;
@@ -113,7 +123,9 @@ export function renderAuth(onAuthenticated) {
                     }
                     if (error instanceof ApiError && error.fieldErrors) {
                         Object.entries(error.fieldErrors).forEach(([field, message]) => {
-                            if (fieldErrors[field]) fieldErrors[field].textContent = message;
+                            if (!fieldErrors[field]) return;
+                            fieldErrors[field].textContent = message;
+                            inputs[field].setAttribute('aria-invalid', 'true');
                         });
                     }
                     errorBox.textContent = error?.message || 'Não foi possível continuar.';
@@ -132,7 +144,7 @@ export function renderAuth(onAuthenticated) {
             el('div', { class: 'field' }, [
                 el('label', { text: 'Senha' }),
                 passwordInput,
-                isLogin ? null : el('span', { class: 'meter-foot', text: 'Mínimo de 8 caracteres.' }),
+                isLogin ? null : el('span', { class: 'meter-foot', id: hintId, text: 'Mínimo de 8 caracteres.' }),
                 fieldErrors.password
             ]),
             submitBtn

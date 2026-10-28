@@ -56,7 +56,7 @@ function resendForm() {
 }
 
 export function renderVerifyEmail() {
-    const status = el('p', { class: 'auth-tagline', text: 'Ativando sua conta…' });
+    const status = el('p', { class: 'auth-tagline', role: 'status', 'aria-live': 'polite', text: 'Ativando sua conta…' });
     const actions = el('div');
     const card = el('div', { class: 'card auth-card' }, [
         el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
