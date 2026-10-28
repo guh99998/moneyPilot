@@ -27,13 +27,13 @@ A pessoa recupera o acesso pelo e-mail cadastrado, e qualquer sessão antiga dei
 
 ## Critérios de aceite
 
-- [ ] **CA1** — Dado um e-mail cadastrado, quando a pessoa pede o reset, então recebe um e-mail com o link.
-- [ ] **CA2** — Dado um e-mail não cadastrado, quando alguém pede o reset, então a resposta na tela é idêntica à do CA1 e nenhum e-mail é enviado.
-- [ ] **CA3** — Dado um link válido, quando a pessoa define uma senha nova, então consegue logar com ela e não com a antiga.
-- [ ] **CA4** — Dada uma sessão aberta em outro dispositivo, quando a senha é trocada pelo reset, então essa sessão é encerrada na próxima renovação.
-- [ ] **CA5** — Dado um link expirado, já usado ou substituído, quando a pessoa tenta usar, então vê que o link não vale mais e pode pedir outro.
-- [ ] **CA6** — Dada uma conta ainda não verificada, quando a pessoa conclui o reset, então a conta fica verificada e ela consegue logar.
-- [ ] **CA7** — Dado um reset concluído, então o e-mail da conta recebe o aviso de que a senha foi alterada.
+- [x] **CA1** — Dado um e-mail cadastrado, quando a pessoa pede o reset, então recebe um e-mail com o link.
+- [x] **CA2** — Dado um e-mail não cadastrado, quando alguém pede o reset, então a resposta na tela é idêntica à do CA1 e nenhum e-mail é enviado.
+- [x] **CA3** — Dado um link válido, quando a pessoa define uma senha nova, então consegue logar com ela e não com a antiga.
+- [x] **CA4** — Dada uma sessão aberta em outro dispositivo, quando a senha é trocada pelo reset, então essa sessão é encerrada na próxima renovação.
+- [x] **CA5** — Dado um link expirado, já usado ou substituído, quando a pessoa tenta usar, então vê que o link não vale mais e pode pedir outro.
+- [x] **CA6** — Dada uma conta ainda não verificada, quando a pessoa conclui o reset, então a conta fica verificada e ela consegue logar.
+- [x] **CA7** — Dado um reset concluído, então o e-mail da conta recebe o aviso de que a senha foi alterada.
 
 ## Casos de borda
 

@@ -24,7 +24,7 @@ Aplicação de controle financeiro pessoal: contas, lançamentos, transferência
 
 ```
 br.com.desenvolvedorgustavolopes.moneyPilot
-├── auth          registro, verificação de conta, login, refresh token, filtro JWT, usuário autenticado, perfil e troca de senha e de e-mail
+├── auth          registro, verificação de conta, login, reset de senha, refresh token, filtro JWT, usuário autenticado, perfil e troca de senha e de e-mail
 ├── account       contas e saldo
 ├── category      categorias do usuário e do sistema
 ├── transaction   lançamentos e transferências
@@ -71,6 +71,7 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Só entra quem verificou o e-mail.** A conta nasce não verificada e recebe um link (`/#/verificar-email?token=…`, 256 bits, só o SHA-256 no banco, 24 horas, uso único, uma linha por usuário: reenviar invalida o anterior). O link verifica, mas não abre sessão. Login de conta não verificada com a senha certa responde `403`; com a senha errada, o `401` de sempre. Contas criadas antes da verificação existir entram como verificadas (`V12`).
 - **Cadastro e reenvio não revelam quais e-mails existem.** O cadastro responde sempre `202` sem corpo: e-mail livre cria a conta e manda o link; e-mail de conta não verificada reaproveita a conta com o nome e a senha novos e manda outro link; e-mail de conta verificada não grava nada e avisa o dono (no máximo 1 aviso por hora). Falha no envio do link desfaz o cadastro (`502`). O reenvio responde sempre `202`; para conta já verificada, manda um e-mail dizendo que ela está ativa. Limites do reenvio: 3 por e-mail e 10 por IP por hora.
 - **E-mail sem distinção de maiúsculas.** Cadastro, login, reenvio e troca gravam e buscam o e-mail sem espaços nas pontas e em minúsculas (`EmailAddress.normalize`); a `V12` converteu os existentes e um `CHECK` no banco recusa o que fugir disso.
+- **Reset de senha por link, sem revelar quem tem conta.** "Esqueci a senha" responde sempre `202`; só e-mail cadastrado recebe o link (`/#/redefinir-senha?token=…`, 256 bits, só o SHA-256 no banco, **30 minutos**, uso único, uma linha por usuário: pedir de novo invalida o anterior). Redefinir grava a senha nova (mesmas regras do cadastro, igual à atual é aceita), verifica a conta se ainda não estava, apaga **todos** os refresh tokens, zera o bloqueio de login por falhas daquele e-mail e avisa o e-mail da conta (falha no aviso só vai para o log). O link não abre sessão. Limites: 3 pedidos por e-mail e 5 por IP por hora.
 - **O access token identifica o usuário pelo id, não pelo e-mail** (`sub` = id). Assim a troca de e-mail não deixa tokens órfãos nem os faz apontar para outra conta. Tokens antigos, com e-mail no `sub`, são recusados (`401`) e o cliente renova sozinho.
 - **Troca de e-mail em duas etapas.** O pedido exige a senha atual e manda um link ao e-mail novo; até o clique, o e-mail antigo segue valendo para login e recuperação. O token (256 bits, só o SHA-256 vai ao banco) vale 24 horas, é de uso único e há no máximo um pedido por usuário: pedir de novo invalida o link anterior. O link usa `#` (`/#/confirmar-email?token=…`), então o token não chega a log de servidor ou proxy. Confirmar não exige login: grava o e-mail novo (minúsculas, sem espaços), apaga o pedido, encerra as outras sessões como na troca de senha e avisa o e-mail antigo (falha no aviso só vai para o log). Limites: senha errada divide o contador da troca de senha; no máximo 3 pedidos por hora por usuário.
 - **Troca de senha encerra as outras sessões e mantém a atual.** O servidor identifica a sessão atual pelo cookie de refresh e **apaga** (não revoga) os refresh tokens ativos das demais: um token revogado que voltasse a ser usado acionaria a detecção de reuso acima e derrubaria também a sessão que trocou a senha. As outras sessões caem na próxima renovação, quando o access token de 15 minutos expira. A rota fica sob `/auth/` porque o cookie só é enviado a essa árvore.
@@ -82,11 +83,11 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 
 ### Modelo
 
-`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `email_change_tokens` · `email_verification_tokens` — migrations `V1` a `V12` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas.
+`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `email_change_tokens` · `email_verification_tokens` · `password_reset_tokens` — migrations `V1` a `V13` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas.
 
 ## API
 
-Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout, verificação de conta e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
+Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout, verificação de conta, reset de senha e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
 
 | Método | Rota | O que faz |
 |---|---|---|
@@ -96,6 +97,8 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `POST` | `/auth/verification/resend` | Reenvia o link para o `email` (sempre `202`; `429` acima de 3 por e-mail ou 10 por IP por hora) |
 | `POST` | `/auth/refresh` | Rotaciona o refresh token e devolve um novo access token |
 | `POST` | `/auth/logout` | Revoga o refresh token e limpa o cookie |
+| `POST` | `/auth/password/forgot` | Pede o link de reset para o `email` (sempre `202`; `429` acima de 3 por e-mail ou 5 por IP por hora) |
+| `POST` | `/auth/password/reset` | Define a senha nova com o `token` do link e `newPassword` (`204`; `400` link inválido ou expirado, ou senha fora das regras) |
 | `POST` | `/auth/password` | Troca a senha (`currentPassword`, `newPassword`) e encerra as outras sessões (`204`; `400` com erro no campo; `429` após 5 erros) |
 | `POST` | `/profile/email` | Pede a troca de e-mail (`newEmail`, `currentPassword`): envia o link ao e-mail novo (`204`; `400` com erro no campo; `429`; `502` se o envio falhar) |
 | `POST` | `/auth/email/confirm` | Confirma a troca com o `token` do link, sem exigir login (`204`; `400` link inválido, expirado ou e-mail em uso) |
@@ -239,12 +242,12 @@ Para voltar uma versão, use a tag com o SHA do commit anterior no lugar de `lat
 node --test "src/test/js/*.test.mjs"   # testes do cliente web
 ```
 
-Os testes de integração estendem `AbstractIntegrationTest`, que sobe um Postgres 18 via Testcontainers. O Flyway aplica as migrations reais e o Hibernate só valida — o mesmo contrato de produção, sem schema gerado. A suíte cobre autenticação, verificação de conta e rotação de refresh token, isolamento entre usuários, saldos e transferências, filtros e paginação, ciclo de vida dos títulos e baixa concorrente, arredondamento de parcelas, baixa em lote, recorrência, previsões de fluxo de caixa semanal e mensal e os relatórios.
+Os testes de integração estendem `AbstractIntegrationTest`, que sobe um Postgres 18 via Testcontainers. O Flyway aplica as migrations reais e o Hibernate só valida — o mesmo contrato de produção, sem schema gerado. A suíte cobre autenticação, verificação de conta, reset de senha e rotação de refresh token, isolamento entre usuários, saldos e transferências, filtros e paginação, ciclo de vida dos títulos e baixa concorrente, arredondamento de parcelas, baixa em lote, recorrência, previsões de fluxo de caixa semanal e mensal e os relatórios.
 
 O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e pull request.
 
 ## Próximos passos
 
-- E-mail transacional, reset de senha e login com Google por ID token verificado no backend.
+- E-mail transacional e login com Google por ID token verificado no backend.
 - Ordenar títulos e lançamentos pelo nome da categoria e da conta (hoje a ordenação cobre data, descrição, valor e tipo).
 - Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), fatura de cartão de crédito, importação de extrato CSV, Redis e RabbitMQ.
