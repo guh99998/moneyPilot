@@ -28,6 +28,7 @@ Regras:
 - Não implemente nada que esteja em "Fora de escopo" nem "melhorias" não pedidas.
 - Se a implementação revelar que a spec está errada ou incompleta, pare e proponha a mudança na spec antes de seguir.
 - Ao terminar, marque as tarefas concluídas em `tasks.md` e atualize o README se a API ou uma decisão de domínio mudou.
+- **Ao finalizar um plano ou uma feature, valide com as skills do projeto** (`.claude/skills/`): `web-design-guidelines`, `accessibility-compliance` e `responsive-design` para telas, `api-design-principles` para rotas novas ou alteradas. No plano, a validação entra como passo da verificação; na feature, rode antes de dizer que está pronta, corrija o que for apontado e anote a revisão em `tasks.md`.
 
 ## Branches e commits
 
@@ -52,6 +53,7 @@ Rode as duas suítes antes de dizer que algo está pronto. Se algum teste falhar
 
 - **Migrations**: nunca editar migration já aplicada (`V1`..`Vn`); toda mudança de schema é uma migration nova. Migration que altera ou apaga dados existentes precisa ser destacada no plano e aprovada.
 - **Dinheiro** é `BigDecimal` escala 2, nunca `double`/`float`. No front, contas em centavos inteiros.
+- **Todo campo de dinheiro de request** leva `@Digits(integer = 17, fraction = 2)`: mais de 2 casas ou vírgula é `400` com erro no campo, nunca arredondamento silencioso. `MoneyScaleIntegrationTest` lista as rotas; inclua a nova nele.
 - **"Hoje"** vem do `Clock` injetado (`America/Sao_Paulo`), nunca de `LocalDate.now()` sem clock.
 - **Isolamento**: toda query é escopada ao usuário autenticado; recurso de outro usuário responde `404`.
 - **Erros** de domínio são exceções em `exception/` tratadas pelo `GlobalExceptionHandler`, no formato `ErrorResponse`.
@@ -62,4 +64,6 @@ Rode as duas suítes antes de dizer que algo está pronto. Se algum teste falhar
 
 - Pacote por domínio (`account`, `bill`, `report`...): entidade, repositório, records de request/response, service e controller juntos. Siga o padrão do domínio vizinho.
 - Testes de integração estendem `AbstractIntegrationTest` (Testcontainers + Flyway real) e usam MockMvc. Cada critério de aceite da spec deve ter ao menos um teste.
+- **Contrato OpenAPI é produto** (`/v3/api-docs`, spec 011). Rota ou campo novo precisa de `@Tag`/`@Operation(summary, description)`, `@ApiResponse` de sucesso e de cada erro (com `ErrorResponse`) e `@Schema(description, example)` em cada campo dos records; enum de body vira componente com `enumAsRef = true`; rota pública leva `@SecurityRequirements` vazio. O `OpenApiContractIntegrationTest` falha se algo faltar (e, para rota pública nova, atualize a lista `PUBLIC_PATHS` dele).
+- **Sessão fora do navegador**: o refresh token só vai no corpo quando o cliente pede (`refreshTokenInBody` no login ou `{refreshToken}` na renovação/logout); o navegador segue só com cookie. Mexeu em login/refresh/logout? Rode `ApiSessionIntegrationTest` e `RefreshTokenIntegrationTest` (este não pode mudar).
 - Telas novas do cliente web são módulos em `src/main/resources/static/js/views/`, mobile-first, seguindo os breakpoints e o tema existentes.
