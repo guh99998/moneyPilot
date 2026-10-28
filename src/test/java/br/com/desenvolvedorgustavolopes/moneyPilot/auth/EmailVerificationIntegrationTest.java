@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String PASSWORD = "senha12345";
+    private static final String PASSWORD = "minha frase secreta";
     private static final ZoneId SAO_PAULO = ZoneId.of("America/Sao_Paulo");
     private static final Pattern TOKEN = Pattern.compile("token=(\\S+)");
     private static final AtomicInteger IP_SEQUENCE = new AtomicInteger();
@@ -209,13 +209,13 @@ class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
         MvcResult fresh = register(newAddress(), PASSWORD, "Outra Pessoa").andReturn();
         emailSender.clear();
 
-        MvcResult taken = register(email, "outra-senha-123", "Outra Pessoa").andReturn();
+        MvcResult taken = register(email, "frase-diferente-123", "Outra Pessoa").andReturn();
 
         assertEquals(fresh.getResponse().getStatus(), taken.getResponse().getStatus());
         assertEquals(fresh.getResponse().getContentAsString(), taken.getResponse().getContentAsString());
         assertEquals(1, accountsWith(email));
         login(email, PASSWORD).andExpect(status().isOk());
-        login(email, "outra-senha-123").andExpect(status().isUnauthorized());
+        login(email, "frase-diferente-123").andExpect(status().isUnauthorized());
 
         List<EmailMessage> sent = emailSender.sent();
         assertEquals(1, sent.size());
@@ -255,7 +255,7 @@ class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
         login(lower.toUpperCase(), PASSWORD).andExpect(status().isOk());
         emailSender.clear();
 
-        register(lower.toUpperCase(), "outra-senha-123", "Outra Pessoa").andExpect(status().isAccepted());
+        register(lower.toUpperCase(), "frase-diferente-123", "Outra Pessoa").andExpect(status().isAccepted());
 
         assertEquals(1, accountsWith(lower));
         assertTrue(emailSender.sent().get(0).text().contains("tentou criar uma conta"));
@@ -300,13 +300,13 @@ class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
         String email = registerUnverified();
         String oldToken = lastTokenSentTo(email);
 
-        register(email, "outra-senha-123", "Nome Novo").andExpect(status().isAccepted());
+        register(email, "frase-diferente-123", "Nome Novo").andExpect(status().isAccepted());
 
         assertEquals(1, accountsWith(email));
         confirm(oldToken).andExpect(status().isBadRequest());
         confirm(lastTokenSentTo(email)).andExpect(status().isNoContent());
         login(email, PASSWORD).andExpect(status().isUnauthorized());
-        login(email, "outra-senha-123").andExpect(status().isOk());
+        login(email, "frase-diferente-123").andExpect(status().isOk());
         assertEquals("Nome Novo", jdbcTemplate.queryForObject(
                 "SELECT name FROM users WHERE email = ?", String.class, email));
     }

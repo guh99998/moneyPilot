@@ -1,6 +1,7 @@
 import { api, ApiError } from '../api.js';
 import { el, toast } from '../ui.js';
 import { forgotPasswordForm } from './auth.js';
+import { HINT, passwordInput as passwordField } from '../password.js';
 
 const INVALID_LINK = 'Link inválido ou expirado. Informe seu e-mail para receber outro.';
 
@@ -67,15 +68,16 @@ export function renderResetPassword() {
         const errorId = newId('password-error');
         const errorBox = el('p', { class: 'dialog-error', hidden: true, role: 'alert' });
         const fieldError = el('span', { class: 'error', id: errorId });
-        const passwordInput = el('input', {
+        // O nome e o e-mail da conta não aparecem nesta tela: a regra de senha pessoal fica com o servidor.
+        const password = passwordField({
             id: inputId,
-            type: 'password',
             autocomplete: 'new-password',
-            required: true,
-            minlength: '8',
-            maxlength: '64',
-            'aria-describedby': `${hintId} ${errorId}`
+            describedBy: `${hintId} ${errorId}`,
+            meter: true,
+            minlength: '10',
+            maxlength: '64'
         });
+        const passwordInput = password.input;
         const submitBtn = el('button', {
             class: 'btn-primary',
             type: 'submit',
@@ -115,8 +117,9 @@ export function renderResetPassword() {
             errorBox,
             el('div', { class: 'field' }, [
                 el('label', { for: inputId, text: 'Nova senha' }),
-                passwordInput,
-                el('span', { class: 'meter-foot', id: hintId, text: 'De 8 a 64 caracteres.' }),
+                password.control,
+                el('span', { class: 'meter-foot', id: hintId, text: HINT }),
+                password.meter,
                 fieldError
             ]),
             submitBtn

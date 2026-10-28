@@ -27,6 +27,7 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicy passwordPolicy;
     private final RefreshTokenService refreshTokenService;
     private final OpaqueTokens opaqueTokens;
     private final AttemptLimiter attemptLimiter;
@@ -80,6 +81,9 @@ public class PasswordResetService {
 
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(InvalidPasswordResetTokenException::new);
+
+        // Senha recusada desfaz a transação: o link continua valendo para uma nova tentativa.
+        passwordPolicy.checkPersonal("newPassword", newPassword, user.getEmail(), user.getName());
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         // Quem usou o link acabou de provar que é dono do e-mail.

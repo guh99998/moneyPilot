@@ -468,6 +468,11 @@ public class GlobalExceptionHandler {
         return fieldError("newPassword", ex.getMessage());
     }
 
+    @ExceptionHandler(WeakPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleWeakPassword(WeakPasswordException ex) {
+        return fieldError(ex.getField(), ex.getMessage());
+    }
+
     @ExceptionHandler(SameEmailException.class)
     public ResponseEntity<ErrorResponse> handleSameEmail(SameEmailException ex) {
         return fieldError("newEmail", ex.getMessage());

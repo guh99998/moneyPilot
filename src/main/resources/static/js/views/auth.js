@@ -1,5 +1,6 @@
 import { api, ApiError, session } from '../api.js';
 import { el, toast } from '../ui.js';
+import { HINT, passwordInput as passwordField } from '../password.js';
 
 /** Pede um link de ativação novo. A resposta do servidor é a mesma exista ou não a conta. */
 export async function resendVerification(email, button) {
@@ -175,15 +176,17 @@ export function renderAuth(onAuthenticated) {
             value: pendingEmail,
             'aria-describedby': errorIds.email
         });
-        const passwordInput = el('input', {
+        // Cadastro: olho + medidor com o nome e o e-mail do formulário. Login: só o olho.
+        const passwordControl = passwordField({
             id: inputIds.password,
-            type: 'password',
             autocomplete: isLogin ? 'current-password' : 'new-password',
-            required: true,
-            minlength: isLogin ? null : '8',
-            maxlength: isLogin ? null : '64',
-            'aria-describedby': isLogin ? errorIds.password : `${hintId} ${errorIds.password}`
+            describedBy: isLogin ? errorIds.password : `${hintId} ${errorIds.password}`,
+            meter: !isLogin,
+            getContext: () => ({ email: emailInput.value.trim(), name: nameInput.value.trim() }),
+            minlength: isLogin ? null : '10',
+            maxlength: isLogin ? null : '64'
         });
+        const passwordInput = passwordControl.input;
         const inputs = { name: nameInput, email: emailInput, password: passwordInput };
 
         const submitBtn = el('button', {
@@ -246,8 +249,9 @@ export function renderAuth(onAuthenticated) {
             ]),
             el('div', { class: 'field' }, [
                 el('label', { for: inputIds.password, text: 'Senha' }),
-                passwordInput,
-                isLogin ? null : el('span', { class: 'meter-foot', id: hintId, text: 'De 8 a 64 caracteres.' }),
+                passwordControl.control,
+                isLogin ? null : el('span', { class: 'meter-foot', id: hintId, text: HINT }),
+                passwordControl.meter,
                 fieldErrors.password
             ]),
             submitBtn

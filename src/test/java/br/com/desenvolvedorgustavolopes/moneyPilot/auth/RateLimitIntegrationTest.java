@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class RateLimitIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String PASSWORD = "senha12345";
+    private static final String PASSWORD = "minha frase secreta";
     private static final ZoneId SAO_PAULO = ZoneId.of("America/Sao_Paulo");
     private static final AtomicInteger IP_SEQUENCE = new AtomicInteger();
 

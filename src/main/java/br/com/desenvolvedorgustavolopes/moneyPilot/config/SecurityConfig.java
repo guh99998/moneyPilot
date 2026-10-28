@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/css/**").permitAll()
                         .requestMatchers("/js/**").permitAll()
                         .requestMatchers("/image/**").permitAll()
+                        .requestMatchers("/data/**").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()

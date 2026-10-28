@@ -16,6 +16,7 @@ public class UserService {
     private final AttemptLimiter attemptLimiter;
     private final RateLimitProperties rateLimit;
     private final EmailVerificationService verificationService;
+    private final PasswordPolicy passwordPolicy;
     private final Clock clock;
 
     /**
@@ -26,6 +27,9 @@ public class UserService {
         String ipKey = "register-ip:" + clientIp;
         attemptLimiter.check(ipKey, rateLimit.registerPerIp());
         attemptLimiter.record(ipKey, rateLimit.registerWindow());
+
+        // Antes de procurar a conta, com os dados do formulário: a resposta não depende de a conta existir.
+        passwordPolicy.checkPersonal("password", request.password(), request.email(), request.name());
 
         User user = repository.findUserByEmail(request.email()).orElse(null);
 

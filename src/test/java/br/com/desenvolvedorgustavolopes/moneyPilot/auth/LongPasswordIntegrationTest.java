@@ -30,9 +30,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class LongPasswordIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String PASSWORD = "senha12345";
+    private static final String PASSWORD = "minha frase secreta";
     private static final String TOO_LONG = "a".repeat(65);
-    private static final String LONGEST = "a".repeat(64);
+    // 64 caracteres, sem repetição nem sequência.
+    private static final String LONGEST = "uma frase longa que vai até o limite de sessenta e quatro letras";
     // 20 caracteres, 80 bytes em UTF-8.
     private static final String TOO_MANY_BYTES = "🔒".repeat(20);
     private static final Pattern TOKEN = Pattern.compile("token=(\\S+)");
@@ -54,7 +55,7 @@ class LongPasswordIntegrationTest extends AbstractIntegrationTest {
     void register_withMoreThan64Characters_isRefusedWithFieldError() throws Exception {
         register(newAddress(), TOO_LONG)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.fieldErrors.password").value("A senha precisa ter de 8 a 64 caracteres."));
+                .andExpect(jsonPath("$.fieldErrors.password").value("A senha precisa ter de 10 a 64 caracteres."));
     }
 
     @Test
@@ -75,10 +76,10 @@ class LongPasswordIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void register_withFewerThan8Characters_isRefusedWithTheSameMessage() throws Exception {
+    void register_withFewerThan10Characters_isRefusedWithTheSameMessage() throws Exception {
         register(newAddress(), "curta")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.fieldErrors.password").value("A senha precisa ter de 8 a 64 caracteres."));
+                .andExpect(jsonPath("$.fieldErrors.password").value("A senha precisa ter de 10 a 64 caracteres."));
     }
 
     @Test
