@@ -116,3 +116,35 @@ test('every label points to the input it names, in login and register', async ()
 
     assert.deepEqual(labelTargets(view), [['Nome', 'text'], ['E-mail', 'email'], ['Senha', 'password']]);
 });
+
+test('forgot password sends the typed email and shows the generic answer', async () => {
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, body: JSON.parse(options.body) };
+        return new Response(null, { status: 202 });
+    };
+    const view = open();
+    inputOfType(view, 'email').value = 'ana@example.com';
+
+    await findByText(view, 'button', 'Redefinir').dispatch('click');
+    assert.equal(inputOfType(view, 'email').value, 'ana@example.com');
+    await submit(view);
+
+    assert.deepEqual(sent, { path: '/api/v1/auth/password/forgot', body: { email: 'ana@example.com' } });
+    const status = findAll(view, (node) => node.getAttribute('role') === 'status')[0];
+    assert.match(status.textContent, /Se houver uma conta com ana@example.com/);
+});
+
+test('a refused forgot request is announced and the form stays', async () => {
+    startServer([{ status: 429, body: { message: 'Muitas tentativas.' } }]);
+    const view = open();
+    await findByText(view, 'button', 'Redefinir').dispatch('click');
+    inputOfType(view, 'email').value = 'ana@example.com';
+
+    await submit(view);
+
+    const errorBox = errorBoxOf(view);
+    assert.equal(errorBox.hidden, false);
+    assert.equal(errorBox.getAttribute('role'), 'alert');
+    assert.ok(findByText(view, 'button', 'Enviar link'));
+});
