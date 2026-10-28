@@ -1,6 +1,6 @@
 # 009 — Política de senha
 
-**Status:** rascunho
+**Status:** em implementação
 **Branch:** feature/009-politica-de-senha
 **Depende de:** 003 (reset usa as mesmas regras), fix do limite de 72 bytes (`@NewPassword`)
 
@@ -19,12 +19,16 @@ Toda senha nova tem pelo menos 10 caracteres e não é uma senha comum nem óbvi
 - Valem para **toda senha nova**: cadastro, troca de senha no perfil e reset. Num lugar só, para as três telas não divergirem.
 - **Tamanho:** de **10** a 64 caracteres (antes 8 a 64). O limite de 72 bytes do bcrypt continua.
 - **Sem regra de composição:** não se exige maiúscula, número nem símbolo. Qualquer caractere vale, inclusive espaço e acento, para permitir frases.
-- **Senha comum é recusada:** a senha, sem diferença de maiúsculas, não pode estar numa lista local das senhas mais usadas (em português e em geral), nem ser só uma sequência ou repetição (`1234567890`, `abcdefghij`, `aaaaaaaaaa`, `qwertyuiop`).
+- **Senha vazada é recusada:** a senha, sem diferença de maiúsculas, não pode estar numa lista local de senhas de **vazamentos públicos** (as cerca de 10 mil mais usadas do SecLists, licença MIT, filtradas para 10 caracteres ou mais, mais uma lista curta em português), nem ser só uma sequência ou repetição (`1234567890`, `abcdefghij`, `aaaaaaaaaa`, `qwertyuiop`). A lista é um arquivo de texto no projeto, sem dependência, servido também ao cliente web.
 - **Senha óbvia para a pessoa é recusada:** a senha não pode conter o e-mail inteiro, a parte antes do `@`, nem uma parte do nome com 4 letras ou mais, sem diferença de maiúsculas e de acentos.
-- Cada recusa diz **o motivo** e o que fazer, por exemplo: "Essa senha é muito comum. Escolha outra, de preferência uma frase."
+- Cada recusa diz **o motivo** e o que fazer. Quando o motivo é a lista, o texto deixa claro que ela vem de **listas públicas de senhas vazadas na internet**, e não de senhas comuns no app:
+  - tamanho: "A senha precisa ter de 10 a 64 caracteres."
+  - vazada: "Essa senha aparece em listas públicas de senhas vazadas na internet. Escolha outra, de preferência uma frase."
+  - sequência ou repetição: "Sequências e repetições, como 1234567890 ou aaaaaaaaaa, são fáceis de adivinhar. Escolha outra."
+  - pessoal: "A senha não pode conter seu e-mail nem seu nome."
 - **Quem já tem senha não é afetado:** login continua aceitando a senha atual, mesmo curta ou comum. A regra vale quando a pessoa cria ou troca a senha.
-- **Medidor de força:** enquanto a pessoa digita, a tela mostra o nível (fraca, razoável, forte) e uma dica do que melhorar. O medidor só **informa**: quem decide se a senha é aceita são as regras acima, conferidas no servidor.
-- **Mostrar senha:** os campos de senha (login, cadastro, reset e perfil) têm um botão para mostrar e esconder o que foi digitado.
+- **Medidor de força:** enquanto a pessoa digita, a tela mostra o nível (fraca, razoável, forte) e uma dica do que melhorar. O medidor só **informa**, nunca impede o envio: quem decide se a senha é aceita são as regras acima, conferidas no servidor. Ele avisa a senha vazada enquanto a pessoa digita, com o mesmo texto da recusa. Se a lista não puder ser baixada, o medidor segue sem essa checagem e o servidor recusa do mesmo jeito.
+- **Mostrar senha:** os campos de senha (login, cadastro, reset e perfil) têm um botão de olho, dentro do campo, para mostrar e esconder o que foi digitado.
 
 ## Critérios de aceite
 
@@ -41,7 +45,8 @@ Toda senha nova tem pelo menos 10 caracteres e não é uma senha comum nem óbvi
 - Usuários em produção com senha de 8 ou 9 caracteres: continuam entrando (CA5).
 - Troca de senha no perfil: a regra "diferente da atual" continua valendo junto com as novas.
 - Reset: a senha nova pode ser igual à atual (decisão da 003), mas agora também precisa passar nas regras novas.
-- Nome curto (`Ana`, `Léo`): partes com menos de 4 letras não contam, para não recusar senhas que só contêm essas letras por acaso.
+- Nome curto (`Ana`, `Léo`): partes com menos de 4 letras não contam, para não recusar senhas que só contêm essas letras por acaso. O mesmo vale para a parte do e-mail antes do `@` (`jo@...`); o e-mail inteiro conta sempre.
+- Reset: a tela não conhece o nome nem o e-mail da conta, então o medidor não avisa senha pessoal; quem recusa é o servidor.
 - Cadastro: o nome e o e-mail usados na verificação são os do próprio formulário.
 - Senha com a palavra comum dentro de uma frase longa (`minha senha123 favorita`): aceita. Só a senha inteira na lista é recusada.
 
@@ -53,7 +58,7 @@ Toda senha nova tem pelo menos 10 caracteres e não é uma senha comum nem óbvi
 - Autenticação em dois fatores (ideia futura, spec própria).
 - Regras de composição (maiúscula, número, símbolo).
 
-## Perguntas em aberto
+## Decisões
 
-- Tamanho da lista de senhas comuns: proponho as cerca de 10 mil mais usadas (filtradas para as que têm 10 caracteres ou mais, que são as que importam com o mínimo novo) mais uma lista curta em português. Fica num arquivo de texto no projeto, sem dependência. Concorda?
-- O medidor deve impedir o envio quando estiver em "fraca", ou só informar? Proponho só informar, porque o servidor já recusa o que importa e um medidor que bloqueia sem regra clara confunde.
+- Lista: as cerca de 10 mil senhas mais usadas do SecLists (MIT, origem citada no arquivo), filtradas para 10 caracteres ou mais, mais uma lista curta em português.
+- O medidor só informa; quem recusa é o servidor.
