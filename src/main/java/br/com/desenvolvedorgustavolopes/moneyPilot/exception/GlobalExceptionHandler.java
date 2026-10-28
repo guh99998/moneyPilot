@@ -16,9 +16,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import tools.jackson.databind.exc.InvalidFormatException;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -45,6 +48,23 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        // Valor com formato errado num campo (ex.: "10,50" em amount) vira erro naquele campo.
+        if (ex.getCause() instanceof InvalidFormatException format && !format.getPath().isEmpty()) {
+            String field = format.getPath().stream()
+                    .map(reference -> reference.getPropertyName())
+                    .filter(name -> name != null)
+                    .collect(Collectors.joining("."));
+            if (!field.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(
+                        Instant.now(),
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Bad Request",
+                        "Validation failed",
+                        Map.of(field, "Invalid value")
+                ));
+            }
+        }
+
         ErrorResponse body = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
@@ -507,6 +527,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SameEmailException.class)
     public ResponseEntity<ErrorResponse> handleSameEmail(SameEmailException ex) {
         return fieldError("newEmail", ex.getMessage());
+    }
+
+    @ExceptionHandler(SupportEmailRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleSupportEmailRequired(SupportEmailRequiredException ex) {
+        return fieldError("email", ex.getMessage());
     }
 
     @ExceptionHandler(EmailAlreadyInUseException.class)

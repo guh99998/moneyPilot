@@ -193,6 +193,10 @@ export const api = {
     loginWithGoogle: (credential) =>
         request('/auth/google', { method: 'POST', body: { credential }, anonymous: true }),
     logout: () => request('/auth/logout', { method: 'POST', anonymous: true }),
+    // Pública com login opcional: quem não consegue entrar também fala com o suporte. Logado, o token vai junto
+    // e o servidor usa o e-mail da conta.
+    sendSupportTicket: (body) =>
+        request('/support/tickets', { method: 'POST', body, anonymous: !session.active }),
 
     alerts: {
         list: () => request('/alerts'),

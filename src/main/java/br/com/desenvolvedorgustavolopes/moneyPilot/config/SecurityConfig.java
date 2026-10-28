@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -46,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/verification/resend").permitAll()
                         .requestMatchers("/api/v1/auth/password/forgot").permitAll()
                         .requestMatchers("/api/v1/auth/password/reset").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/support/tickets").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/index.html").permitAll()
                         .requestMatchers("/css/**").permitAll()

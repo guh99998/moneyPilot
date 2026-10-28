@@ -13,7 +13,7 @@ class MailConfigurationTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(PropertiesConfig.class, ResendEmailSender.class)
-            .withPropertyValues("spring.profiles.active=prod");
+            .withPropertyValues("spring.profiles.active=prod", "app.support.email=suporte@exemplo.com");
 
     @Test
     void prodWithoutMailKey_failsToStartWithClearMessage() {

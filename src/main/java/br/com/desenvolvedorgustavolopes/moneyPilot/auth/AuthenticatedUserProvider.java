@@ -14,6 +14,15 @@ public class AuthenticatedUserProvider {
 
     private final UserRepository repository;
 
+    /** Como {@link #getCurrentUserId()}, mas para rotas públicas de login opcional: sem sessão válida, vazio. */
+    public Optional<Long> findCurrentUserId() {
+        try {
+            return Optional.of(getCurrentUserId());
+        } catch (UnauthenticatedRequestException e) {
+            return Optional.empty();
+        }
+    }
+
     public Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
