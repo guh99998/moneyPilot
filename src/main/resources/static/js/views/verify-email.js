@@ -36,7 +36,8 @@ function confirmOnce() {
 }
 
 function resendForm() {
-    const emailInput = el('input', { type: 'email', autocomplete: 'email', required: true });
+    const inputId = `f-email-${Math.random().toString(36).slice(2, 7)}`;
+    const emailInput = el('input', { id: inputId, type: 'email', autocomplete: 'email', required: true });
     const submitBtn = el('button', {
         class: 'btn-primary',
         type: 'submit',
@@ -50,7 +51,7 @@ function resendForm() {
             resendVerification(emailInput.value.trim(), submitBtn);
         }
     }, [
-        el('div', { class: 'field' }, [el('label', { text: 'E-mail' }), emailInput]),
+        el('div', { class: 'field' }, [el('label', { for: inputId, text: 'E-mail' }), emailInput]),
         submitBtn
     ]);
 }

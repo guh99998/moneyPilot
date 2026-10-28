@@ -59,9 +59,10 @@ export function renderAuth(onAuthenticated) {
             text: 'Reenviar link de ativação',
             onClick: () => resendVerification(emailInput.value.trim(), resendBtn)
         });
-        const errorId = (field) => `f-${field}-error-${Math.random().toString(36).slice(2, 7)}`;
-        const errorIds = { name: errorId('name'), email: errorId('email'), password: errorId('password') };
-        const hintId = errorId('password-hint');
+        const newId = (part) => `f-${part}-${Math.random().toString(36).slice(2, 7)}`;
+        const inputIds = { name: newId('name'), email: newId('email'), password: newId('password') };
+        const errorIds = { name: newId('name-error'), email: newId('email-error'), password: newId('password-error') };
+        const hintId = newId('password-hint');
         const fieldErrors = {
             name: el('span', { class: 'error', id: errorIds.name }),
             email: el('span', { class: 'error', id: errorIds.email }),
@@ -69,12 +70,18 @@ export function renderAuth(onAuthenticated) {
         };
 
         const nameInput = el('input', {
-            type: 'text', autocomplete: 'name', required: true, 'aria-describedby': errorIds.name
+            id: inputIds.name, type: 'text', autocomplete: 'name', required: true, 'aria-describedby': errorIds.name
         });
         const emailInput = el('input', {
-            type: 'email', autocomplete: 'email', required: true, value: pendingEmail, 'aria-describedby': errorIds.email
+            id: inputIds.email,
+            type: 'email',
+            autocomplete: 'email',
+            required: true,
+            value: pendingEmail,
+            'aria-describedby': errorIds.email
         });
         const passwordInput = el('input', {
+            id: inputIds.password,
             type: 'password',
             autocomplete: isLogin ? 'current-password' : 'new-password',
             required: true,
@@ -136,13 +143,13 @@ export function renderAuth(onAuthenticated) {
         }, [
             errorBox,
             isLogin ? null : el('div', { class: 'field' }, [
-                el('label', { text: 'Nome' }), nameInput, fieldErrors.name
+                el('label', { for: inputIds.name, text: 'Nome' }), nameInput, fieldErrors.name
             ]),
             el('div', { class: 'field' }, [
-                el('label', { text: 'E-mail' }), emailInput, fieldErrors.email
+                el('label', { for: inputIds.email, text: 'E-mail' }), emailInput, fieldErrors.email
             ]),
             el('div', { class: 'field' }, [
-                el('label', { text: 'Senha' }),
+                el('label', { for: inputIds.password, text: 'Senha' }),
                 passwordInput,
                 isLogin ? null : el('span', { class: 'meter-foot', id: hintId, text: 'Mínimo de 8 caracteres.' }),
                 fieldErrors.password

@@ -97,3 +97,22 @@ test('the invalid flag is cleared when the next attempt fails for another reason
     assert.equal(inputOfType(view, 'email').getAttribute('aria-invalid'), null);
     assert.equal(errorBoxOf(view).textContent, 'Tente de novo.');
 });
+
+/** [label text, type of the input the label points to] for every label on the screen. */
+function labelTargets(view) {
+    return findByTag(view, 'label').map((label) => {
+        const target = label.getAttribute('for');
+        const input = target && findAll(view, (node) => node.tagName === 'INPUT' && node.getAttribute('id') === target)[0];
+        return [label.textContent, input?.getAttribute('type')];
+    });
+}
+
+test('every label points to the input it names, in login and register', async () => {
+    const view = open();
+
+    assert.deepEqual(labelTargets(view), [['E-mail', 'email'], ['Senha', 'password']]);
+
+    await switchToRegister(view);
+
+    assert.deepEqual(labelTargets(view), [['Nome', 'text'], ['E-mail', 'email'], ['Senha', 'password']]);
+});

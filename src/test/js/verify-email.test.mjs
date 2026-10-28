@@ -80,3 +80,15 @@ test('a failed activation is marked as an error and the stylesheet gives it a lo
     const css = readFileSync(new URL('../../main/resources/static/css/app.css', import.meta.url), 'utf8');
     assert.match(css, /\.auth-tagline\.error\s*\{/);
 });
+
+test('the resend form label points to its e-mail input', async () => {
+    startServer([]);
+
+    const view = await openLink('#/verificar-email?token=token-f');
+
+    const [label] = findAll(view, (node) => node.tagName === 'LABEL');
+    const target = label.getAttribute('for');
+    const input = findAll(view, (node) => node.tagName === 'INPUT' && node.getAttribute('id') === target)[0];
+    assert.ok(target);
+    assert.equal(input.getAttribute('type'), 'email');
+});
