@@ -275,3 +275,15 @@ test('the login offers a way to talk to support, and the register screen does no
     await switchToRegister(register);
     assert.equal(findByText(register, 'button', 'Falar com o suporte'), undefined);
 });
+
+test('the login links to the "Usando com IA" guide, and the register screen does not', async () => {
+    const view = open();
+
+    await findByText(view, 'button', 'Usar com IA').dispatch('click');
+
+    assert.equal(window.location.hash, '#/usando-com-ia');
+
+    const register = open();
+    await switchToRegister(register);
+    assert.equal(findByText(register, 'button', 'Usar com IA'), undefined);
+});
