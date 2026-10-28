@@ -148,3 +148,15 @@ test('a refused forgot request is announced and the form stays', async () => {
     assert.equal(errorBox.getAttribute('role'), 'alert');
     assert.ok(findByText(view, 'button', 'Enviar link'));
 });
+
+test('after asking for a reset, focus moves to the generic answer so it is read out', async () => {
+    startServer([{ status: 202 }]);
+    const view = open();
+    await findByText(view, 'button', 'Redefinir').dispatch('click');
+    inputOfType(view, 'email').value = 'ana@example.com';
+
+    await submit(view);
+
+    const status = findAll(view, (node) => node.getAttribute('role') === 'status')[0];
+    assert.equal(document.activeElement, status);
+});

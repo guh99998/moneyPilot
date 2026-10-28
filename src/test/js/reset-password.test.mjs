@@ -76,7 +76,7 @@ test('an expired or used link shows the error and a form to ask for another', as
     assert.deepEqual(requests[1], { path: '/api/v1/auth/password/forgot', body: { email: 'ana@example.com' } });
 });
 
-test('a password the server refuses stays on the form, linked to the field', async () => {
+test('a password the server refuses stays on the form, explained in Portuguese and focused', async () => {
     startServer([{ status: 400, body: { message: 'Validation failed', fieldErrors: { newPassword: 'size must be between 8 and 2147483647' } } }]);
     const view = openLink('#/redefinir-senha?token=token-d');
 
@@ -87,7 +87,8 @@ test('a password the server refuses stays on the form, linked to the field', asy
     const described = input.getAttribute('aria-describedby').split(' ')
         .map((id) => findAll(view, (node) => node.getAttribute('id') === id)[0]?.textContent);
     assert.ok(described.includes('Mínimo de 8 caracteres.'));
-    assert.ok(described.includes('size must be between 8 and 2147483647'));
+    assert.ok(described.includes('A senha precisa ter pelo menos 8 caracteres.'));
+    assert.equal(document.activeElement, input);
 });
 
 test('after a successful reset, opening the screen without a token asks for a new link', async () => {
@@ -107,4 +108,13 @@ test('the new password label points to its input', () => {
     const [label] = findByTag(view, 'label');
     const input = findAll(view, (node) => node.tagName === 'INPUT' && node.getAttribute('id') === label.getAttribute('for'))[0];
     assert.equal(input.getAttribute('type'), 'password');
+});
+
+test('after saving, focus moves to the result so it is read out', async () => {
+    startServer([{ status: 204 }]);
+    const view = openLink('#/redefinir-senha?token=token-focus');
+
+    await submitPassword(view, 'nova-senha-678');
+
+    assert.equal(document.activeElement, statusOf(view));
 });
