@@ -204,6 +204,7 @@ class RefreshTokenIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, "Refresh User"))))
                 .andExpect(status().isCreated());
+        markVerified(email);
         return email;
     }
 

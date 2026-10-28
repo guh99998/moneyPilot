@@ -47,6 +47,7 @@ class JwtSubjectIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, "Jwt User"))))
                 .andExpect(status().isCreated());
+        markVerified(email);
 
         MvcResult login = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,6 +73,7 @@ class JwtSubjectIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, "Legacy User"))))
                 .andExpect(status().isCreated());
+        markVerified(email);
 
         // token as it was issued before the subject became the user id
         String legacyToken = Jwts.builder()

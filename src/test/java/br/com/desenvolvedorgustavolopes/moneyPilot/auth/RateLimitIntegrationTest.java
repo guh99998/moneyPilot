@@ -173,6 +173,7 @@ class RateLimitIntegrationTest extends AbstractIntegrationTest {
     private String registeredEmail() throws Exception {
         String email = uniqueEmail();
         register(email, uniqueIp()).andExpect(status().isCreated());
+        markVerified(email);
         return email;
     }
 

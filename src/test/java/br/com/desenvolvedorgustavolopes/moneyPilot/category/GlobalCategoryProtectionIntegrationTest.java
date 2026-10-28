@@ -64,6 +64,7 @@ class GlobalCategoryProtectionIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, password, "Test User"))))
                 .andExpect(status().isCreated());
+        markVerified(email);
 
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

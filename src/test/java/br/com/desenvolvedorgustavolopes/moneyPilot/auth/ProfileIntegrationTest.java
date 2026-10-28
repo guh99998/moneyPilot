@@ -294,6 +294,7 @@ class ProfileIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, name))))
                 .andExpect(status().isCreated());
+        markVerified(email);
         return email;
     }
 

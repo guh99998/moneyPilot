@@ -311,6 +311,7 @@ class EmailChangeIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(newEmail, PASSWORD, "Outra Pessoa"))))
                 .andExpect(status().isCreated());
+        markVerified(newEmail);
 
         confirm(token, null)
                 .andExpect(status().isBadRequest())
@@ -396,6 +397,7 @@ class EmailChangeIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, "Maria Silva"))))
                 .andExpect(status().isCreated());
+        markVerified(email);
         return email;
     }
 

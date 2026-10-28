@@ -38,6 +38,7 @@ class AccessTokenExpiryIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, "Expiry User"))))
                 .andExpect(status().isCreated());
+        markVerified(email);
 
         MvcResult login = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
