@@ -78,7 +78,7 @@ test('field errors are linked to their inputs and flagged as invalid', async () 
     assert.ok(describedBy(view, email).includes('E-mail inválido.'));
     assert.equal(password.getAttribute('aria-invalid'), 'true');
     assert.ok(describedBy(view, password).includes('Senha fraca.'));
-    assert.ok(describedBy(view, password).includes('De 8 a 64 caracteres.'));
+    assert.ok(describedBy(view, password).includes('De 10 a 64 caracteres.'));
     assert.equal(findByTag(view, 'input')[0].getAttribute('aria-invalid'), null);
 });
 
