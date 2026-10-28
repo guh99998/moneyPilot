@@ -49,3 +49,13 @@ test('a second link opened in the same tab is confirmed with its own token', asy
     assert.deepEqual(confirmed, ['token-a', 'token-b']);
     assert.match(statusOf(second).textContent, /Link inválido ou expirado/);
 });
+
+test('rendering again without a token reuses the result and does not spend the link twice', async () => {
+    startServer(['token-c']);
+
+    await openLink('#/verificar-email?token=token-c');
+    const again = await openLink('#/verificar-email');
+
+    assert.deepEqual(confirmed, ['token-c']);
+    assert.match(statusOf(again).textContent, /Conta verificada/);
+});

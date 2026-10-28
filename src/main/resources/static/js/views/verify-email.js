@@ -5,29 +5,34 @@ import { resendVerification } from './auth.js';
 const INVALID_LINK = 'Link inválido ou expirado. Informe seu e-mail para receber outro.';
 
 // O link é de uso único e a tela pode ser renderizada mais de uma vez (hashchange, login):
-// a confirmação roda uma só vez e as renderizações seguintes reaproveitam o resultado.
-let outcome = null;
+// cada token é confirmado uma só vez e as renderizações seguintes reaproveitam o resultado.
+// Um link novo (outro token) na mesma aba é confirmado de novo.
+let confirmation = null;
+
+function confirm(token) {
+    return api.confirmVerification(token).then(() => ({ ok: true }), (error) => ({
+        ok: false,
+        invalid: error instanceof ApiError && error.status === 400,
+        message: error instanceof ApiError && error.status === 400
+            ? INVALID_LINK
+            : error?.message || 'Não foi possível ativar agora. Tente abrir o link de novo.'
+    }));
+}
 
 function confirmOnce() {
-    if (outcome) return outcome;
-
     const query = window.location.hash.split('?')[1] || '';
     const token = new URLSearchParams(query).get('token');
 
     // Tira o token da barra de endereço (replaceState não dispara hashchange).
     window.history.replaceState(null, '', '#/verificar-email');
 
-    outcome = token
-        ? api.confirmVerification(token).then(() => ({ ok: true }), (error) => ({
-            ok: false,
-            invalid: error instanceof ApiError && error.status === 400,
-            message: error instanceof ApiError && error.status === 400
-                ? INVALID_LINK
-                : error?.message || 'Não foi possível ativar agora. Tente abrir o link de novo.'
-        }))
-        : Promise.resolve({ ok: false, invalid: true, message: INVALID_LINK });
+    if (token && confirmation?.token !== token) {
+        confirmation = { token, outcome: confirm(token) };
+    } else if (!confirmation) {
+        confirmation = { token: null, outcome: Promise.resolve({ ok: false, invalid: true, message: INVALID_LINK }) };
+    }
 
-    return outcome;
+    return confirmation.outcome;
 }
 
 function resendForm() {
