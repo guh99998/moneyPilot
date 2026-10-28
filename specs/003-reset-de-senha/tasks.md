@@ -13,3 +13,4 @@
 - [ ] **T9** — Backup antes do deploy (Gustavo)
 
 ## Notas de implementação
+- T7: revisão com as skills de acessibilidade, responsividade e Web Interface Guidelines: foco levado à mensagem de resultado e ao primeiro campo com erro, estado "Enviando…"/"Salvando…", e-mail sem corretor e sem maiúscula automática, mensagem de senha curta em português, `.auth-tagline` quebrando e-mail longo, botões de `.auth-switch` com 44px de alvo de toque e `.auth-wrap` em `100dvh`.
