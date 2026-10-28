@@ -221,7 +221,7 @@ class BillRecurrenceMaterializeIntegrationTest extends AbstractIntegrationTest {
 
     private String registerAndLogin() throws Exception {
         String email = "test-" + UUID.randomUUID() + "@example.com";
-        String password = "senha12345";
+        String password = "minha frase secreta";
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

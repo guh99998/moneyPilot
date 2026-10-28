@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ProfileIntegrationTest extends AbstractIntegrationTest {
 
     private static final String COOKIE_NAME = "refresh_token";
-    private static final String PASSWORD = "senha12345";
+    private static final String PASSWORD = "minha frase secreta";
     private static final String NEW_PASSWORD = "outra-senha-9876";
     private static final ZoneId SAO_PAULO = ZoneId.of("America/Sao_Paulo");
 
@@ -151,11 +151,11 @@ class ProfileIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void changePassword_newPasswordShorterThanEight_isRefused() throws Exception {
+    void changePassword_newPasswordShorterThanTen_isRefused() throws Exception {
         String email = registerNewUser("Maria");
         Session session = login(email, PASSWORD);
 
-        changePassword(session, PASSWORD, "curta12")
+        changePassword(session, PASSWORD, "curta1234")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.newPassword").exists());
 

@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "app.rate-limit.login-failures-per-email=3")
 class PasswordResetIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String PASSWORD = "senha12345";
+    private static final String PASSWORD = "minha frase secreta";
     private static final String NEW_PASSWORD = "nova-senha-678";
     private static final String COOKIE_NAME = "refresh_token";
     private static final ZoneId SAO_PAULO = ZoneId.of("America/Sao_Paulo");
