@@ -509,6 +509,11 @@ public class GlobalExceptionHandler {
         return fieldError("newEmail", ex.getMessage());
     }
 
+    @ExceptionHandler(SupportEmailRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleSupportEmailRequired(SupportEmailRequiredException ex) {
+        return fieldError("email", ex.getMessage());
+    }
+
     @ExceptionHandler(EmailAlreadyInUseException.class)
     public ResponseEntity<ErrorResponse> handleEmailAlreadyInUse(EmailAlreadyInUseException ex) {
         return fieldError("newEmail", ex.getMessage());

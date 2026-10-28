@@ -12,6 +12,7 @@ import { renderProfile } from './views/profile.js';
 import { renderConfirmEmail } from './views/confirm-email.js';
 import { renderVerifyEmail } from './views/verify-email.js';
 import { renderResetPassword } from './views/reset-password.js';
+import { renderSupport } from './views/support.js';
 import { renderBell, refreshAlerts, resetAlerts } from './alerts.js';
 
 const ROUTES = [
@@ -32,11 +33,13 @@ const NAV_ICONS = {
     forecast: svgIcon('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
     accounts: svgIcon('<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>'),
     categories: svgIcon('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>'),
+    support: svgIcon('<path d="M21 12a9 9 0 0 1-9 9H4l2.2-3.3A9 9 0 1 1 21 12z"/><path d="M9 10h6M9 14h4"/>'),
     budgets: svgIcon('<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>')
 };
 
 // Tela fora do menu: o acesso é pelo nome do usuário no rodapé.
 const PROFILE_ROUTE = { path: 'profile', label: 'Perfil', render: renderProfile };
+const SUPPORT_ROUTE = { path: 'suporte', label: 'Falar com o suporte', render: renderSupport };
 
 // O app tem só o tema claro; limpa a preferência que versões antigas gravavam.
 localStorage.removeItem('moneypilot.theme');
@@ -44,6 +47,7 @@ localStorage.removeItem('moneypilot.theme');
 function currentRoute() {
     const path = window.location.hash.replace(/^#\/?/, '');
     if (path === PROFILE_ROUTE.path) return PROFILE_ROUTE;
+    if (path === SUPPORT_ROUTE.path) return SUPPORT_ROUTE;
     return ROUTES.find((route) => route.path === path) || ROUTES[0];
 }
 
@@ -88,6 +92,15 @@ function buildSidebar(active) {
             ]))),
             el('div', { class: 'sidebar-foot' }, [
                 el('a', {
+                    class: 'user-chip' + (active.path === SUPPORT_ROUTE.path ? ' active' : ''),
+                    href: '#/' + SUPPORT_ROUTE.path,
+                    // Tocar na página atual não dispara hashchange, então fecha à mão.
+                    onClick: () => sidebar.classList.remove('open')
+                }, [
+                    el('span', { class: 'user-chip-avatar', 'aria-hidden': 'true', html: NAV_ICONS.support }),
+                    el('span', { class: 'user-chip-name', text: SUPPORT_ROUTE.label })
+                ]),
+                el('a', {
                     class: 'user-chip' + (active.path === PROFILE_ROUTE.path ? ' active' : ''),
                     href: '#/' + PROFILE_ROUTE.path,
                     title: session.email || 'Meu perfil',
@@ -95,8 +108,8 @@ function buildSidebar(active) {
                     // Tocar na página atual não dispara hashchange, então fecha à mão.
                     onClick: () => sidebar.classList.remove('open')
                 }, [
-                    el('span', { class: 'user-chip-avatar' }, userAvatar()),
-                    el('span', { class: 'user-chip-name', text: session.name || session.email || '' })
+                    el('span', { class: 'user-chip-avatar profile-chip-avatar' }, userAvatar()),
+                    el('span', { class: 'user-chip-name profile-chip-name', text: session.name || session.email || '' })
                 ]),
                 el('button', {
                     class: 'btn-ghost btn-sm',
@@ -150,6 +163,12 @@ async function render() {
         return;
     }
 
+    // Rota pública: quem não consegue entrar também precisa falar com o suporte.
+    if (!session.active && window.location.hash.startsWith('#/suporte')) {
+        root.append(renderSupport());
+        return;
+    }
+
     if (!session.active) {
         root.append(renderAuth(() => {
             window.location.hash = '#/dashboard';
@@ -178,9 +197,9 @@ async function render() {
 
 window.addEventListener('hashchange', render);
 window.addEventListener('profile:updated', () => {
-    const chipName = document.querySelector('.user-chip-name');
+    const chipName = document.querySelector('.profile-chip-name');
     if (chipName) chipName.textContent = session.name || session.email || '';
-    document.querySelector('.user-chip-avatar')?.replaceChildren(userAvatar());
+    document.querySelector('.profile-chip-avatar')?.replaceChildren(userAvatar());
 });
 window.addEventListener('session:expired', () => {
     toast('Sua sessão expirou. Entre novamente.', 'error');

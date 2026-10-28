@@ -60,6 +60,9 @@ public class ResendEmailSender implements EmailSender {
         if (message.html() != null && !message.html().isBlank()) {
             body.put("html", message.html());
         }
+        if (message.replyTo() != null && !message.replyTo().isBlank()) {
+            body.put("reply_to", message.replyTo());
+        }
 
         try {
             client.post()

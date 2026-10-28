@@ -72,6 +72,28 @@ class ResendEmailSenderTest {
     }
 
     @Test
+    void send_withReplyTo_postsReplyToToProvider() {
+        server.expect(requestTo("https://resend.test/emails"))
+                .andExpect(jsonPath("$.reply_to").value("maria@example.com"))
+                .andRespond(withSuccess("{\"id\":\"abc\"}", MediaType.APPLICATION_JSON));
+
+        sender.send(new EmailMessage("suporte@exemplo.com", "Chamado", "Texto", null, "maria@example.com"));
+
+        server.verify();
+    }
+
+    @Test
+    void send_withoutReplyTo_omitsTheField() {
+        server.expect(requestTo("https://resend.test/emails"))
+                .andExpect(jsonPath("$.reply_to").doesNotExist())
+                .andRespond(withSuccess("{\"id\":\"abc\"}", MediaType.APPLICATION_JSON));
+
+        sender.send(new EmailMessage("ana@example.com", "Olá", "Texto"));
+
+        server.verify();
+    }
+
+    @Test
     void send_providerError_throwsAndNeverLogsTheKey() {
         server.expect(requestTo("https://resend.test/emails"))
                 .andRespond(withStatus(HttpStatus.UNPROCESSABLE_ENTITY)

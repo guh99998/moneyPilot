@@ -295,6 +295,14 @@ export function renderAuth(onAuthenticated) {
                     text: 'Redefinir',
                     onClick: () => { pendingEmail = emailInput.value.trim(); mode = 'forgot'; draw(); }
                 })
+            ]) : null,
+            isLogin ? el('p', { class: 'auth-switch', style: 'margin-top:.25rem;' }, [
+                el('span', { text: 'Não consegue entrar?' }),
+                el('button', {
+                    type: 'button',
+                    text: 'Falar com o suporte',
+                    onClick: () => { window.location.hash = '#/suporte'; }
+                })
             ]) : null
         ]);
 

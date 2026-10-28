@@ -19,7 +19,8 @@ class LoggingEmailSenderTest {
         logger.addAppender(logs);
 
         try {
-            new LoggingEmailSender().send(new EmailMessage("ana@example.com", "Confirme", "Clique no link: http://x/y"));
+            new LoggingEmailSender().send(new EmailMessage(
+                    "ana@example.com", "Confirme", "Clique no link: http://x/y", null, "maria@example.com"));
         } finally {
             logger.detachAppender(logs);
         }
@@ -28,6 +29,7 @@ class LoggingEmailSenderTest {
         String line = logs.list.get(0).getFormattedMessage();
         assertTrue(line.contains("ana@example.com"));
         assertTrue(line.contains("Confirme"));
+        assertTrue(line.contains("maria@example.com"));
         assertTrue(line.contains("Clique no link: http://x/y"));
     }
 }

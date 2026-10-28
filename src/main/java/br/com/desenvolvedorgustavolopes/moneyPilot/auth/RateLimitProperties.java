@@ -21,6 +21,9 @@ public record RateLimitProperties(
         Duration registerNoticeWindow,
         int passwordResetPerEmail,
         int passwordResetPerIp,
-        Duration passwordResetWindow
+        Duration passwordResetWindow,
+        int supportPerSender,
+        int supportPerIp,
+        Duration supportWindow
 ) {
 }

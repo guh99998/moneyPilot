@@ -263,3 +263,15 @@ test('an e-mail linked to another Google account is announced in the alert box',
     assert.match(errorBox.textContent, /vinculada a outra conta Google/);
     assert.equal(authenticated, 0);
 });
+
+test('the login offers a way to talk to support, and the register screen does not', async () => {
+    const view = open();
+
+    await findByText(view, 'button', 'Falar com o suporte').dispatch('click');
+
+    assert.equal(window.location.hash, '#/suporte');
+
+    const register = open();
+    await switchToRegister(register);
+    assert.equal(findByText(register, 'button', 'Falar com o suporte'), undefined);
+});
