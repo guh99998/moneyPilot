@@ -1,13 +1,64 @@
 import { api, ApiError, session } from '../api.js';
 import { el, toast } from '../ui.js';
 
+/** Pede um link de ativação novo. A resposta do servidor é a mesma exista ou não a conta. */
+export async function resendVerification(email, button) {
+    button.disabled = true;
+    try {
+        await api.resendVerification(email);
+        toast('Enviamos um novo link. Confira também a caixa de spam.', 'success');
+    } catch (error) {
+        toast(error?.message || 'Não foi possível reenviar agora.', 'error');
+    } finally {
+        button.disabled = false;
+    }
+}
+
 export function renderAuth(onAuthenticated) {
     let mode = 'login';
+    let pendingEmail = '';
     const wrap = el('div', { class: 'auth-wrap' });
 
+    function drawSent() {
+        const resendBtn = el('button', {
+            class: 'btn-ghost',
+            type: 'button',
+            style: 'width:100%; justify-content:center;',
+            text: 'Reenviar link',
+            onClick: () => resendVerification(pendingEmail, resendBtn)
+        });
+
+        wrap.replaceChildren(el('div', { class: 'card auth-card' }, [
+            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('h2', { text: 'Confira seu e-mail', style: 'text-align:center; margin:0 0 .5rem;' }),
+            el('p', {
+                class: 'auth-tagline',
+                text: `Enviamos um link para ${pendingEmail}. Abra-o para ativar a sua conta (vale por 24 horas).`
+            }),
+            resendBtn,
+            el('p', { class: 'auth-switch' }, [
+                el('span', { text: 'Já ativou?' }),
+                el('button', { type: 'button', text: 'Entrar', onClick: () => { mode = 'login'; draw(); } })
+            ])
+        ]));
+        resendBtn.focus();
+    }
+
     function draw() {
+        if (mode === 'sent') {
+            drawSent();
+            return;
+        }
+
         const isLogin = mode === 'login';
         const errorBox = el('p', { class: 'dialog-error', hidden: true });
+        const resendBtn = el('button', {
+            class: 'btn-ghost',
+            type: 'button',
+            style: 'width:100%; justify-content:center; margin-bottom:.75rem;',
+            text: 'Reenviar link de ativação',
+            onClick: () => resendVerification(emailInput.value.trim(), resendBtn)
+        });
         const fieldErrors = {
             name: el('span', { class: 'error' }),
             email: el('span', { class: 'error' }),
@@ -15,7 +66,7 @@ export function renderAuth(onAuthenticated) {
         };
 
         const nameInput = el('input', { type: 'text', autocomplete: 'name', required: true });
-        const emailInput = el('input', { type: 'email', autocomplete: 'email', required: true });
+        const emailInput = el('input', { type: 'email', autocomplete: 'email', required: true, value: pendingEmail });
         const passwordInput = el('input', {
             type: 'password',
             autocomplete: isLogin ? 'current-password' : 'new-password',
@@ -35,6 +86,7 @@ export function renderAuth(onAuthenticated) {
                 event.preventDefault();
                 submitBtn.disabled = true;
                 errorBox.hidden = true;
+                resendBtn.remove();
                 Object.values(fieldErrors).forEach((node) => { node.textContent = ''; });
 
                 const email = emailInput.value.trim();
@@ -43,12 +95,22 @@ export function renderAuth(onAuthenticated) {
                 try {
                     if (!isLogin) {
                         await api.register({ name: nameInput.value.trim(), email, password });
+                        pendingEmail = email;
+                        mode = 'sent';
+                        draw();
+                        return;
                     }
                     const auth = await api.login({ email, password });
                     session.start(auth.token, email);
-                    if (!isLogin) toast('Conta criada. Bem-vindo!', 'success');
                     onAuthenticated();
                 } catch (error) {
+                    if (error instanceof ApiError && error.status === 403) {
+                        errorBox.textContent = 'Sua conta ainda não foi ativada. Abra o link que enviamos para o seu e-mail ou peça outro.';
+                        errorBox.hidden = false;
+                        errorBox.after(resendBtn);
+                        submitBtn.disabled = false;
+                        return;
+                    }
                     if (error instanceof ApiError && error.fieldErrors) {
                         Object.entries(error.fieldErrors).forEach(([field, message]) => {
                             if (fieldErrors[field]) fieldErrors[field].textContent = message;

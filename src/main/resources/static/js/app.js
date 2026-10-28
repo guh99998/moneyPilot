@@ -10,6 +10,7 @@ import { renderCategories } from './views/categories.js';
 import { renderBudgets } from './views/budgets.js';
 import { renderProfile } from './views/profile.js';
 import { renderConfirmEmail } from './views/confirm-email.js';
+import { renderVerifyEmail } from './views/verify-email.js';
 import { renderBell, refreshAlerts, resetAlerts } from './alerts.js';
 
 const ROUTES = [
@@ -125,6 +126,12 @@ async function render() {
     // Rota pública: o link do e-mail confirma a troca mesmo sem sessão aberta.
     if (window.location.hash.startsWith('#/confirmar-email')) {
         root.append(renderConfirmEmail());
+        return;
+    }
+
+    // Rota pública: quem ativa a conta ainda não tem sessão.
+    if (window.location.hash.startsWith('#/verificar-email')) {
+        root.append(renderVerifyEmail());
         return;
     }
 
