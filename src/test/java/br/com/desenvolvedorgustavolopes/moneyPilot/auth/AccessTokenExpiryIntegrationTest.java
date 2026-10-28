@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "jwt.expiration-ms=1")
 class AccessTokenExpiryIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String PASSWORD = "senha12345";
+    private static final String PASSWORD = "minha frase secreta";
 
     @Autowired
     private MockMvc mockMvc;
@@ -37,7 +37,8 @@ class AccessTokenExpiryIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, "Expiry User"))))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
+        markVerified(email);
 
         MvcResult login = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

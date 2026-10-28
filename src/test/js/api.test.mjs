@@ -343,3 +343,207 @@ test('confirming an email change is anonymous: a 400 never fires session:expired
     assert.equal(authorization, undefined);
     assert.deepEqual(events, []);
 });
+
+test('registering resolves with no body: the account still has to be verified', async () => {
+    session.clear();
+    events.length = 0;
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, authorization: options.headers?.Authorization };
+        return new Response(null, { status: 202 });
+    };
+
+    const result = await api.register({ name: 'Maria', email: 'maria@example.com', password: 'senha12345' });
+
+    assert.equal(result, null);
+    assert.deepEqual(sent, { path: '/api/v1/auth/register', authorization: undefined });
+    assert.equal(session.active, false);
+});
+
+test('logging in to an unverified account is a 403, not an expired session', async () => {
+    session.clear();
+    events.length = 0;
+    const paths = [];
+    globalThis.fetch = async (url) => {
+        paths.push(new URL(url).pathname);
+        return new Response(JSON.stringify({ status: 403, message: 'E-mail not verified' }),
+            { status: 403, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.login({ email: 'maria@example.com', password: 'senha12345' }),
+        (error) => error instanceof ApiError && error.status === 403);
+
+    assert.deepEqual(paths, ['/api/v1/auth/login']);
+    assert.deepEqual(events, []);
+});
+
+test('resending the verification link posts only the email, without a session', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, body: options.body, authorization: options.headers?.Authorization };
+        return new Response(null, { status: 202 });
+    };
+
+    await api.resendVerification('maria@example.com');
+
+    assert.deepEqual(sent, {
+        path: '/api/v1/auth/verification/resend',
+        body: JSON.stringify({ email: 'maria@example.com' }),
+        authorization: undefined
+    });
+    assert.deepEqual(events, []);
+});
+
+test('confirming a verification link is anonymous: a 400 never fires session:expired nor refreshes', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    const paths = [];
+    let authorization;
+    globalThis.fetch = async (url, options = {}) => {
+        paths.push(new URL(url).pathname);
+        authorization = options.headers?.Authorization;
+        return new Response(JSON.stringify({ message: 'Invalid or expired verification link' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.confirmVerification('token-ruim'), (error) => error instanceof ApiError && error.status === 400);
+
+    assert.deepEqual(paths, ['/api/v1/auth/verification/confirm']);
+    assert.equal(authorization, undefined);
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});
+
+test('asking for a password reset posts only the email, without a session', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, body: options.body, authorization: options.headers?.Authorization };
+        return new Response(null, { status: 202 });
+    };
+
+    await api.forgotPassword('maria@example.com');
+
+    assert.deepEqual(sent, {
+        path: '/api/v1/auth/password/forgot',
+        body: JSON.stringify({ email: 'maria@example.com' }),
+        authorization: undefined
+    });
+    assert.deepEqual(events, []);
+});
+
+test('resetting the password is anonymous: a 400 never fires session:expired nor refreshes', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    const sent = [];
+    globalThis.fetch = async (url, options = {}) => {
+        sent.push({ path: new URL(url).pathname, body: options.body, authorization: options.headers?.Authorization });
+        return new Response(JSON.stringify({ message: 'Invalid or expired password reset link' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.resetPassword('token-ruim', 'nova-senha-678'),
+        (error) => error instanceof ApiError && error.status === 400);
+
+    assert.deepEqual(sent, [{
+        path: '/api/v1/auth/password/reset',
+        body: JSON.stringify({ token: 'token-ruim', newPassword: 'nova-senha-678' }),
+        authorization: undefined
+    }]);
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});
+
+test('the Google config and the Google login are anonymous: a 401 or 409 never fires session:expired nor refreshes', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    const sent = [];
+    globalThis.fetch = async (url, options = {}) => {
+        sent.push({ path: new URL(url).pathname, method: options.method ?? 'GET', body: options.body, authorization: options.headers?.Authorization });
+        return sent.length === 1
+            ? Response.json({ clientId: 'abc.apps.googleusercontent.com' })
+            : new Response(JSON.stringify({ message: 'Invalid Google credential' }),
+                { status: 401, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    assert.deepEqual(await api.googleConfig(), { clientId: 'abc.apps.googleusercontent.com' });
+    await assert.rejects(api.loginWithGoogle('id-token'), (error) => error instanceof ApiError && error.status === 401);
+
+    assert.deepEqual(sent, [
+        { path: '/api/v1/auth/google/config', method: 'GET', body: undefined, authorization: undefined },
+        { path: '/api/v1/auth/google', method: 'POST', body: JSON.stringify({ credential: 'id-token' }), authorization: undefined }
+    ]);
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});
+
+test('linking and unlinking Google carry the current password with the session token', async () => {
+    session.start('valid', 'user@example.com');
+    const sent = [];
+    globalThis.fetch = async (url, options = {}) => {
+        sent.push({ path: new URL(url).pathname, method: options.method, body: options.body, authorization: options.headers?.Authorization });
+        return new Response(null, { status: 204 });
+    };
+
+    await api.profile.linkGoogle('id-token', 'minha frase secreta');
+    await api.profile.unlinkGoogle('minha frase secreta');
+
+    assert.deepEqual(sent, [
+        {
+            path: '/api/v1/profile/google', method: 'POST', authorization: 'Bearer valid',
+            body: JSON.stringify({ credential: 'id-token', currentPassword: 'minha frase secreta' })
+        },
+        {
+            path: '/api/v1/profile/google/unlink', method: 'POST', authorization: 'Bearer valid',
+            body: JSON.stringify({ currentPassword: 'minha frase secreta' })
+        }
+    ]);
+});
+
+test('a refused Google credential on the profile is a 400 with the field error, not an expired session', async () => {
+    session.start('valid', 'user@example.com');
+    events.length = 0;
+    globalThis.fetch = async () => new Response(JSON.stringify({
+        message: 'Invalid Google credential', fieldErrors: { credential: 'Invalid Google credential' }
+    }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+    await assert.rejects(api.profile.linkGoogle('falso', 'senha'), (error) =>
+        error instanceof ApiError && error.status === 400 && error.fieldErrors.credential === 'Invalid Google credential');
+
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});
+
+test('hiding the photo and using the Google photo again use their own routes', async () => {
+    session.start('valid', 'user@example.com');
+    const sent = [];
+    globalThis.fetch = async (url, options = {}) => {
+        sent.push({ path: new URL(url).pathname, method: options.method });
+        return new Response(null, { status: 204 });
+    };
+
+    await api.profile.hideAvatar();
+    await api.profile.useGoogleAvatar();
+
+    assert.deepEqual(sent, [
+        { path: '/api/v1/profile/avatar', method: 'DELETE' },
+        { path: '/api/v1/profile/avatar/google', method: 'POST' }
+    ]);
+});
+
+test('session keeps the photo URL, tells "no photo" from "not known yet", and clears it on logout', () => {
+    session.start('token', 'user@example.com');
+    assert.equal(session.avatar, null);
+
+    session.setAvatar(null);
+    assert.equal(session.avatar, '');
+
+    session.setAvatar('https://lh3.example/ana.png');
+    assert.equal(session.avatar, 'https://lh3.example/ana.png');
+
+    session.clear();
+    assert.equal(session.avatar, null);
+});

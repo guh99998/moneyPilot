@@ -19,6 +19,7 @@ public class ProfileService {
     private final AttemptLimiter attemptLimiter;
     private final RateLimitProperties rateLimit;
     private final EmailChangeService emailChangeService;
+    private final PasswordPolicy passwordPolicy;
 
     public ProfileResponse getProfile() {
         User user = currentUser();
@@ -40,10 +41,12 @@ public class ProfileService {
 
         attemptLimiter.check(key, rateLimit.passwordChangeFailures());
 
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+        if (!user.hasPassword() || !passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             attemptLimiter.record(key, rateLimit.passwordChangeWindow());
             throw new InvalidCurrentPasswordException();
         }
+
+        passwordPolicy.checkPersonal("newPassword", request.newPassword(), user.getEmail(), user.getName());
 
         if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
             throw new SamePasswordException();

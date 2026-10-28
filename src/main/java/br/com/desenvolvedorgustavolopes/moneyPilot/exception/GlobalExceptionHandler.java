@@ -162,17 +162,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
-    @ExceptionHandler(EmailAlreadyRegistredException.class)
-    public ResponseEntity<ErrorResponse> handleEmailAlreadyRegistred(EmailAlreadyRegistredException ex) {
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleEmailNotVerified(EmailNotVerifiedException ex) {
         ErrorResponse body = new ErrorResponse(
                 Instant.now(),
-                HttpStatus.CONFLICT.value(),
-                "Conflict",
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
                 ex.getMessage(),
                 null
         );
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
     @ExceptionHandler(CategoryTypeMismatchException.class)
@@ -463,9 +463,45 @@ public class GlobalExceptionHandler {
         return fieldError("currentPassword", ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidGoogleCredentialException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidGoogleCredential(InvalidGoogleCredentialException ex) {
+        return fieldError("credential", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidGoogleTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidGoogleToken(InvalidGoogleTokenException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "Unauthorized",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    @ExceptionHandler(GoogleAccountConflictException.class)
+    public ResponseEntity<ErrorResponse> handleGoogleAccountConflict(GoogleAccountConflictException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     @ExceptionHandler(SamePasswordException.class)
     public ResponseEntity<ErrorResponse> handleSamePassword(SamePasswordException ex) {
         return fieldError("newPassword", ex.getMessage());
+    }
+
+    @ExceptionHandler(WeakPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleWeakPassword(WeakPasswordException ex) {
+        return fieldError(ex.getField(), ex.getMessage());
     }
 
     @ExceptionHandler(SameEmailException.class)
@@ -480,6 +516,32 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidEmailChangeTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidEmailChangeToken(InvalidEmailChangeTokenException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(InvalidVerificationTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidVerificationToken(InvalidVerificationTokenException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(InvalidPasswordResetTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPasswordResetToken(InvalidPasswordResetTokenException ex) {
         ErrorResponse body = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),

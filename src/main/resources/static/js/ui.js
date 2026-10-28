@@ -25,6 +25,33 @@ export function svgIcon(shapes, size = 18) {
         + `stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shapes}</svg>`;
 }
 
+/** Iniciais para o avatar sem foto: primeira letra do primeiro e do último nome. */
+export function initialsOf(name) {
+    const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return '?';
+    const first = [...words[0]][0];
+    const last = words.length > 1 ? [...words[words.length - 1]][0] : '';
+    return (first + last).toUpperCase();
+}
+
+/**
+ * Círculo com a foto ou, sem foto (ou se ela não carregar), as iniciais. É decorativo: o nome fica ao lado.
+ * `size` em px; o tamanho visual vem do CSS, os atributos só reservam o espaço da imagem.
+ */
+export function avatar({ url, name, size = 32 }) {
+    const node = el('span', { class: size > 40 ? 'avatar avatar-lg' : 'avatar', 'aria-hidden': 'true' });
+    const showInitials = () => node.replaceChildren(initialsOf(name));
+    if (!url) {
+        showInitials();
+        return node;
+    }
+    // no-referrer: o Google serve a foto sem exigir de onde o pedido vem.
+    const image = el('img', { src: url, alt: '', width: size, height: size, referrerpolicy: 'no-referrer' });
+    image.addEventListener('error', showInitials);
+    node.append(image);
+    return node;
+}
+
 export function clear(node) {
     node.replaceChildren();
     return node;

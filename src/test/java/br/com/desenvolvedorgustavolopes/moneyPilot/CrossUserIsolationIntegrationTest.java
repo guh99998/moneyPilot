@@ -98,12 +98,13 @@ class CrossUserIsolationIntegrationTest extends AbstractIntegrationTest {
 
     private String registerAndLogin() throws Exception {
         String email = "test-" + UUID.randomUUID() + "@example.com";
-        String password = "senha12345";
+        String password = "minha frase secreta";
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, password, "Test User"))))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
+        markVerified(email);
 
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

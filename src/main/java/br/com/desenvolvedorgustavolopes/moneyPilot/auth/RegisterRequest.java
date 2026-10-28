@@ -2,7 +2,6 @@ package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
         @NotBlank
@@ -10,9 +9,13 @@ public record RegisterRequest(
         String email,
 
         @NotBlank
-        @Size(min = 8)
+        @NewPassword
         String password,
 
         @NotBlank
         String name) {
+
+    public RegisterRequest {
+        email = EmailAddress.normalize(email);
+    }
 }

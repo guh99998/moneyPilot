@@ -206,7 +206,7 @@ h3 { font-size: .92rem; }
     font-weight: 600;
     text-decoration: none;
 }
-.user-chip-icon { display: inline-flex; flex: none; }
+.user-chip-avatar { display: inline-flex; flex: none; }
 .user-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-chip:hover, .user-chip.active { background: var(--navy-2); color: #fff; }
 .sidebar-foot button { color: #dbe4f0; border-color: var(--navy-3); background: transparent; }
@@ -357,6 +357,26 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .field label { font-size: .8rem; font-weight: 700; color: var(--text-secondary); }
 .field .error { font-size: .78rem; color: var(--critical); }
 .form-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 .85rem; }
+
+/* ---------- campo de senha (js/password.js) ---------- */
+.password-field { position: relative; }
+.password-field input { min-height: 44px; padding-right: 48px; }
+.password-toggle {
+    position: absolute; top: 0; right: 0;
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    padding: 0; border: none; border-radius: 9px;
+    background: transparent; color: var(--text-secondary);
+    cursor: pointer;
+}
+.password-toggle:hover { color: var(--navy); }
+.strength-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.strength-fill { display: block; height: 100%; width: 0; border-radius: 3px; }
+.strength-fill.weak { width: 33%; background: var(--critical); }
+.strength-fill.fair { width: 66%; background: var(--warning); }
+.strength-fill.strong { width: 100%; background: var(--good); }
+.strength-text { margin: .3rem 0 0; font-size: .78rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.strength-label { font-weight: 700; }
 
 .filters { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; align-items: flex-end; margin-bottom: 1rem; }
 .filters .field { margin-bottom: 0; min-width: 0; }
@@ -620,13 +640,47 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .recurrence-actions { display: flex; gap: .25rem; }
 
 /* ---------- auth ---------- */
-.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 1.5rem var(--gutter); background: linear-gradient(180deg, var(--surface) 0%, var(--page) 100%); }
+.auth-wrap { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 1.5rem var(--gutter); background: linear-gradient(180deg, var(--surface) 0%, var(--page) 100%); }
 .auth-card { width: min(400px, 100%); padding: 1.5rem 1.25rem; }
 .auth-card .brand { justify-content: center; margin-bottom: .25rem; font-size: 1.25rem; color: var(--navy); }
 .auth-logo { display: block; width: 220px; max-width: 80%; margin: -.35rem auto .9rem; border-radius: 12px; background: #fff; }
-.auth-tagline { text-align: center; color: var(--text-secondary); font-size: .88rem; margin: 0 0 1.25rem; }
+.auth-tagline { text-align: center; color: var(--text-secondary); font-size: .88rem; margin: 0 0 1.25rem; overflow-wrap: anywhere; }
+.auth-tagline.error { color: var(--critical); font-weight: 600; }
 .auth-switch { text-align: center; font-size: .85rem; color: var(--text-secondary); margin-top: 1rem; }
-.auth-switch button { background: none; border: none; color: var(--navy-3); padding: 0 .2rem; font-weight: 800; }
+/* Alvo de toque de 44px no celular sem mudar o desenho do link */
+.auth-switch button { background: none; border: none; color: var(--navy-3); padding: 0 .4rem; min-height: 44px; font-weight: 800; }
+
+/* Entrar com Google: o "ou" e o botão oficial (um iframe do Google, que desenha o próprio visual) */
+.google-block { margin-top: 1rem; }
+.auth-or { display: flex; align-items: center; gap: .75rem; margin: 0 0 1rem; color: var(--text-muted); font-size: .8rem; }
+.auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.google-slot { display: flex; justify-content: center; min-height: 44px; max-width: 100%; overflow: hidden; }
+.auth-note { text-align: center; font-size: .8rem; color: var(--text-secondary); margin: .75rem 0 0; }
+
+/* Avatar: foto do Google ou iniciais */
+.avatar {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--green);
+    color: var(--navy);
+    font-size: .8rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    line-height: 1;
+}
+.avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.avatar-lg { width: 64px; height: 64px; font-size: 1.35rem; }
+
+.profile-photo { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.profile-photo-body { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; min-width: 0; }
+.profile-photo-actions { display: flex; flex-wrap: wrap; gap: .25rem; }
+.profile-photo-actions button, .profile-card .btn-danger { min-height: 44px; }
 
 /* ---------- misc ---------- */
 .empty { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: .9rem; }

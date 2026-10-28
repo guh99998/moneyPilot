@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EmailChangeIntegrationTest extends AbstractIntegrationTest {
 
     private static final String COOKIE_NAME = "refresh_token";
-    private static final String PASSWORD = "senha12345";
+    private static final String PASSWORD = "minha frase secreta";
     private static final ZoneId SAO_PAULO = ZoneId.of("America/Sao_Paulo");
     private static final Pattern TOKEN = Pattern.compile("token=(\\S+)");
 
@@ -310,7 +310,8 @@ class EmailChangeIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(newEmail, PASSWORD, "Outra Pessoa"))))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
+        markVerified(newEmail);
 
         confirm(token, null)
                 .andExpect(status().isBadRequest())
@@ -395,7 +396,10 @@ class EmailChangeIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, "Maria Silva"))))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
+        markVerified(email);
+        // O cadastro envia o link de verificação; os testes daqui só olham os e-mails da troca.
+        emailSender.clear();
         return email;
     }
 

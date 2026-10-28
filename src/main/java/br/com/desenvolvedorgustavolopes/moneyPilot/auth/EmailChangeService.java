@@ -59,7 +59,7 @@ public class EmailChangeService {
         attemptLimiter.check(passwordKey, rateLimit.passwordChangeFailures());
         attemptLimiter.check(requestKey, rateLimit.emailChangeRequests());
 
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+        if (!user.hasPassword() || !passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             attemptLimiter.record(passwordKey, rateLimit.passwordChangeWindow());
             throw new InvalidCurrentPasswordException();
         }

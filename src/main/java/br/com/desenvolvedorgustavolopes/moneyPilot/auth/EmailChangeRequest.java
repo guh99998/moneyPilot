@@ -4,8 +4,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import java.util.Locale;
-
 public record EmailChangeRequest(
         @NotBlank
         @Email
@@ -16,8 +14,6 @@ public record EmailChangeRequest(
         String currentPassword) {
 
     public EmailChangeRequest {
-        if (newEmail != null) {
-            newEmail = newEmail.strip().toLowerCase(Locale.ROOT);
-        }
+        newEmail = EmailAddress.normalize(newEmail);
     }
 }

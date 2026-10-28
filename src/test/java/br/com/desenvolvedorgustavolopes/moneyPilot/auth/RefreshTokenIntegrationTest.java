@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RefreshTokenIntegrationTest extends AbstractIntegrationTest {
 
     private static final String COOKIE_NAME = "refresh_token";
-    private static final String PASSWORD = "senha12345";
+    private static final String PASSWORD = "minha frase secreta";
 
     @Autowired
     private MockMvc mockMvc;
@@ -203,7 +203,8 @@ class RefreshTokenIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, PASSWORD, "Refresh User"))))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
+        markVerified(email);
         return email;
     }
 

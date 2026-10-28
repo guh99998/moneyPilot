@@ -2,6 +2,7 @@ const BASE = '/api/v1';
 const TOKEN_KEY = 'moneypilot.token';
 const EMAIL_KEY = 'moneypilot.email';
 const NAME_KEY = 'moneypilot.name';
+const AVATAR_KEY = 'moneypilot.avatar';
 
 export class ApiError extends Error {
     constructor(status, message, fieldErrors) {
@@ -24,6 +25,13 @@ export const session = {
     setName(name) {
         if (name) localStorage.setItem(NAME_KEY, name);
     },
+    // Nulo = ainda não se sabe; vazio = a conta não tem foto (então não há o que buscar de novo).
+    get avatar() {
+        return localStorage.getItem(AVATAR_KEY);
+    },
+    setAvatar(url) {
+        localStorage.setItem(AVATAR_KEY, url || '');
+    },
     start(token, email) {
         localStorage.setItem(TOKEN_KEY, token);
         if (email) localStorage.setItem(EMAIL_KEY, email);
@@ -32,6 +40,7 @@ export const session = {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(EMAIL_KEY);
         localStorage.removeItem(NAME_KEY);
+        localStorage.removeItem(AVATAR_KEY);
     },
     get active() {
         return Boolean(localStorage.getItem(TOKEN_KEY));
@@ -169,6 +178,20 @@ export function normalizePage(payload) {
 export const api = {
     register: (body) => request('/auth/register', { method: 'POST', body, anonymous: true }),
     login: (body) => request('/auth/login', { method: 'POST', body, anonymous: true }),
+    // Anônimas: quem ainda não ativou a conta não tem sessão, e um 400 (link inválido) não pode derrubar outra.
+    resendVerification: (email) =>
+        request('/auth/verification/resend', { method: 'POST', body: { email }, anonymous: true }),
+    confirmVerification: (token) =>
+        request('/auth/verification/confirm', { method: 'POST', body: { token }, anonymous: true }),
+    // Anônimas: quem esqueceu a senha não tem sessão, e um 400 (link inválido) não pode derrubar outra.
+    forgotPassword: (email) =>
+        request('/auth/password/forgot', { method: 'POST', body: { email }, anonymous: true }),
+    resetPassword: (token, newPassword) =>
+        request('/auth/password/reset', { method: 'POST', body: { token, newPassword }, anonymous: true }),
+    // Anônimas: quem entra com o Google ainda não tem sessão, e um 401/409 não pode derrubar outra.
+    googleConfig: () => request('/auth/google/config', { anonymous: true }),
+    loginWithGoogle: (credential) =>
+        request('/auth/google', { method: 'POST', body: { credential }, anonymous: true }),
     logout: () => request('/auth/logout', { method: 'POST', anonymous: true }),
 
     alerts: {
@@ -178,7 +201,14 @@ export const api = {
 
     profile: {
         get: () => request('/profile'),
-        update: (name) => request('/profile', { method: 'PUT', body: { name } })
+        update: (name) => request('/profile', { method: 'PUT', body: { name } }),
+        // Autenticadas: um credential recusado volta como 400 no campo, nunca como sessão expirada.
+        linkGoogle: (credential, currentPassword) =>
+            request('/profile/google', { method: 'POST', body: { credential, currentPassword } }),
+        unlinkGoogle: (currentPassword) =>
+            request('/profile/google/unlink', { method: 'POST', body: { currentPassword } }),
+        hideAvatar: () => request('/profile/avatar', { method: 'DELETE' }),
+        useGoogleAvatar: () => request('/profile/avatar/google', { method: 'POST' })
     },
     changePassword: (currentPassword, newPassword) =>
         request('/auth/password', { method: 'POST', body: { currentPassword, newPassword } }),
