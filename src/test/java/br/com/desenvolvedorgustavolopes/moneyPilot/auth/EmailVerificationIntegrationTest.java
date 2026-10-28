@@ -5,6 +5,7 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.mail.EmailMessage;
 import br.com.desenvolvedorgustavolopes.moneyPilot.mail.RecordingEmailSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +72,12 @@ class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
         when(clock.getZone()).thenReturn(SAO_PAULO);
         when(clock.instant()).thenAnswer(invocation -> now);
         emailSender.clear();
+    }
+
+    // O RecordingEmailSender é compartilhado com as outras classes que usam o mesmo contexto.
+    @AfterEach
+    void stopFailing() {
+        emailSender.failFromNowOn(false);
     }
 
     // CA1
