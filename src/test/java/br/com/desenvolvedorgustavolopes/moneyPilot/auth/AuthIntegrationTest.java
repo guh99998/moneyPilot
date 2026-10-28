@@ -22,13 +22,13 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void register_withValidData_returns201() throws Exception {
+    void register_withValidData_returns202() throws Exception {
         RegisterRequest request = new RegisterRequest(uniqueEmail(), "senha12345", "Test User");
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
     }
 
     @Test
@@ -56,7 +56,8 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
+        markVerified(email);
     }
 
     private String uniqueEmail() {

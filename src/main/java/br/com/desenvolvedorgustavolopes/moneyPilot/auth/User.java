@@ -30,4 +30,7 @@ public class User {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
 }

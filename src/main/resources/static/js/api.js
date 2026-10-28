@@ -169,6 +169,11 @@ export function normalizePage(payload) {
 export const api = {
     register: (body) => request('/auth/register', { method: 'POST', body, anonymous: true }),
     login: (body) => request('/auth/login', { method: 'POST', body, anonymous: true }),
+    // Anônimas: quem ainda não ativou a conta não tem sessão, e um 400 (link inválido) não pode derrubar outra.
+    resendVerification: (email) =>
+        request('/auth/verification/resend', { method: 'POST', body: { email }, anonymous: true }),
+    confirmVerification: (token) =>
+        request('/auth/verification/confirm', { method: 'POST', body: { token }, anonymous: true }),
     logout: () => request('/auth/logout', { method: 'POST', anonymous: true }),
 
     alerts: {

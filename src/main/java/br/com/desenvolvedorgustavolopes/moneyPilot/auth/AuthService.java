@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.exception.EmailNotVerifiedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,7 +19,7 @@ public class AuthService {
 
     public AuthTokens login(LoginRequest request, String clientIp) {
         String ipKey = "login-ip:" + clientIp;
-        String emailKey = "login-email:" + request.email().trim().toLowerCase();
+        String emailKey = "login-email:" + request.email();
 
         attemptLimiter.check(ipKey, rateLimit.loginPerIp());
         attemptLimiter.check(emailKey, rateLimit.loginFailuresPerEmail());
@@ -32,6 +33,11 @@ public class AuthService {
         }
 
         attemptLimiter.reset(emailKey);
+
+        // Só quem sabe a senha chega aqui, então o 403 não revela se o e-mail tem conta.
+        if (user.getEmailVerifiedAt() == null) {
+            throw new EmailNotVerifiedException();
+        }
 
         String accessToken = jwtService.generateToken(user.getId());
 

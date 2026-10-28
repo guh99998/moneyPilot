@@ -24,9 +24,9 @@ public class UserController {
     private boolean cookieSecure;
 
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserDTO createUser(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
-        return service.createUser(request, httpRequest.getRemoteAddr());
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void createUser(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        service.createUser(request, httpRequest.getRemoteAddr());
     }
 
     @PostMapping("/login")

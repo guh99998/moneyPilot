@@ -343,3 +343,75 @@ test('confirming an email change is anonymous: a 400 never fires session:expired
     assert.equal(authorization, undefined);
     assert.deepEqual(events, []);
 });
+
+test('registering resolves with no body: the account still has to be verified', async () => {
+    session.clear();
+    events.length = 0;
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, authorization: options.headers?.Authorization };
+        return new Response(null, { status: 202 });
+    };
+
+    const result = await api.register({ name: 'Maria', email: 'maria@example.com', password: 'senha12345' });
+
+    assert.equal(result, null);
+    assert.deepEqual(sent, { path: '/api/v1/auth/register', authorization: undefined });
+    assert.equal(session.active, false);
+});
+
+test('logging in to an unverified account is a 403, not an expired session', async () => {
+    session.clear();
+    events.length = 0;
+    const paths = [];
+    globalThis.fetch = async (url) => {
+        paths.push(new URL(url).pathname);
+        return new Response(JSON.stringify({ status: 403, message: 'E-mail not verified' }),
+            { status: 403, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.login({ email: 'maria@example.com', password: 'senha12345' }),
+        (error) => error instanceof ApiError && error.status === 403);
+
+    assert.deepEqual(paths, ['/api/v1/auth/login']);
+    assert.deepEqual(events, []);
+});
+
+test('resending the verification link posts only the email, without a session', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, body: options.body, authorization: options.headers?.Authorization };
+        return new Response(null, { status: 202 });
+    };
+
+    await api.resendVerification('maria@example.com');
+
+    assert.deepEqual(sent, {
+        path: '/api/v1/auth/verification/resend',
+        body: JSON.stringify({ email: 'maria@example.com' }),
+        authorization: undefined
+    });
+    assert.deepEqual(events, []);
+});
+
+test('confirming a verification link is anonymous: a 400 never fires session:expired nor refreshes', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    const paths = [];
+    let authorization;
+    globalThis.fetch = async (url, options = {}) => {
+        paths.push(new URL(url).pathname);
+        authorization = options.headers?.Authorization;
+        return new Response(JSON.stringify({ message: 'Invalid or expired verification link' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.confirmVerification('token-ruim'), (error) => error instanceof ApiError && error.status === 400);
+
+    assert.deepEqual(paths, ['/api/v1/auth/verification/confirm']);
+    assert.equal(authorization, undefined);
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});
