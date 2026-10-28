@@ -14,7 +14,7 @@ public class LoggingEmailSender implements EmailSender {
 
     @Override
     public void send(EmailMessage message) {
-        log.info("E-mail not sent (non-prod profile). To: {} | Subject: {}\n{}",
-                message.to(), message.subject(), message.text());
+        log.info("E-mail not sent (non-prod profile). To: {} | Reply-To: {} | Subject: {}\n{}",
+                message.to(), message.replyTo(), message.subject(), message.text());
     }
 }
