@@ -6,10 +6,19 @@ import { installFakeDom, findAll, findByTag, findByText } from './fake-dom.mjs';
 installFakeDom();
 
 const { renderAuth } = await import('../../main/resources/static/js/views/auth.js');
+const { session } = await import('../../main/resources/static/js/api.js');
 
-/** Fake backend: every call to `path` answers with the next response of `queue`. */
+// The login and register screens ask whether Google is on. It is off unless a test turns it on.
+let googleClientId = '';
+const googleOff = (url) => new URL(url, 'http://localhost').pathname === '/api/v1/auth/google/config'
+    ? Response.json({ clientId: googleClientId })
+    : null;
+
+/** Fake backend: every call (but the Google config) answers with the next response of `queue`. */
 function startServer(queue) {
-    globalThis.fetch = async () => {
+    globalThis.fetch = async (url) => {
+        const off = googleOff(url);
+        if (off) return off;
         const { status, body } = queue.shift();
         return body === undefined ? new Response(null, { status }) : Response.json(body, { status });
     };
@@ -120,6 +129,8 @@ test('every label points to the input it names, in login and register', async ()
 test('forgot password sends the typed email and shows the generic answer', async () => {
     let sent;
     globalThis.fetch = async (url, options = {}) => {
+        const off = googleOff(url);
+        if (off) return off;
         sent = { path: new URL(url).pathname, body: JSON.parse(options.body) };
         return new Response(null, { status: 202 });
     };
@@ -159,4 +170,96 @@ test('after asking for a reset, focus moves to the generic answer so it is read 
 
     const status = findAll(view, (node) => node.getAttribute('role') === 'status')[0];
     assert.equal(document.activeElement, status);
+});
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+const googleBlock = (view) => findAll(view, (node) => node.className === 'google-block')[0];
+
+/** Turns Google on with a stand-in script; returns what the screen handed to it. */
+function turnGoogleOn(t) {
+    const calls = { initialize: null, render: null };
+    googleClientId = 'meu-app.apps.googleusercontent.com';
+    globalThis.google = {
+        accounts: {
+            id: {
+                initialize: (options) => { calls.initialize = options; },
+                renderButton: (slot, options) => { calls.render = options; }
+            }
+        }
+    };
+    t.after(() => {
+        googleClientId = '';
+        delete globalThis.google;
+    });
+    return calls;
+}
+
+test('the login always tells who signed up with Google where to go, and hides the button while Google is off', async () => {
+    const view = open();
+    await settle();
+
+    assert.ok(findAll(view, (node) => node.className === 'auth-note'
+        && node.textContent === 'Criou a conta com o Google? Use Entrar com Google.')[0]);
+    assert.equal(googleBlock(view).hidden, true);
+});
+
+test('with Google on, the login shows the "ou" separator and the sign-in button', async (t) => {
+    const calls = turnGoogleOn(t);
+    const view = open();
+    await settle();
+
+    assert.equal(googleBlock(view).hidden, false);
+    assert.equal(calls.render.text, 'signin_with');
+    assert.equal(findAll(view, (node) => node.className === 'auth-or')[0].getAttribute('aria-hidden'), 'true');
+});
+
+test('the register screen offers the sign-up button, without the login hint', async (t) => {
+    const calls = turnGoogleOn(t);
+    const view = open();
+    await switchToRegister(view);
+    await settle();
+
+    assert.equal(googleBlock(view).hidden, false);
+    assert.equal(calls.render.text, 'signup_with');
+    assert.equal(findAll(view, (node) => node.className === 'auth-note').length, 0);
+});
+
+test('a Google credential logs in the same way as a password does', async (t) => {
+    const calls = turnGoogleOn(t);
+    let authenticated = 0;
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        const off = googleOff(url);
+        if (off) return off;
+        sent = { path: new URL(url).pathname, body: JSON.parse(options.body) };
+        return Response.json({ token: 'access-token', email: 'ana@example.com' });
+    };
+    const view = renderAuth(() => { authenticated += 1; });
+    await settle();
+
+    await calls.initialize.callback({ credential: 'id-token' });
+
+    assert.deepEqual(sent, { path: '/api/v1/auth/google', body: { credential: 'id-token' } });
+    assert.equal(session.token, 'access-token');
+    assert.equal(session.email, 'ana@example.com');
+    assert.equal(authenticated, 1);
+    assert.equal(errorBoxOf(view).hidden, true);
+    session.clear();
+});
+
+test('an e-mail linked to another Google account is announced in the alert box', async (t) => {
+    const calls = turnGoogleOn(t);
+    globalThis.fetch = async (url) => googleOff(url)
+        || Response.json({ message: 'This e-mail belongs to an account linked to another Google account' }, { status: 409 });
+    let authenticated = 0;
+    const view = renderAuth(() => { authenticated += 1; });
+    await settle();
+
+    await calls.initialize.callback({ credential: 'id-token' });
+
+    const errorBox = errorBoxOf(view);
+    assert.equal(errorBox.hidden, false);
+    assert.equal(errorBox.getAttribute('role'), 'alert');
+    assert.match(errorBox.textContent, /vinculada a outra conta Google/);
+    assert.equal(authenticated, 0);
 });
