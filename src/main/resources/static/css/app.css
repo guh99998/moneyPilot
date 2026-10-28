@@ -358,6 +358,26 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .field .error { font-size: .78rem; color: var(--critical); }
 .form-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 .85rem; }
 
+/* ---------- campo de senha (js/password.js) ---------- */
+.password-field { position: relative; }
+.password-field input { min-height: 44px; padding-right: 48px; }
+.password-toggle {
+    position: absolute; top: 0; right: 0;
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    padding: 0; border: none; border-radius: 9px;
+    background: transparent; color: var(--text-secondary);
+    cursor: pointer;
+}
+.password-toggle:hover { color: var(--navy); }
+.strength-track { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.strength-fill { display: block; height: 100%; width: 0; border-radius: 3px; }
+.strength-fill.weak { width: 33%; background: var(--critical); }
+.strength-fill.fair { width: 66%; background: var(--warning); }
+.strength-fill.strong { width: 100%; background: var(--good); }
+.strength-text { margin: .3rem 0 0; font-size: .78rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.strength-label { font-weight: 700; }
+
 .filters { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; align-items: flex-end; margin-bottom: 1rem; }
 .filters .field { margin-bottom: 0; min-width: 0; }
 .filters > button { grid-column: 1 / -1; justify-content: center; padding: .55rem; }

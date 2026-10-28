@@ -1,11 +1,12 @@
 import { api, ApiError, session } from '../api.js';
 import { el, toast, pageHead } from '../ui.js';
+import { HINT, passwordInput as passwordField } from '../password.js';
 
 const CREATED_AT_FORMAT = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'America/Sao_Paulo' });
 
-function fieldRow(label, input, errorNode, hint) {
+function fieldRow(label, input, errorNode, hint, forId) {
     return el('div', { class: 'field' }, [
-        el('label', { text: label }),
+        el('label', { text: label, for: forId }),
         input,
         hint ? el('span', { class: 'meter-foot', text: hint }) : null,
         errorNode
@@ -16,9 +17,8 @@ function fieldRow(label, input, errorNode, hint) {
 function fieldMessage(field, message) {
     if (field === 'currentPassword') return 'Senha atual incorreta.';
     if (field === 'newPassword') {
-        return message.includes('different')
-            ? 'A nova senha deve ser diferente da atual.'
-            : 'A nova senha deve ter no mínimo 8 caracteres.';
+        // A regra de senha nova responde em português, com o motivo; só "diferente da atual" vem em inglês.
+        return message.includes('different') ? 'A nova senha deve ser diferente da atual.' : message;
     }
     if (field === 'newEmail') {
         if (message.includes('different')) return 'Esse já é o e-mail atual da conta.';
@@ -72,6 +72,7 @@ export async function renderProfile() {
             try {
                 const updated = await api.profile.update(nameInput.value.trim());
                 session.setName(updated.name);
+                profile.name = updated.name;
                 nameInput.value = updated.name;
                 toast('Nome atualizado.', 'success');
                 // O rodapé do menu mostra o nome; só ele precisa ser atualizado.
@@ -93,9 +94,19 @@ export async function renderProfile() {
     ]);
 
     // Senha
-    const currentInput = el('input', { type: 'password', autocomplete: 'current-password', required: true });
-    const newInput = el('input', { type: 'password', autocomplete: 'new-password', required: true, minlength: '8', maxlength: '64' });
-    const passwordErrors = { currentPassword: el('span', { class: 'error' }), newPassword: el('span', { class: 'error' }) };
+    const currentField = passwordField({ id: 'profile-current-password', autocomplete: 'current-password' });
+    const currentInput = currentField.input;
+    const newField = passwordField({
+        id: 'profile-new-password',
+        autocomplete: 'new-password',
+        describedBy: 'profile-new-password-hint profile-new-password-error',
+        meter: true,
+        getContext: () => ({ email: profile.email, name: profile.name }),
+        minlength: '10',
+        maxlength: '64'
+    });
+    const newInput = newField.input;
+    const passwordErrors = { currentPassword: el('span', { class: 'error' }), newPassword: el('span', { class: 'error', id: 'profile-new-password-error' }) };
     const passwordBox = el('p', { class: 'dialog-error', hidden: true });
     const passwordBtn = el('button', { class: 'btn-primary', type: 'submit', text: 'Trocar senha' });
 
@@ -108,6 +119,7 @@ export async function renderProfile() {
                 await api.changePassword(currentInput.value, newInput.value);
                 currentInput.value = '';
                 newInput.value = '';
+                newField.refresh();
                 toast('Senha alterada. Os outros aparelhos foram desconectados.', 'success');
             } catch (error) {
                 showErrors(error, passwordErrors, passwordBox);
@@ -116,14 +128,21 @@ export async function renderProfile() {
         }
     }, [
         passwordBox,
-        fieldRow('Senha atual', currentInput, passwordErrors.currentPassword),
-        fieldRow('Nova senha', newInput, passwordErrors.newPassword, 'De 8 a 64 caracteres, diferente da atual.'),
+        fieldRow('Senha atual', currentField.control, passwordErrors.currentPassword, null, 'profile-current-password'),
+        el('div', { class: 'field' }, [
+            el('label', { for: 'profile-new-password', text: 'Nova senha' }),
+            newField.control,
+            el('span', { class: 'meter-foot', id: 'profile-new-password-hint', text: `${HINT} Diferente da atual.` }),
+            newField.meter,
+            passwordErrors.newPassword
+        ]),
         passwordBtn
     ]);
 
     // E-mail
     const emailInput = el('input', { type: 'email', autocomplete: 'email', required: true, maxlength: '255', value: profile.pendingEmail || '' });
-    const emailPasswordInput = el('input', { type: 'password', autocomplete: 'current-password', required: true });
+    const emailPasswordField = passwordField({ id: 'profile-email-password', autocomplete: 'current-password' });
+    const emailPasswordInput = emailPasswordField.input;
     const emailErrors = { newEmail: el('span', { class: 'error' }), currentPassword: el('span', { class: 'error' }) };
     const emailBox = el('p', { class: 'dialog-error', hidden: true });
     const pendingNote = el('p', { class: 'meter-foot' });
@@ -160,7 +179,7 @@ export async function renderProfile() {
         pendingNote,
         fieldRow('Novo e-mail', emailInput, emailErrors.newEmail,
             'Enviaremos um link para este endereço. A troca só vale depois que você abri-lo.'),
-        fieldRow('Senha atual', emailPasswordInput, emailErrors.currentPassword),
+        fieldRow('Senha atual', emailPasswordField.control, emailErrors.currentPassword, null, 'profile-email-password'),
         emailBtn
     ]);
 
