@@ -23,7 +23,7 @@ Tudo no pacote `auth`, no mesmo desenho da verificação (002) e da troca de e-m
   3. apaga o token (uso único: usado é igual a inexistente, CA5);
   4. apaga **todos** os refresh tokens da conta (`endAllExcept(userId, null)`), e as sessões abertas caem na próxima renovação (CA4);
   5. zera o contador `login-email:<email>`, desbloqueando o login.
-- Depois da transação, envia o aviso "sua senha foi alterada" (CA7); falha no envio só vai para o log.
+- Por último, envia o aviso "sua senha foi alterada" (CA7), como o aviso da troca de e-mail: falha no envio só vai para o log e não desfaz a troca.
 - Responde `204`, sem tokens: a pessoa vai para o login.
 - A senha nova pode ser igual à atual: quem esqueceu a senha não sabe qual era, e recusar revelaria a senha antiga a quem tem o link.
 

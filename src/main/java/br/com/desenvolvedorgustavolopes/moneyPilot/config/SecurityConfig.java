@@ -42,6 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/email/confirm").permitAll()
                         .requestMatchers("/api/v1/auth/verification/confirm").permitAll()
                         .requestMatchers("/api/v1/auth/verification/resend").permitAll()
+                        .requestMatchers("/api/v1/auth/password/forgot").permitAll()
+                        .requestMatchers("/api/v1/auth/password/reset").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/index.html").permitAll()
                         .requestMatchers("/css/**").permitAll()
