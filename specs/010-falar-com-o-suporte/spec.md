@@ -1,6 +1,6 @@
 # 010 — Falar com o suporte
 
-**Status:** rascunho
+**Status:** aprovada
 **Branch:** feature/010-falar-com-o-suporte
 **Depende de:** 001 (e-mail), 005 (limite de tentativas)
 
@@ -14,16 +14,16 @@ A pessoa abre um chamado pelo próprio app, em poucos segundos, e a mensagem che
 
 ## Regras de negócio
 
-- **Onde fica (proposta):** um item "Falar com o suporte" no rodapé do menu, para quem está logado, e um link na tela de login, para quem não consegue entrar.
-- **Campos (proposta):**
+- **Onde fica:** uma tela própria (`#/suporte`), aberta por um item "Falar com o suporte" no rodapé do menu, para quem está logado, e por um link na tela de login, para quem não consegue entrar.
+- **Campos:**
   - categoria: Dúvida, Problema, Sugestão ou Outro;
   - mensagem: obrigatória, de 10 a 2.000 caracteres;
   - e-mail: só para quem não está logado (obrigatório). Logado, vai o e-mail da conta, sem a pessoa digitar.
 - **Entrega:** o chamado vira um e-mail para o endereço do suporte, com o e-mail da pessoa no `Reply-To`. Responder é só clicar em "Responder".
 - **Conteúdo do e-mail ao suporte:** categoria, mensagem, e-mail da pessoa, se estava logada, nome da conta (quando logada), data e hora (`America/Sao_Paulo`) e um número curto do chamado para referência.
 - **Destino:** o endereço do suporte vem de variável de ambiente (`SUPPORT_EMAIL`), nunca do código, porque o repositório é público. Sem a variável em `prod`, o app não sobe, como no e-mail transacional.
-- **Confirmação (proposta):** mensagem na tela "Recebemos sua mensagem. Respondemos no e-mail …". Sem e-mail de confirmação para a pessoa.
-- **Limites (proposta):** 3 chamados por hora por conta (ou por e-mail, sem login) e 10 por hora por IP. Acima disso, `429` com o tempo de espera.
+- **Confirmação:** mensagem na tela "Recebemos sua mensagem (chamado K7Q2M9). Respondemos no e-mail …", com o número curto do chamado. Sem e-mail de confirmação nem cópia para a pessoa.
+- **Limites:** 3 chamados por hora por conta (ou por e-mail, sem login) e 10 por hora por IP. Acima disso, `429` com o tempo de espera. Só conta o chamado que chegou a ser enviado: uma falha de envio não gasta a cota.
 - Falha no envio do e-mail responde erro (`502`), e a mensagem continua no formulário para a pessoa tentar de novo. Nada fica perdido em silêncio.
 
 ## Critérios de aceite
@@ -49,10 +49,10 @@ A pessoa abre um chamado pelo próprio app, em poucos segundos, e a mensagem che
 - Anexos e capturas de tela
 - Chat em tempo real
 
-## Perguntas em aberto
+## Decisões
 
-- O link na tela de login entra agora ou só o formulário para quem está logado?
-- As categorias propostas servem? Quer outras (ex.: "Cobrança", quando houver)?
-- Só e-mail, como proposto, ou quer também guardar no banco desde já? Guardar dá histórico, mas vira dado de usuário a proteger e a apagar na exclusão de conta (012).
-- Quer que a pessoa receba uma cópia por e-mail do que enviou?
-- Os limites propostos (3 por hora por conta, 10 por IP) estão bons?
+- O link na tela de login entra agora.
+- As categorias são Dúvida, Problema, Sugestão e Outro.
+- Os chamados vão só por e-mail, sem banco e sem migration.
+- A pessoa não recebe cópia por e-mail.
+- Os limites são 3 por hora por conta (ou por e-mail, sem login) e 10 por hora por IP.
