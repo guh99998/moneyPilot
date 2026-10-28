@@ -76,8 +76,8 @@ test('an expired or used link shows the error and a form to ask for another', as
     assert.deepEqual(requests[1], { path: '/api/v1/auth/password/forgot', body: { email: 'ana@example.com' } });
 });
 
-test('a password the server refuses stays on the form, explained in Portuguese and focused', async () => {
-    startServer([{ status: 400, body: { message: 'Validation failed', fieldErrors: { newPassword: 'size must be between 8 and 2147483647' } } }]);
+test('a password the server refuses stays on the form, with the server message and focused', async () => {
+    startServer([{ status: 400, body: { message: 'Validation failed', fieldErrors: { newPassword: 'A senha precisa ter de 8 a 64 caracteres.' } } }]);
     const view = openLink('#/redefinir-senha?token=token-d');
 
     await submitPassword(view, 'curta');
@@ -86,8 +86,8 @@ test('a password the server refuses stays on the form, explained in Portuguese a
     assert.equal(input.getAttribute('aria-invalid'), 'true');
     const described = input.getAttribute('aria-describedby').split(' ')
         .map((id) => findAll(view, (node) => node.getAttribute('id') === id)[0]?.textContent);
-    assert.ok(described.includes('Mínimo de 8 caracteres.'));
-    assert.ok(described.includes('A senha precisa ter pelo menos 8 caracteres.'));
+    assert.ok(described.includes('De 8 a 64 caracteres.'));
+    assert.ok(described.includes('A senha precisa ter de 8 a 64 caracteres.'));
     assert.equal(document.activeElement, input);
 });
 
