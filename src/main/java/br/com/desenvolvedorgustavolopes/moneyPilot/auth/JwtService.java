@@ -23,6 +23,10 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
+    public long expirationSeconds() {
+        return expirationMs / 1000;
+    }
+
     public String generateToken(Long userId){
         return Jwts.builder()
                 .subject(String.valueOf(userId))

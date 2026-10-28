@@ -65,6 +65,8 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 **Sessão**
 
 - **Access token de 15 minutos, refresh token de 30 dias.** O refresh é opaco (256 bits), gravado como SHA-256, entregue em cookie `httpOnly` + `Secure` + `SameSite=Strict` (restrito a `/api/v1/auth`) e rotacionado a cada uso.
+- **Refresh token no corpo, só se o cliente pedir (spec 011).** O navegador segue só com o cookie e a resposta dele não traz `refreshToken`. Um cliente fora do navegador manda `refreshTokenInBody: true` no login e recebe `{token, refreshToken, expiresIn}` sem `Set-Cookie`; renovação e logout aceitam `{refreshToken}` no corpo, e mandar o token no corpo já liga o modo. Cookie e corpo juntos: vale o corpo e o cookie é ignorado. Rotação e detecção de reuso são as mesmas do cookie. Não há tokens de API pessoais nem CORS aberto, por decisão. A troca de senha pelo app encerra as sessões da API.
+- **Dinheiro nas bordas da API recusa mais de 2 casas.** Todo campo de dinheiro dos requests tem `@Digits(integer = 17, fraction = 2)`; `10.555` ou `"10,50"` respondem `400` com erro no campo, em vez de o banco arredondar sem avisar.
 - **Reuso de refresh token já rotacionado revoga a família inteira** daquele usuário — sinal de token vazado.
 - **O cliente faz uma única renovação compartilhada** quando várias chamadas recebem `401` ao mesmo tempo; uma renovação por chamada se autoinvalidaria pela detecção de reuso.
 - **Limite de tentativas no login e no cadastro**, em memória e por janela fixa (`AttemptLimiter`). Login: 10 tentativas por IP e 3 falhas por e-mail a cada 15 min — o bloqueio por e-mail vale de qualquer IP e recusa até a senha certa; login bem-sucedido zera as falhas. Cadastro: 3 por IP por hora, contando também e-mail já cadastrado. Excedido, responde `429` com `Retry-After`. O IP vem do `X-Forwarded-For` do Caddy (`server.forward-headers-strategy=framework`). Os contadores zeram no restart (uma instância só); limites em `app.rate-limit.*`.
@@ -95,16 +97,16 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 
 ## API
 
-Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout, verificação de conta, reset de senha, o login com Google (`/auth/google`, `/auth/google/config`) e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
+Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout, verificação de conta, reset de senha, o login com Google (`/auth/google`, `/auth/google/config`) e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`, com resumo, descrição, exemplos, erros e enums de cada rota). Para usar a API com um assistente de IA, há a página pública `#/usando-com-ia` no app, com o passo a passo e um texto pronto para colar. Dinheiro é número com 2 casas e ponto decimal (`50.00`) e datas são `aaaa-mm-dd`.
 
 | Método | Rota | O que faz |
 |---|---|---|
 | `POST` | `/auth/register` | Cadastra e envia o link de verificação; resposta igual exista ou não a conta (`202` sem corpo; `400` com erro no campo, inclusive senha fora da política; `502` se o link não puder ser enviado; `429` acima de 3 por IP/hora) |
-| `POST` | `/auth/login` | Devolve o access token e grava o refresh token em cookie (`403` conta não verificada; `429` após muitas tentativas) |
+| `POST` | `/auth/login` | Devolve o access token e grava o refresh token em cookie. Com `refreshTokenInBody: true` no corpo (clientes fora do navegador), responde `{token, refreshToken, expiresIn}` e **não** envia cookie (`401` credenciais inválidas, inclusive conta só com Google; `403` conta não verificada; `429` após muitas tentativas) |
 | `POST` | `/auth/verification/confirm` | Verifica a conta com o `token` do link (`204`, também para link já usado; `400` inválido ou expirado) |
 | `POST` | `/auth/verification/resend` | Reenvia o link para o `email` (sempre `202`; `429` acima de 3 por e-mail ou 10 por IP por hora) |
-| `POST` | `/auth/refresh` | Rotaciona o refresh token e devolve um novo access token |
-| `POST` | `/auth/logout` | Revoga o refresh token e limpa o cookie |
+| `POST` | `/auth/refresh` | Rotaciona o refresh token (do cookie ou de `{refreshToken}` no corpo; se vierem os dois, vale o corpo) e devolve um novo access token; no modo corpo a resposta é `{token, refreshToken, expiresIn}` sem cookie |
+| `POST` | `/auth/logout` | Revoga o refresh token (do cookie ou de `{refreshToken}` no corpo) e, no modo cookie, limpa o cookie |
 | `GET` | `/auth/google/config` | `{clientId}` do Google (vazio = login com Google desligado); público |
 | `POST` | `/auth/google` | Entra com o ID token do Google (`credential`): devolve `{token, email}` e grava o cookie de refresh (`401` token inválido; `409` e-mail de conta vinculada a outro Google; `429` por IP); público |
 | `POST` | `/auth/password/forgot` | Pede o link de reset para o `email` (sempre `202`; `429` acima de 3 por e-mail ou 5 por IP por hora) |
@@ -183,6 +185,7 @@ Servido em `/` pela própria aplicação, a partir de `src/main/resources/static
 - **Campo de senha** (`js/password.js`): botão de olho dentro do campo (login, cadastro, reset e perfil) e, nas senhas novas, medidor de força (fraca, razoável, forte) com dica, que avisa senha vazada enquanto a pessoa digita. O medidor só informa, não bloqueia o envio: quem recusa é o servidor.
 - **Login com Google** (`js/google.js`): carrega o script oficial só quando vai desenhar o botão, que aparece no login e no cadastro (e no cartão Google do perfil). Sem client ID ou com o script bloqueado, o botão simplesmente não aparece. O perfil mostra a foto do Google (ou as iniciais, também no rodapé do menu), vincula e desvincula o Google e oferece "Criar senha" a quem não tem uma.
 - **Falar com o suporte** (`js/views/support.js`, rota `#/suporte`): item no rodapé do menu para quem está logado e link "Não consegue entrar?" no login, que abre a tela sem sessão. Pede o e-mail só sem login, mostra o contador da mensagem, bloqueia o duplo envio, mantém o texto em caso de erro e confirma com o número do chamado.
+- **Usando com IA** (`js/views/ai-guide.js`, rota pública `#/usando-com-ia`): passo a passo (entrar com `refreshTokenInBody`, renovar, listar contas e categorias, lançar uma despesa, sair), cuidados com o refresh token, links para o Swagger e o texto pronto para o assistente, com botão "Copiar". Item no rodapé do menu e link "Usar com IA" no login.
 - **Ordenação por coluna** em Lançamentos, A pagar e receber e Contas: clicar no cabeçalho ordena, clicar de novo inverte.
 
 ## Desenvolvimento

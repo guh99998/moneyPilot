@@ -1,9 +1,11 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.report;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record BillsSummaryResponse(
-        BillTypeSummaryResponse payable,
-        BillTypeSummaryResponse receivable,
-        SettledSummaryResponse settledThisMonth
+        @Schema(description = "Resumo das contas a pagar") BillTypeSummaryResponse payable,
+        @Schema(description = "Resumo das contas a receber") BillTypeSummaryResponse receivable,
+        @Schema(description = "Contas quitadas neste mês") SettledSummaryResponse settledThisMonth
 ) {
     public BillsSummaryResponse(BillsSummaryTotals totals) {
         this(
