@@ -18,3 +18,4 @@
 ## Notas de implementação
 
 - T2: o `MigrationV12Test` confere os dados depois da V12 (verificados, e-mails normalizados, `CHECK` ativo) e que duplicatas por maiúsculas fazem a migration falhar sem alterar nada. Que esses usuários conseguem logar fica para o teste de integração da T8, porque o app só enxerga o schema principal.
+- T10: revisão de acessibilidade das telas (`views/auth.js`, `views/verify-email.js`): resultado da ativação anunciado (`role="status"`), erros de login e cadastro anunciados (`role="alert"`, `aria-describedby`, `aria-invalid`), labels ligados aos campos e o link de ativação confirmado por token, não uma vez por página. Os testes usam um DOM falso mínimo (`src/test/js/fake-dom.mjs`), sem dependência nova.
