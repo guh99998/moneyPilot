@@ -3,6 +3,7 @@ import { el, toast } from '../ui.js';
 import { forgotPasswordForm } from './auth.js';
 
 const INVALID_LINK = 'Link inválido ou expirado. Informe seu e-mail para receber outro.';
+const SHORT_PASSWORD = 'A senha precisa ter pelo menos 8 caracteres.';
 
 // O token sai da barra de endereço na primeira renderização e fica aqui até a senha ser trocada:
 // a tela pode ser renderizada de novo (hashchange) sem perder o link. Um link novo substitui o anterior.
@@ -21,7 +22,8 @@ function takeToken() {
 
 export function renderResetPassword() {
     const token = takeToken();
-    const status = el('p', { class: 'auth-tagline', role: 'status', 'aria-live': 'polite' });
+    // tabindex -1: a mensagem recebe o foco quando o conteúdo abaixo dela é trocado.
+    const status = el('p', { class: 'auth-tagline', role: 'status', 'aria-live': 'polite', tabindex: '-1' });
     const body = el('div');
     const card = el('div', { class: 'card auth-card' }, [
         el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
@@ -39,10 +41,11 @@ export function renderResetPassword() {
         currentToken = null;
         status.textContent = INVALID_LINK;
         status.classList.add('error');
-        const { form } = forgotPasswordForm({
+        const { form, emailInput } = forgotPasswordForm({
             onSent: () => toast('Se houver uma conta com esse e-mail, enviamos um link novo. Confira também o spam.', 'success')
         });
         body.replaceChildren(form, loginLine('Lembrou a senha?'));
+        emailInput.focus();
     }
 
     function showDone() {
@@ -55,6 +58,7 @@ export function renderResetPassword() {
             text: 'Entrar',
             onClick: () => { window.location.hash = ''; }
         }));
+        status.focus();
     }
 
     function showForm() {
@@ -83,6 +87,7 @@ export function renderResetPassword() {
             onSubmit: async (event) => {
                 event.preventDefault();
                 submitBtn.disabled = true;
+                submitBtn.textContent = 'Salvando…';
                 errorBox.hidden = true;
                 fieldError.textContent = '';
                 passwordInput.removeAttribute('aria-invalid');
@@ -91,10 +96,11 @@ export function renderResetPassword() {
                     await api.resetPassword(currentToken, passwordInput.value);
                     showDone();
                 } catch (error) {
-                    const newPasswordError = error instanceof ApiError ? error.fieldErrors?.newPassword : null;
-                    if (newPasswordError) {
-                        fieldError.textContent = newPasswordError;
+                    // A mensagem do servidor vem da validação, em inglês; a regra é uma só.
+                    if (error instanceof ApiError && error.fieldErrors?.newPassword) {
+                        fieldError.textContent = SHORT_PASSWORD;
                         passwordInput.setAttribute('aria-invalid', 'true');
+                        passwordInput.focus();
                     } else if (error instanceof ApiError && error.status === 400) {
                         showInvalidLink();
                         return;
@@ -103,6 +109,7 @@ export function renderResetPassword() {
                         errorBox.hidden = false;
                     }
                     submitBtn.disabled = false;
+                    submitBtn.textContent = 'Salvar nova senha';
                 }
             }
         }, [

@@ -22,7 +22,9 @@ export async function resendVerification(email, button) {
 export function forgotPasswordForm({ email = '', onSent }) {
     const inputId = `f-email-${Math.random().toString(36).slice(2, 7)}`;
     const errorBox = el('p', { class: 'dialog-error', hidden: true, role: 'alert' });
-    const emailInput = el('input', { id: inputId, type: 'email', autocomplete: 'email', required: true, value: email });
+    const emailInput = el('input', {
+        id: inputId, type: 'email', autocomplete: 'email', spellcheck: 'false', autocapitalize: 'none', required: true, value: email
+    });
     const submitBtn = el('button', {
         class: 'btn-primary',
         type: 'submit',
@@ -34,6 +36,7 @@ export function forgotPasswordForm({ email = '', onSent }) {
         onSubmit: async (event) => {
             event.preventDefault();
             submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando…';
             errorBox.hidden = true;
             const typed = emailInput.value.trim();
             try {
@@ -43,6 +46,7 @@ export function forgotPasswordForm({ email = '', onSent }) {
                 errorBox.textContent = error?.message || 'Não foi possível enviar agora.';
                 errorBox.hidden = false;
                 submitBtn.disabled = false;
+                submitBtn.textContent = 'Enviar link';
             }
         }
     }, [
@@ -109,18 +113,20 @@ export function renderAuth(onAuthenticated) {
     }
 
     function drawForgotSent() {
-        const back = loginButton();
+        // A mensagem recebe o foco: um role=status criado já com o texto não é anunciado.
+        const message = el('p', {
+            class: 'auth-tagline',
+            role: 'status',
+            tabindex: '-1',
+            text: `Se houver uma conta com ${pendingEmail}, enviamos um link para redefinir a senha (vale por 30 minutos). Confira também a caixa de spam.`
+        });
         wrap.replaceChildren(el('div', { class: 'card auth-card' }, [
             el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
             el('h2', { text: 'Confira seu e-mail', style: 'text-align:center; margin:0 0 .5rem;' }),
-            el('p', {
-                class: 'auth-tagline',
-                role: 'status',
-                text: `Se houver uma conta com ${pendingEmail}, enviamos um link para redefinir a senha (vale por 30 minutos). Confira também a caixa de spam.`
-            }),
-            el('p', { class: 'auth-switch' }, [el('span', { text: 'Já redefiniu?' }), back])
+            message,
+            el('p', { class: 'auth-switch' }, [el('span', { text: 'Já redefiniu?' }), loginButton()])
         ]));
-        back.focus();
+        message.focus();
     }
 
     function draw() {
@@ -163,6 +169,8 @@ export function renderAuth(onAuthenticated) {
             id: inputIds.email,
             type: 'email',
             autocomplete: 'email',
+            spellcheck: 'false',
+            autocapitalize: 'none',
             required: true,
             value: pendingEmail,
             'aria-describedby': errorIds.email
