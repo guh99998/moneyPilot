@@ -303,6 +303,14 @@ export function renderAuth(onAuthenticated) {
                     text: 'Falar com o suporte',
                     onClick: () => { window.location.hash = '#/suporte'; }
                 })
+            ]) : null,
+            isLogin ? el('p', { class: 'auth-switch', style: 'margin-top:.25rem;' }, [
+                el('span', { text: 'Quer automatizar?' }),
+                el('button', {
+                    type: 'button',
+                    text: 'Usar com IA',
+                    onClick: () => { window.location.hash = '#/usando-com-ia'; }
+                })
             ]) : null
         ]);
 
