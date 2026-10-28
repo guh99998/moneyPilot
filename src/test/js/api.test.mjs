@@ -415,3 +415,44 @@ test('confirming a verification link is anonymous: a 400 never fires session:exp
     assert.deepEqual(events, []);
     assert.equal(session.token, 'valid');
 });
+
+test('asking for a password reset posts only the email, without a session', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    let sent;
+    globalThis.fetch = async (url, options = {}) => {
+        sent = { path: new URL(url).pathname, body: options.body, authorization: options.headers?.Authorization };
+        return new Response(null, { status: 202 });
+    };
+
+    await api.forgotPassword('maria@example.com');
+
+    assert.deepEqual(sent, {
+        path: '/api/v1/auth/password/forgot',
+        body: JSON.stringify({ email: 'maria@example.com' }),
+        authorization: undefined
+    });
+    assert.deepEqual(events, []);
+});
+
+test('resetting the password is anonymous: a 400 never fires session:expired nor refreshes', async () => {
+    session.start('valid', 'other@example.com');
+    events.length = 0;
+    const sent = [];
+    globalThis.fetch = async (url, options = {}) => {
+        sent.push({ path: new URL(url).pathname, body: options.body, authorization: options.headers?.Authorization });
+        return new Response(JSON.stringify({ message: 'Invalid or expired password reset link' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } });
+    };
+
+    await assert.rejects(api.resetPassword('token-ruim', 'nova-senha-678'),
+        (error) => error instanceof ApiError && error.status === 400);
+
+    assert.deepEqual(sent, [{
+        path: '/api/v1/auth/password/reset',
+        body: JSON.stringify({ token: 'token-ruim', newPassword: 'nova-senha-678' }),
+        authorization: undefined
+    }]);
+    assert.deepEqual(events, []);
+    assert.equal(session.token, 'valid');
+});

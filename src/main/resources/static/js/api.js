@@ -174,6 +174,11 @@ export const api = {
         request('/auth/verification/resend', { method: 'POST', body: { email }, anonymous: true }),
     confirmVerification: (token) =>
         request('/auth/verification/confirm', { method: 'POST', body: { token }, anonymous: true }),
+    // Anônimas: quem esqueceu a senha não tem sessão, e um 400 (link inválido) não pode derrubar outra.
+    forgotPassword: (email) =>
+        request('/auth/password/forgot', { method: 'POST', body: { email }, anonymous: true }),
+    resetPassword: (token, newPassword) =>
+        request('/auth/password/reset', { method: 'POST', body: { token, newPassword }, anonymous: true }),
     logout: () => request('/auth/logout', { method: 'POST', anonymous: true }),
 
     alerts: {

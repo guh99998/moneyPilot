@@ -18,6 +18,9 @@ public record RateLimitProperties(
         int verificationResendPerEmail,
         int verificationResendPerIp,
         Duration verificationResendWindow,
-        Duration registerNoticeWindow
+        Duration registerNoticeWindow,
+        int passwordResetPerEmail,
+        int passwordResetPerIp,
+        Duration passwordResetWindow
 ) {
 }
