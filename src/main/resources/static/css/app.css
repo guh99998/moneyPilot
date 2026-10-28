@@ -223,6 +223,9 @@ h3 { font-size: .92rem; }
 .ai-guide .ai-warning { font-weight: 700; color: var(--critical); }
 .ai-guide .ai-prompt { width: 100%; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
 .ai-guide .ai-actions { margin-top: .5rem; }
+.ai-guide .ai-actions button { min-height: 44px; padding-inline: 1.1rem; }
+.ai-guide .code-block:focus-visible, .ai-guide .ai-prompt:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.ai-guide a { display: inline-block; padding: .65rem .25rem; }
 .sidebar-foot button { color: #dbe4f0; border-color: var(--navy-3); background: transparent; }
 .sidebar-foot button:hover:not(:disabled) { background: var(--navy-2); color: #fff; }
 

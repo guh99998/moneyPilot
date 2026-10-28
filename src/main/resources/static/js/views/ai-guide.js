@@ -29,7 +29,8 @@ export function assistantPrompt(origin) {
 }
 
 function code(text) {
-    return el('pre', { class: 'code-block', tabindex: '0' }, [el('code', { text })]);
+    // tabindex: o bloco rola na horizontal e precisa ser alcançável pelo teclado.
+    return el('pre', { class: 'code-block', tabindex: '0', role: 'region', 'aria-label': 'Exemplo de chamada', translate: 'no' }, [el('code', { text })]);
 }
 
 /**
@@ -43,7 +44,11 @@ export function renderAiGuide() {
 
     const promptBox = el('textarea', {
         id: promptId,
+        name: 'assistant-prompt',
         class: 'ai-prompt',
+        autocomplete: 'off',
+        spellcheck: 'false',
+        translate: 'no',
         readonly: true,
         rows: '14',
         'aria-label': 'Texto para colar no assistente'
@@ -97,7 +102,7 @@ export function renderAiGuide() {
             el('ul', {}, [
                 el('li', { text: 'Guarde o refresh token como se fosse a sua senha: ele vale 30 dias, até você sair (o logout o revoga).' }),
                 el('li', { text: 'Conta criada só com o Google não tem senha. Para usar a API, crie uma em Perfil → Criar senha.' }),
-                el('li', { text: 'Trocar a senha encerra todas as sessões, inclusive as da API: entre de novo depois.' })
+                el('li', { text: 'Trocar a senha no app encerra as sessões da API: entre de novo depois.' })
             ])
         ]),
         el('section', {}, [
@@ -110,7 +115,7 @@ export function renderAiGuide() {
         ]),
         el('section', {}, [
             el('h3', { text: 'Texto para o seu assistente' }),
-            el('p', { text: 'Cole no assistente de IA. Depois diga o que quer, por exemplo: "lance R$ 50 no mercado hoje".' }),
+            el('p', { text: 'Cole no assistente de IA. Depois diga o que quer, por exemplo: “lance R$ 50 no mercado hoje”.' }),
             promptBox,
             el('div', { class: 'ai-actions' }, [copyBtn]),
             copyStatus

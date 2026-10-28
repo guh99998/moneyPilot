@@ -42,7 +42,7 @@ public class ProfileController {
     }
 
     // Fica sob /auth porque o cookie refresh_token só é enviado a essa árvore de rotas.
-    @Operation(summary = "Troca a senha", description = "Troca (ou cria, em conta só com Google) a senha. Encerra todas as sessões, inclusive as da API: entre de novo depois.")
+    @Operation(summary = "Troca a senha", description = "Troca (ou cria, em conta só com Google) a senha. Encerra as outras sessões, inclusive as da API (só a sessão do navegador que fez a troca continua): entre de novo depois.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Senha trocada"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),

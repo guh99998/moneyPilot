@@ -27,7 +27,7 @@ test('opens without a session and shows the step-by-step', () => {
     assert.ok(text.includes('refreshTokenInBody'));
     assert.ok(text.includes('http://localhost/api/v1/auth/login'), 'examples use the app origin');
     assert.ok(text.includes('Criar senha'), 'explains Google-only accounts');
-    assert.ok(text.includes('encerra todas as sessões'), 'warns that changing the password ends API sessions');
+    assert.ok(text.includes('encerra as sessões da API'), 'warns that changing the password ends API sessions');
 });
 
 test('links to the Swagger UI and to the OpenAPI contract', () => {
