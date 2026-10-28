@@ -17,8 +17,14 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende.
 - [x] **T11** — Testes JS: `admin-tickets-view.test.mjs` e menu só para administrador (CA2, CA3, CA4, CA6, CA7)
 - [x] **T12** — Exclusão de conta apaga `support_tickets`: a 012 ainda não foi implementada, então fica registrado nas notas e na spec 012 (LGPD)
 - [x] **T13** — README: tabela da API, decisão de domínio (admin por e-mail, chamado gravado), `ADMIN_EMAILS` e cliente web
-- [ ] **T14** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`, e a checagem manual do plano
+- [x] **T14** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`, e a checagem manual do plano
 - [x] **T15** — Validação com as skills do projeto (`api-design-principles`, `web-design-guidelines`, `accessibility-compliance`, `responsive-design`) e anotar a revisão aqui
+
+## Verificação
+
+- `./mvnw verify`: 436 testes, nenhuma falha. `node --test "src/test/js/*.test.mjs"`: 146 testes, nenhuma falha.
+- Checagem manual com o app local e `ADMIN_EMAILS` apontando para uma conta de teste: chamado aberto sem login e com login (`200`, gravados como `OPEN`); o administrador lista os abertos, mais recentes primeiro, e muda o status (`200`, com a hora da mudança); `admin` no `/profile` é `true` só para o administrador; outra conta recebe `404` nas rotas do painel e, sem login, `401`.
+- No navegador, o item "Chamados" aparece para o administrador e não aparece para a outra conta.
 
 ## Notas de implementação
 

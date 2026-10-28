@@ -1,6 +1,6 @@
 # 017 — Painel de chamados do suporte
 
-**Status:** aprovado
+**Status:** entregue
 **Branch:** feature/017-painel-de-chamados
 **Depende de:** 010 (falar com o suporte)
 
