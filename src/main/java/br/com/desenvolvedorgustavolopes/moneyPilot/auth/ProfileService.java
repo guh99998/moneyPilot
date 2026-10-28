@@ -41,7 +41,7 @@ public class ProfileService {
 
         attemptLimiter.check(key, rateLimit.passwordChangeFailures());
 
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+        if (!user.hasPassword() || !passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             attemptLimiter.record(key, rateLimit.passwordChangeWindow());
             throw new InvalidCurrentPasswordException();
         }

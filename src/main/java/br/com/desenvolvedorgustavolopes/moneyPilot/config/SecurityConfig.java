@@ -39,6 +39,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
                         .requestMatchers("/api/v1/auth/logout").permitAll()
+                        .requestMatchers("/api/v1/auth/google").permitAll()
+                        .requestMatchers("/api/v1/auth/google/config").permitAll()
                         .requestMatchers("/api/v1/auth/email/confirm").permitAll()
                         .requestMatchers("/api/v1/auth/verification/confirm").permitAll()
                         .requestMatchers("/api/v1/auth/verification/resend").permitAll()
