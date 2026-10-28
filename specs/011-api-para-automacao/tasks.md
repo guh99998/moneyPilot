@@ -2,10 +2,10 @@
 
 **Plano:** [plan.md](plan.md)
 
-- [ ] **T1** — `LoginRequest.refreshTokenInBody`, `RefreshRequest`, `AuthResponse` com `refreshToken`/`expiresIn`, `JwtService.expirationSeconds`, `UserController` login/refresh/logout (CA2, CA3, CA4, CA6)
-- [ ] **T2** — Testes `ApiSessionIntegrationTest` (CA2, CA3, CA4, CA6)
-- [ ] **T3** — `@Digits(fraction = 2)` em todo campo de dinheiro e tratamento de formato ilegível no `GlobalExceptionHandler` (CA7)
-- [ ] **T4** — Teste `MoneyScaleIntegrationTest` (CA7)
+- [x] **T1** — `LoginRequest.refreshTokenInBody`, `RefreshRequest`, `AuthResponse` com `refreshToken`/`expiresIn`, `JwtService.expirationSeconds`, `UserController` login/refresh/logout (CA2, CA3, CA4, CA6)
+- [x] **T2** — Testes `ApiSessionIntegrationTest` (CA2, CA3, CA4, CA6)
+- [x] **T3** — `@Digits(fraction = 2)` em todo campo de dinheiro e tratamento de formato ilegível no `GlobalExceptionHandler` (CA7)
+- [x] **T4** — Teste `MoneyScaleIntegrationTest` (CA7)
 - [ ] **T5** — `OpenApiConfig`, `@Tag`/`@Operation`/`@ApiResponse` nos controllers, `@Schema` nos records e enums (CA1)
 - [ ] **T6** — Teste `OpenApiContractIntegrationTest` (CA1)
 - [ ] **T7** — Tela `#/usando-com-ia`, rota, item no menu, link no login (CA5)
