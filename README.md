@@ -24,7 +24,7 @@ Aplicação de controle financeiro pessoal: contas, lançamentos, transferência
 
 ```
 br.com.desenvolvedorgustavolopes.moneyPilot
-├── auth          registro, login, refresh token, filtro JWT, usuário autenticado, perfil e troca de senha e de e-mail
+├── auth          registro, verificação de conta, login, refresh token, filtro JWT, usuário autenticado, perfil e troca de senha e de e-mail
 ├── account       contas e saldo
 ├── category      categorias do usuário e do sistema
 ├── transaction   lançamentos e transferências
@@ -68,6 +68,9 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Reuso de refresh token já rotacionado revoga a família inteira** daquele usuário — sinal de token vazado.
 - **O cliente faz uma única renovação compartilhada** quando várias chamadas recebem `401` ao mesmo tempo; uma renovação por chamada se autoinvalidaria pela detecção de reuso.
 - **Limite de tentativas no login e no cadastro**, em memória e por janela fixa (`AttemptLimiter`). Login: 10 tentativas por IP e 3 falhas por e-mail a cada 15 min — o bloqueio por e-mail vale de qualquer IP e recusa até a senha certa; login bem-sucedido zera as falhas. Cadastro: 3 por IP por hora, contando também e-mail já cadastrado. Excedido, responde `429` com `Retry-After`. O IP vem do `X-Forwarded-For` do Caddy (`server.forward-headers-strategy=framework`). Os contadores zeram no restart (uma instância só); limites em `app.rate-limit.*`.
+- **Só entra quem verificou o e-mail.** A conta nasce não verificada e recebe um link (`/#/verificar-email?token=…`, 256 bits, só o SHA-256 no banco, 24 horas, uso único, uma linha por usuário: reenviar invalida o anterior). O link verifica, mas não abre sessão. Login de conta não verificada com a senha certa responde `403`; com a senha errada, o `401` de sempre. Contas criadas antes da verificação existir entram como verificadas (`V12`).
+- **Cadastro e reenvio não revelam quais e-mails existem.** O cadastro responde sempre `202` sem corpo: e-mail livre cria a conta e manda o link; e-mail de conta não verificada reaproveita a conta com o nome e a senha novos e manda outro link; e-mail de conta verificada não grava nada e avisa o dono (no máximo 1 aviso por hora). Falha no envio do link desfaz o cadastro (`502`). O reenvio responde sempre `202`; para conta já verificada, manda um e-mail dizendo que ela está ativa. Limites do reenvio: 3 por e-mail e 10 por IP por hora.
+- **E-mail sem distinção de maiúsculas.** Cadastro, login, reenvio e troca gravam e buscam o e-mail sem espaços nas pontas e em minúsculas (`EmailAddress.normalize`); a `V12` converteu os existentes e um `CHECK` no banco recusa o que fugir disso.
 - **O access token identifica o usuário pelo id, não pelo e-mail** (`sub` = id). Assim a troca de e-mail não deixa tokens órfãos nem os faz apontar para outra conta. Tokens antigos, com e-mail no `sub`, são recusados (`401`) e o cliente renova sozinho.
 - **Troca de e-mail em duas etapas.** O pedido exige a senha atual e manda um link ao e-mail novo; até o clique, o e-mail antigo segue valendo para login e recuperação. O token (256 bits, só o SHA-256 vai ao banco) vale 24 horas, é de uso único e há no máximo um pedido por usuário: pedir de novo invalida o link anterior. O link usa `#` (`/#/confirmar-email?token=…`), então o token não chega a log de servidor ou proxy. Confirmar não exige login: grava o e-mail novo (minúsculas, sem espaços), apaga o pedido, encerra as outras sessões como na troca de senha e avisa o e-mail antigo (falha no aviso só vai para o log). Limites: senha errada divide o contador da troca de senha; no máximo 3 pedidos por hora por usuário.
 - **Troca de senha encerra as outras sessões e mantém a atual.** O servidor identifica a sessão atual pelo cookie de refresh e **apaga** (não revoga) os refresh tokens ativos das demais: um token revogado que voltasse a ser usado acionaria a detecção de reuso acima e derrubaria também a sessão que trocou a senha. As outras sessões caem na próxima renovação, quando o access token de 15 minutos expira. A rota fica sob `/auth/` porque o cookie só é enviado a essa árvore.
@@ -79,16 +82,18 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 
 ### Modelo
 
-`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `email_change_tokens` — migrations `V1` a `V11` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais.
+`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `email_change_tokens` · `email_verification_tokens` — migrations `V1` a `V12` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas.
 
 ## API
 
-Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
+Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, login, refresh, logout, verificação de conta e a confirmação de troca de e-mail. A documentação interativa fica em `/swagger-ui.html` (spec em `/v3/api-docs`).
 
 | Método | Rota | O que faz |
 |---|---|---|
-| `POST` | `/auth/register` | Cria usuário (`429` acima de 3 por IP/hora) |
-| `POST` | `/auth/login` | Devolve o access token e grava o refresh token em cookie (`429` após muitas tentativas) |
+| `POST` | `/auth/register` | Cadastra e envia o link de verificação; resposta igual exista ou não a conta (`202` sem corpo; `502` se o link não puder ser enviado; `429` acima de 3 por IP/hora) |
+| `POST` | `/auth/login` | Devolve o access token e grava o refresh token em cookie (`403` conta não verificada; `429` após muitas tentativas) |
+| `POST` | `/auth/verification/confirm` | Verifica a conta com o `token` do link (`204`, também para link já usado; `400` inválido ou expirado) |
+| `POST` | `/auth/verification/resend` | Reenvia o link para o `email` (sempre `202`; `429` acima de 3 por e-mail ou 10 por IP por hora) |
 | `POST` | `/auth/refresh` | Rotaciona o refresh token e devolve um novo access token |
 | `POST` | `/auth/logout` | Revoga o refresh token e limpa o cookie |
 | `POST` | `/auth/password` | Troca a senha (`currentPassword`, `newPassword`) e encerra as outras sessões (`204`; `400` com erro no campo; `429` após 5 erros) |
@@ -234,12 +239,12 @@ Para voltar uma versão, use a tag com o SHA do commit anterior no lugar de `lat
 node --test "src/test/js/*.test.mjs"   # testes do cliente web
 ```
 
-Os testes de integração estendem `AbstractIntegrationTest`, que sobe um Postgres 18 via Testcontainers. O Flyway aplica as migrations reais e o Hibernate só valida — o mesmo contrato de produção, sem schema gerado. A suíte cobre autenticação e rotação de refresh token, isolamento entre usuários, saldos e transferências, filtros e paginação, ciclo de vida dos títulos e baixa concorrente, arredondamento de parcelas, baixa em lote, recorrência, previsões de fluxo de caixa semanal e mensal e os relatórios.
+Os testes de integração estendem `AbstractIntegrationTest`, que sobe um Postgres 18 via Testcontainers. O Flyway aplica as migrations reais e o Hibernate só valida — o mesmo contrato de produção, sem schema gerado. A suíte cobre autenticação, verificação de conta e rotação de refresh token, isolamento entre usuários, saldos e transferências, filtros e paginação, ciclo de vida dos títulos e baixa concorrente, arredondamento de parcelas, baixa em lote, recorrência, previsões de fluxo de caixa semanal e mensal e os relatórios.
 
 O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e pull request.
 
 ## Próximos passos
 
-- E-mail transacional, verificação de conta, reset de senha e login com Google por ID token verificado no backend.
+- E-mail transacional, reset de senha e login com Google por ID token verificado no backend.
 - Ordenar títulos e lançamentos pelo nome da categoria e da conta (hoje a ordenação cobre data, descrição, valor e tipo).
 - Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), fatura de cartão de crédito, importação de extrato CSV, Redis e RabbitMQ.

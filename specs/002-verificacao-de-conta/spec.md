@@ -29,14 +29,14 @@ Só entra no app quem provou ser dono do e-mail cadastrado, e o e-mail vale igua
 
 ## Critérios de aceite
 
-- [ ] **CA1** — Dado um cadastro novo, quando ele é concluído, então a conta fica não verificada e um e-mail com o link é enviado.
-- [ ] **CA2** — Dada uma conta não verificada, quando a pessoa tenta logar com a senha certa, então o login é recusado com a explicação e a opção de reenviar.
-- [ ] **CA3** — Dado um link válido, quando a pessoa clica, então a conta é verificada e ela consegue logar.
-- [ ] **CA4** — Dado um link expirado ou substituído por um reenvio, quando a pessoa clica, então vê que o link não vale mais e pode pedir outro.
-- [ ] **CA5** — Dados os usuários cadastrados antes desta feature, quando ela entra no ar, então todos continuam logando normalmente.
-- [ ] **CA6** — Dado um e-mail não cadastrado, quando alguém pede reenvio, então a resposta é idêntica à de um e-mail cadastrado.
-- [ ] **CA7** — Dado um cadastro com e-mail que já tem conta verificada, então a resposta é idêntica à de um cadastro novo, nenhuma conta é criada e o dono recebe o aviso.
-- [ ] **CA8** — Dada uma conta com `Fulano@x.com`, quando a pessoa entra com `fulano@x.com` (ou o contrário), então o login funciona, e cadastrar `FULANO@x.com` é tratado como o mesmo e-mail.
+- [x] **CA1** — Dado um cadastro novo, quando ele é concluído, então a conta fica não verificada e um e-mail com o link é enviado.
+- [x] **CA2** — Dada uma conta não verificada, quando a pessoa tenta logar com a senha certa, então o login é recusado com a explicação e a opção de reenviar.
+- [x] **CA3** — Dado um link válido, quando a pessoa clica, então a conta é verificada e ela consegue logar.
+- [x] **CA4** — Dado um link expirado ou substituído por um reenvio, quando a pessoa clica, então vê que o link não vale mais e pode pedir outro.
+- [x] **CA5** — Dados os usuários cadastrados antes desta feature, quando ela entra no ar, então todos continuam logando normalmente.
+- [x] **CA6** — Dado um e-mail não cadastrado, quando alguém pede reenvio, então a resposta é idêntica à de um e-mail cadastrado.
+- [x] **CA7** — Dado um cadastro com e-mail que já tem conta verificada, então a resposta é idêntica à de um cadastro novo, nenhuma conta é criada e o dono recebe o aviso.
+- [x] **CA8** — Dada uma conta com `Fulano@x.com`, quando a pessoa entra com `fulano@x.com` (ou o contrário), então o login funciona, e cadastrar `FULANO@x.com` é tratado como o mesmo e-mail.
 
 ## Casos de borda
 
