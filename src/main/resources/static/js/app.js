@@ -11,6 +11,7 @@ import { renderBudgets } from './views/budgets.js';
 import { renderProfile } from './views/profile.js';
 import { renderConfirmEmail } from './views/confirm-email.js';
 import { renderVerifyEmail } from './views/verify-email.js';
+import { renderResetPassword } from './views/reset-password.js';
 import { renderBell, refreshAlerts, resetAlerts } from './alerts.js';
 
 const ROUTES = [
@@ -132,6 +133,12 @@ async function render() {
     // Rota pública: quem ativa a conta ainda não tem sessão.
     if (window.location.hash.startsWith('#/verificar-email')) {
         root.append(renderVerifyEmail());
+        return;
+    }
+
+    // Rota pública: quem esqueceu a senha não tem sessão.
+    if (window.location.hash.startsWith('#/redefinir-senha')) {
+        root.append(renderResetPassword());
         return;
     }
 

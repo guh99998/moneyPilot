@@ -14,6 +14,46 @@ export async function resendVerification(email, button) {
     }
 }
 
+/**
+ * Formulário de "esqueci a senha": só o e-mail. A resposta do servidor é a mesma exista ou não a conta,
+ * então `onSent` recebe o e-mail informado e a tela mostra a mensagem genérica. Devolve o formulário e o campo,
+ * para a tela decidir o foco.
+ */
+export function forgotPasswordForm({ email = '', onSent }) {
+    const inputId = `f-email-${Math.random().toString(36).slice(2, 7)}`;
+    const errorBox = el('p', { class: 'dialog-error', hidden: true, role: 'alert' });
+    const emailInput = el('input', { id: inputId, type: 'email', autocomplete: 'email', required: true, value: email });
+    const submitBtn = el('button', {
+        class: 'btn-primary',
+        type: 'submit',
+        style: 'width:100%; justify-content:center;',
+        text: 'Enviar link'
+    });
+
+    const form = el('form', {
+        onSubmit: async (event) => {
+            event.preventDefault();
+            submitBtn.disabled = true;
+            errorBox.hidden = true;
+            const typed = emailInput.value.trim();
+            try {
+                await api.forgotPassword(typed);
+                onSent(typed);
+            } catch (error) {
+                errorBox.textContent = error?.message || 'Não foi possível enviar agora.';
+                errorBox.hidden = false;
+                submitBtn.disabled = false;
+            }
+        }
+    }, [
+        errorBox,
+        el('div', { class: 'field' }, [el('label', { for: inputId, text: 'E-mail' }), emailInput]),
+        submitBtn
+    ]);
+
+    return { form, emailInput };
+}
+
 export function renderAuth(onAuthenticated) {
     let mode = 'login';
     let pendingEmail = '';
@@ -44,9 +84,56 @@ export function renderAuth(onAuthenticated) {
         resendBtn.focus();
     }
 
+    function loginButton() {
+        return el('button', { type: 'button', text: 'Entrar', onClick: () => { mode = 'login'; draw(); } });
+    }
+
+    function drawForgot() {
+        const { form, emailInput } = forgotPasswordForm({
+            email: pendingEmail,
+            onSent: (email) => {
+                pendingEmail = email;
+                mode = 'forgot-sent';
+                draw();
+            }
+        });
+
+        wrap.replaceChildren(el('div', { class: 'card auth-card' }, [
+            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('h2', { text: 'Redefinir senha', style: 'text-align:center; margin:0 0 .5rem;' }),
+            el('p', { class: 'auth-tagline', text: 'Informe o e-mail da sua conta. Enviaremos um link para criar uma senha nova.' }),
+            form,
+            el('p', { class: 'auth-switch' }, [el('span', { text: 'Lembrou a senha?' }), loginButton()])
+        ]));
+        emailInput.focus();
+    }
+
+    function drawForgotSent() {
+        const back = loginButton();
+        wrap.replaceChildren(el('div', { class: 'card auth-card' }, [
+            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('h2', { text: 'Confira seu e-mail', style: 'text-align:center; margin:0 0 .5rem;' }),
+            el('p', {
+                class: 'auth-tagline',
+                role: 'status',
+                text: `Se houver uma conta com ${pendingEmail}, enviamos um link para redefinir a senha (vale por 30 minutos). Confira também a caixa de spam.`
+            }),
+            el('p', { class: 'auth-switch' }, [el('span', { text: 'Já redefiniu?' }), back])
+        ]));
+        back.focus();
+    }
+
     function draw() {
         if (mode === 'sent') {
             drawSent();
+            return;
+        }
+        if (mode === 'forgot') {
+            drawForgot();
+            return;
+        }
+        if (mode === 'forgot-sent') {
+            drawForgotSent();
             return;
         }
 
@@ -167,7 +254,15 @@ export function renderAuth(onAuthenticated) {
                     text: isLogin ? 'Criar agora' : 'Entrar',
                     onClick: () => { mode = isLogin ? 'register' : 'login'; draw(); }
                 })
-            ])
+            ]),
+            isLogin ? el('p', { class: 'auth-switch', style: 'margin-top:.25rem;' }, [
+                el('span', { text: 'Esqueceu a senha?' }),
+                el('button', {
+                    type: 'button',
+                    text: 'Redefinir',
+                    onClick: () => { pendingEmail = emailInput.value.trim(); mode = 'forgot'; draw(); }
+                })
+            ]) : null
         ]);
 
         wrap.replaceChildren(card);
