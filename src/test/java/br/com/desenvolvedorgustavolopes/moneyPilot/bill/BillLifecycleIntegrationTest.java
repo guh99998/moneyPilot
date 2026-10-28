@@ -318,7 +318,7 @@ class BillLifecycleIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RegisterRequest(email, password, "Test User"))))
-                .andExpect(status().isCreated());
+                .andExpect(status().isAccepted());
         markVerified(email);
 
         MvcResult result = mockMvc.perform(post("/api/v1/auth/login")

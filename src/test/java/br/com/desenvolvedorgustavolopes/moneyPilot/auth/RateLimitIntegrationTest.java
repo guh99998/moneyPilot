@@ -122,13 +122,13 @@ class RateLimitIntegrationTest extends AbstractIntegrationTest {
         String ip = uniqueIp();
 
         for (int i = 0; i < 3; i++) {
-            register(uniqueEmail(), ip).andExpect(status().isCreated());
+            register(uniqueEmail(), ip).andExpect(status().isAccepted());
         }
 
         register(uniqueEmail(), ip)
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"));
-        register(uniqueEmail(), uniqueIp()).andExpect(status().isCreated());
+        register(uniqueEmail(), uniqueIp()).andExpect(status().isAccepted());
     }
 
     @Test
@@ -136,9 +136,9 @@ class RateLimitIntegrationTest extends AbstractIntegrationTest {
         String ip = uniqueIp();
         String email = uniqueEmail();
 
-        register(email, ip).andExpect(status().isCreated());
-        register(email, ip).andExpect(status().isConflict());
-        register(email, ip).andExpect(status().isConflict());
+        register(email, ip).andExpect(status().isAccepted());
+        register(email, ip).andExpect(status().isAccepted());
+        register(email, ip).andExpect(status().isAccepted());
 
         register(uniqueEmail(), ip).andExpect(status().isTooManyRequests());
     }
@@ -147,13 +147,13 @@ class RateLimitIntegrationTest extends AbstractIntegrationTest {
     void register_afterTheWindowPasses_isProcessedNormally() throws Exception {
         String ip = uniqueIp();
         for (int i = 0; i < 3; i++) {
-            register(uniqueEmail(), ip).andExpect(status().isCreated());
+            register(uniqueEmail(), ip).andExpect(status().isAccepted());
         }
         register(uniqueEmail(), ip).andExpect(status().isTooManyRequests());
 
         now = now.plusSeconds(60 * 60);
 
-        register(uniqueEmail(), ip).andExpect(status().isCreated());
+        register(uniqueEmail(), ip).andExpect(status().isAccepted());
     }
 
     @Test
@@ -162,17 +162,17 @@ class RateLimitIntegrationTest extends AbstractIntegrationTest {
         String visitorB = uniqueIp();
 
         for (int i = 0; i < 3; i++) {
-            registerForwarded(uniqueEmail(), visitorA).andExpect(status().isCreated());
+            registerForwarded(uniqueEmail(), visitorA).andExpect(status().isAccepted());
         }
 
         registerForwarded(uniqueEmail(), visitorA).andExpect(status().isTooManyRequests());
-        registerForwarded(uniqueEmail(), visitorB).andExpect(status().isCreated());
+        registerForwarded(uniqueEmail(), visitorB).andExpect(status().isAccepted());
     }
 
     /** Each registration comes from its own IP so the per-IP register limit does not interfere. */
     private String registeredEmail() throws Exception {
         String email = uniqueEmail();
-        register(email, uniqueIp()).andExpect(status().isCreated());
+        register(email, uniqueIp()).andExpect(status().isAccepted());
         markVerified(email);
         return email;
     }
