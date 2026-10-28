@@ -20,6 +20,10 @@ A pessoa recupera o acesso pelo e-mail cadastrado, e qualquer sessão antiga dei
 - Trocar a senha **encerra todas as sessões** da conta, em todos os dispositivos.
 - Concluir o reset também verifica a conta, se ela ainda não estava verificada — a pessoa acabou de provar que é dona do e-mail.
 - Conta criada só pelo Google (004, sem senha) pode usar o reset para definir uma senha.
+- Depois do reset a pessoa vai para a tela de login: o link **não** abre sessão.
+- Concluído o reset, o e-mail da conta recebe o aviso "sua senha foi alterada". Se o aviso não puder ser enviado, a troca vale mesmo assim.
+- Concluir o reset zera o bloqueio de login por falhas daquele e-mail: quem errou a senha 3 vezes e redefiniu consegue entrar na hora.
+- Limites (spec 005): no máximo 3 pedidos por e-mail e 5 por IP por hora.
 
 ## Critérios de aceite
 
@@ -28,18 +32,24 @@ A pessoa recupera o acesso pelo e-mail cadastrado, e qualquer sessão antiga dei
 - [ ] **CA3** — Dado um link válido, quando a pessoa define uma senha nova, então consegue logar com ela e não com a antiga.
 - [ ] **CA4** — Dada uma sessão aberta em outro dispositivo, quando a senha é trocada pelo reset, então essa sessão é encerrada na próxima renovação.
 - [ ] **CA5** — Dado um link expirado, já usado ou substituído, quando a pessoa tenta usar, então vê que o link não vale mais e pode pedir outro.
+- [ ] **CA6** — Dada uma conta ainda não verificada, quando a pessoa conclui o reset, então a conta fica verificada e ela consegue logar.
+- [ ] **CA7** — Dado um reset concluído, então o e-mail da conta recebe o aviso de que a senha foi alterada.
 
 ## Casos de borda
 
-- Pedir o reset várias vezes seguidas (limitado pela 005)
-- Abrir o link e demorar mais de 30 minutos para enviar a senha nova
+- Pedir o reset várias vezes seguidas: limitado pela 005, e só o último link vale.
+- Abrir o link e demorar mais de 30 minutos para enviar a senha nova: a senha não é trocada e a tela oferece pedir outro link.
+- Login bloqueado por 3 senhas erradas: o reset desbloqueia.
+- Provedor de e-mail fora do ar no pedido: a resposta continua a mesma, para não revelar a conta, e a pessoa pode pedir de novo.
 
 ## Fora de escopo
 
 - Trocar a senha estando logado (spec 006)
 - Perguntas de segurança, SMS ou 2FA
+- Entrar logado direto pelo link de reset
+- Login com Google (spec 004): esta spec não cria contas sem senha, só não impede que a 004 use o reset
 
-## Perguntas em aberto
+## Decisões das perguntas em aberto
 
-- Depois do reset, a pessoa já entra logada ou vai para a tela de login?
-- Enviar um e-mail avisando "sua senha foi alterada"? (recomendado: ajuda a perceber troca não autorizada)
+- Depois do reset: vai para o login, sem sessão.
+- Aviso "sua senha foi alterada": enviado (CA7).
