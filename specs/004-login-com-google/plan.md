@@ -39,8 +39,8 @@ ALTER TABLE users ADD COLUMN avatar_hidden BOOLEAN NOT NULL DEFAULT FALSE;
 | Método | Rota | Mudança |
 |---|---|---|
 | `GET` | `/auth/google/config` (público) | novo: `{clientId}` (vazio = desligado) |
-| `POST` | `/auth/google` (público) | novo: `{credential}` → `200 {token}` + cookie de refresh; `401` token inválido; `409` e-mail já ligado a outro Google; `429` |
-| `POST` | `/profile/google` | novo: `{credential, currentPassword}` → `204`; `400` senha errada; `409` Google já usado ou conta já vinculada; `429` |
+| `POST` | `/auth/google` (público) | novo: `{credential}` → `200 {token, email}` + cookie de refresh; `401` token inválido; `409` e-mail já ligado a outro Google; `429` |
+| `POST` | `/profile/google` | novo: `{credential, currentPassword}` → `204`; `400` senha errada ou token recusado (erro no campo `credential`, para o cliente não tratar como sessão expirada); `409` Google já usado ou conta já vinculada; `429` |
 | `POST` | `/profile/google/unlink` | novo: `{currentPassword}` → `204`; `400`; `409` sem senha |
 | `DELETE` | `/profile/avatar` | novo: oculta a foto → `204` |
 | `POST` | `/profile/avatar/google` | novo: volta a usar a foto do Google → `204`; `409` sem vínculo |

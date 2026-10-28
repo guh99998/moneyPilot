@@ -55,8 +55,9 @@ export function googleErrorMessage(error) {
  * o login por senha segue como está. `onCredential` recebe o ID token.
  *
  * `text`: 'signin_with' | 'signup_with' | 'continue_with'. `separator`: mostra o "ou" acima do botão.
+ * `onReady`: chamado quando o botão aparece, para a tela mostrar o que só faz sentido com ele.
  */
-export function googleButton({ text = 'signin_with', separator = false, onCredential }) {
+export function googleButton({ text = 'signin_with', separator = false, onCredential, onReady }) {
     const slot = el('div', { class: 'google-slot' });
     const block = el('div', { class: 'google-block', hidden: true }, [
         separator ? el('p', { class: 'auth-or', 'aria-hidden': 'true' }, [el('span', { text: 'ou' })]) : null,
@@ -84,6 +85,7 @@ export function googleButton({ text = 'signin_with', separator = false, onCreden
                 locale: 'pt-BR',
                 width: Math.min(slot.clientWidth || 320, BUTTON_MAX_WIDTH)
             });
+            onReady?.();
         } catch {
             block.hidden = true;
         }

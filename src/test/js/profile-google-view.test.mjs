@@ -89,6 +89,7 @@ test('a refused "Criar senha" is announced and the button works again', async ()
 
     assert.equal(alerts(cardOf(view, 'Senha')).length, 1);
     assert.equal(button.disabled, false);
+    assert.equal(button.textContent, 'Criar senha');
 });
 
 test('a Google-only account cannot unlink: the button is off and says why', async () => {
@@ -110,16 +111,25 @@ test('an unlinked account asks for the current password before the Google button
     await settle();
 
     const card = cardOf(view, 'Google');
+    assert.equal(card.hidden, false);
     assert.ok(byId(card, 'profile-google-password'));
     assert.equal(byClass(card, 'google-block')[0].hidden, false);
 });
 
-test('the Google button stays hidden while Google is off, and the card keeps its password field', async () => {
+test('the whole Google card stays hidden while Google is off', async () => {
     startServer({});
     const view = await renderProfile();
     await settle();
 
-    assert.equal(byClass(cardOf(view, 'Google'), 'google-block')[0].hidden, true);
+    assert.equal(cardOf(view, 'Google').hidden, true);
+});
+
+test('the Google card of a linked account shows even while Google is off, so it can be unlinked', async () => {
+    startServer(LINKED);
+    const view = await renderProfile();
+    await settle();
+
+    assert.equal(cardOf(view, 'Google').hidden, false);
 });
 
 test('linking without the current password asks for it and sends nothing', async (t) => {

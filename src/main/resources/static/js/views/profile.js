@@ -172,7 +172,7 @@ function dataCard(profile, reload, focus) {
         nameBox,
         fieldRow('Nome', nameInput, nameErrors.name),
         fieldRow('E-mail', el('input', { type: 'email', value: profile.email, disabled: true }), null,
-            'Para trocar o e-mail, use o cartão abaixo.'),
+            profile.hasPassword ? 'Para trocar o e-mail, use o cartão abaixo.' : 'Para trocar o e-mail, crie uma senha antes.'),
         fieldRow('Conta criada em', el('input', {
             type: 'text', value: CREATED_AT_FORMAT.format(new Date(profile.createdAt)), disabled: true
         })),
@@ -241,6 +241,7 @@ function createPasswordCard(profile) {
 
     button.addEventListener('click', async () => {
         button.disabled = true;
+        button.textContent = 'Enviando…';
         errorBox.hidden = true;
         try {
             await api.forgotPassword(profile.email);
@@ -251,6 +252,7 @@ function createPasswordCard(profile) {
             errorBox.hidden = false;
         }
         button.disabled = false;
+        button.textContent = 'Criar senha';
     });
 
     return card('Senha', null, el('div', {}, [
@@ -346,6 +348,8 @@ function googleCard(profile, reload, focus) {
     });
     const google = googleButton({
         text: 'continue_with',
+        // Sem Google (desligado ou bloqueado) não há o que vincular: o cartão inteiro fica escondido.
+        onReady: () => { unlinked.hidden = false; },
         onCredential: async (credential) => {
             resetErrors(fieldErrors, errorBox);
             if (!passwordControl.input.value) {
@@ -363,13 +367,15 @@ function googleCard(profile, reload, focus) {
         }
     });
 
-    return card('Google', 'Entre com um clique.', el('div', {}, [
+    const unlinked = card('Google', 'Entre com um clique.', el('div', {}, [
         errorBox,
         el('p', { class: 'meter-foot', text: 'Informe a senha atual para confirmar que é você e escolha a conta Google. Ela pode ter um e-mail diferente do da conta.' }),
         fieldRow('Senha atual', passwordControl.control, fieldErrors.currentPassword, null, 'profile-google-password'),
         google,
         fieldErrors.credential
     ]), heading);
+    unlinked.hidden = true;
+    return unlinked;
 }
 
 function linkedGoogle(profile, errorBox, fieldErrors, fail, reload) {
