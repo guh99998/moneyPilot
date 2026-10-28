@@ -1,7 +1,7 @@
 # 011 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** proposto
+**Status:** implementado
 
 ## Abordagem
 

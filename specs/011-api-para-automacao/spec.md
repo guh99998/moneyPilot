@@ -37,13 +37,13 @@ Uma pessoa (ou o assistente de IA dela) entende a API lendo só a documentação
 
 ## Critérios de aceite
 
-- [ ] **CA1** — Dado o contrato `/v3/api-docs`, quando lido, então toda rota tem resumo, exemplo de requisição e resposta e os erros possíveis, e os enums aparecem como valores fechados.
-- [ ] **CA2** — Dado um cliente fora do navegador, quando entra pedindo o refresh token no corpo, então recebe o access token, o refresh token e o `expiresIn` na resposta, sem `Set-Cookie`.
-- [ ] **CA3** — Dado esse refresh token, quando o envia no corpo da renovação, então recebe um novo par, e o antigo deixa de valer (mesma rotação do cookie).
-- [ ] **CA4** — Dado o navegador, quando entra como hoje, então nada muda: o refresh token continua só no cookie.
-- [ ] **CA5** — Dada a página "Usando com IA", quando aberta sem login, então mostra o passo a passo e o texto para o assistente.
-- [ ] **CA6** — Dado um refresh token, quando enviado no corpo do logout, então ele é revogado e deixa de renovar a sessão.
-- [ ] **CA7** — Dado qualquer request com dinheiro, quando o valor tem mais de 2 casas ou vírgula, então responde `400` com erro no campo.
+- [x] **CA1** — Dado o contrato `/v3/api-docs`, quando lido, então toda rota tem resumo, exemplo de requisição e resposta e os erros possíveis, e os enums aparecem como valores fechados.
+- [x] **CA2** — Dado um cliente fora do navegador, quando entra pedindo o refresh token no corpo, então recebe o access token, o refresh token e o `expiresIn` na resposta, sem `Set-Cookie`.
+- [x] **CA3** — Dado esse refresh token, quando o envia no corpo da renovação, então recebe um novo par, e o antigo deixa de valer (mesma rotação do cookie).
+- [x] **CA4** — Dado o navegador, quando entra como hoje, então nada muda: o refresh token continua só no cookie.
+- [x] **CA5** — Dada a página "Usando com IA", quando aberta sem login, então mostra o passo a passo e o texto para o assistente.
+- [x] **CA6** — Dado um refresh token, quando enviado no corpo do logout, então ele é revogado e deixa de renovar a sessão.
+- [x] **CA7** — Dado qualquer request com dinheiro, quando o valor tem mais de 2 casas ou vírgula, então responde `400` com erro no campo.
 
 ## Casos de borda
 
