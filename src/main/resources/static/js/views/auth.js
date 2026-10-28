@@ -181,6 +181,7 @@ export function renderAuth(onAuthenticated) {
             autocomplete: isLogin ? 'current-password' : 'new-password',
             required: true,
             minlength: isLogin ? null : '8',
+            maxlength: isLogin ? null : '64',
             'aria-describedby': isLogin ? errorIds.password : `${hintId} ${errorIds.password}`
         });
         const inputs = { name: nameInput, email: emailInput, password: passwordInput };
@@ -246,7 +247,7 @@ export function renderAuth(onAuthenticated) {
             el('div', { class: 'field' }, [
                 el('label', { for: inputIds.password, text: 'Senha' }),
                 passwordInput,
-                isLogin ? null : el('span', { class: 'meter-foot', id: hintId, text: 'Mínimo de 8 caracteres.' }),
+                isLogin ? null : el('span', { class: 'meter-foot', id: hintId, text: 'De 8 a 64 caracteres.' }),
                 fieldErrors.password
             ]),
             submitBtn

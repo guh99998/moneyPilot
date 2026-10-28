@@ -94,7 +94,7 @@ export async function renderProfile() {
 
     // Senha
     const currentInput = el('input', { type: 'password', autocomplete: 'current-password', required: true });
-    const newInput = el('input', { type: 'password', autocomplete: 'new-password', required: true, minlength: '8' });
+    const newInput = el('input', { type: 'password', autocomplete: 'new-password', required: true, minlength: '8', maxlength: '64' });
     const passwordErrors = { currentPassword: el('span', { class: 'error' }), newPassword: el('span', { class: 'error' }) };
     const passwordBox = el('p', { class: 'dialog-error', hidden: true });
     const passwordBtn = el('button', { class: 'btn-primary', type: 'submit', text: 'Trocar senha' });
@@ -117,7 +117,7 @@ export async function renderProfile() {
     }, [
         passwordBox,
         fieldRow('Senha atual', currentInput, passwordErrors.currentPassword),
-        fieldRow('Nova senha', newInput, passwordErrors.newPassword, 'Mínimo de 8 caracteres, diferente da atual.'),
+        fieldRow('Nova senha', newInput, passwordErrors.newPassword, 'De 8 a 64 caracteres, diferente da atual.'),
         passwordBtn
     ]);
 
