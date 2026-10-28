@@ -138,6 +138,7 @@ test('field errors are linked to their fields, flagged as invalid and keep what 
     assert.ok(describedBy(view, textarea(view)).includes('A mensagem deve ter de 10 a 2.000 caracteres.'));
     assert.deepEqual(describedBy(view, emailInput(view)), ['Informe um e-mail válido.']);
     assert.equal(errorBoxOf(view).hidden, true);
+    assert.equal(globalThis.document.activeElement, textarea(view));
     assert.equal(textarea(view).value, 'curta');
     assert.equal(emailInput(view).value, 'ana@example');
 });

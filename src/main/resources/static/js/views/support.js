@@ -27,10 +27,13 @@ export function renderSupport() {
     };
 
     const errorBox = el('p', { class: 'dialog-error', hidden: true, role: 'alert' });
-    const categoryInput = el('select', { id: ids.category, required: true, 'aria-describedby': errorIds.category },
+    const categoryInput = el('select', { id: ids.category, name: 'category', required: true, 'aria-describedby': errorIds.category },
         CATEGORIES.map(([value, label]) => el('option', { value, text: label })));
     const messageInput = el('textarea', {
         id: ids.message,
+        name: 'message',
+        autocomplete: 'off',
+        placeholder: 'Descreva o que aconteceu ou o que você precisa…',
         rows: '6',
         maxlength: String(MAX_MESSAGE),
         required: true,
@@ -39,6 +42,7 @@ export function renderSupport() {
     const counter = el('span', { class: 'meter-foot support-count', id: counterId, text: `0/${MAX_MESSAGE}` });
     const emailInput = loggedIn ? null : el('input', {
         id: ids.email,
+        name: 'email',
         type: 'email',
         autocomplete: 'email',
         spellcheck: 'false',
@@ -100,6 +104,8 @@ export function renderSupport() {
                         inputs[field].setAttribute('aria-invalid', 'true');
                         shownOnField = true;
                     });
+                    // Foco no primeiro campo com erro, na ordem da tela.
+                    Object.values(inputs).find((input) => input?.getAttribute('aria-invalid'))?.focus();
                 }
                 if (!shownOnField) {
                     errorBox.textContent = error?.message || 'Não foi possível enviar agora. Tente de novo.';
