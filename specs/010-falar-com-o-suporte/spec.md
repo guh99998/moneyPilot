@@ -53,6 +53,6 @@ A pessoa abre um chamado pelo próprio app, em poucos segundos, e a mensagem che
 
 - O link na tela de login entra agora.
 - As categorias são Dúvida, Problema, Sugestão e Outro.
-- Os chamados vão só por e-mail, sem banco e sem migration.
+- Os chamados vão só por e-mail, sem banco e sem migration. **Atualizado pela 017:** o chamado passa a ser gravado no banco, e a falha no envio do e-mail deixa de dar erro (o chamado fica gravado e a pessoa vê "recebido"), o que muda o CA5.
 - A pessoa não recebe cópia por e-mail.
 - Os limites são 3 por hora por conta (ou por e-mail, sem login) e 10 por hora por IP.

@@ -212,6 +212,16 @@ h3 { font-size: .92rem; }
 .support-card { width: min(560px, 100%); }
 .support-card textarea { resize: vertical; min-height: 8rem; }
 .support-count { align-self: flex-end; }
+
+/* painel de chamados (admin) */
+.ticket-filter { max-width: 14rem; }
+.ticket-badges { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: flex-end; }
+.ticket-meta { display: grid; gap: .35rem; margin: 0 0 1rem; font-size: .88rem; }
+.ticket-meta dt { font-weight: 700; color: var(--text-secondary); font-size: .78rem; }
+.ticket-meta dd { margin: 0 0 .35rem; overflow-wrap: anywhere; }
+.ticket-message { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 1.1rem; padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); }
+.ticket-status-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem; }
+.ticket-status-form .field { margin-bottom: 0; min-width: 12rem; }
 .ai-card { width: min(720px, 100%); }
 .auth-card.ai-card { padding: 1.5rem 1.25rem; }
 .ai-guide section { margin-top: 1.25rem; }

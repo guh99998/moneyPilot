@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.config.AdminProperties;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidCurrentPasswordException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.SamePasswordException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.UnauthenticatedRequestException;
@@ -20,10 +21,11 @@ public class ProfileService {
     private final RateLimitProperties rateLimit;
     private final EmailChangeService emailChangeService;
     private final PasswordPolicy passwordPolicy;
+    private final AdminProperties adminProperties;
 
     public ProfileResponse getProfile() {
         User user = currentUser();
-        return new ProfileResponse(user, emailChangeService.pendingEmail(user.getId()));
+        return new ProfileResponse(user, emailChangeService.pendingEmail(user.getId()), adminProperties.isAdminEmail(user.getEmail()));
     }
 
     @Transactional
@@ -31,7 +33,7 @@ public class ProfileService {
         User user = currentUser();
         user.setName(request.name());
         User saved = repository.save(user);
-        return new ProfileResponse(saved, emailChangeService.pendingEmail(saved.getId()));
+        return new ProfileResponse(saved, emailChangeService.pendingEmail(saved.getId()), adminProperties.isAdminEmail(saved.getEmail()));
     }
 
     @Transactional

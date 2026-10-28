@@ -27,10 +27,9 @@ public class SupportController {
 
     @Operation(summary = "Fala com o suporte", description = "Envia uma mensagem para o suporte. Vale sem login; com login, a resposta vai para o e-mail da conta.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Mensagem enviada, com a referência"),
+            @ApiResponse(responseCode = "200", description = "Chamado recebido e gravado, com a referência; vale mesmo que o e-mail ao suporte falhe"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "429", description = "Muitas tentativas; veja o cabeçalho Retry-After", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "502", description = "Falha no provedor externo", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(responseCode = "429", description = "Muitas tentativas; veja o cabeçalho Retry-After", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @SecurityRequirements
     @PostMapping("/tickets")

@@ -19,7 +19,7 @@ A pessoa apaga a própria conta pelo perfil, confirmando que é ela, e todos os 
   - conta com senha: informa a senha atual;
   - conta só com Google: confirma entrando de novo com o Google (a conta Google precisa ser a vinculada).
   - Proposta: além disso, digitar uma palavra de confirmação (ex.: "EXCLUIR").
-- **O que é apagado (proposta):** tudo o que é da conta: contas bancárias, categorias próprias, lançamentos, orçamentos, títulos e recorrências, alertas dispensados, sessões e todos os tokens (verificação, reset, troca de e-mail). Categorias globais ficam.
+- **O que é apagado (proposta):** tudo o que é da conta: contas bancárias, categorias próprias, lançamentos, orçamentos, títulos e recorrências, alertas dispensados, chamados de suporte da conta (`support_tickets`, spec 017), sessões e todos os tokens (verificação, reset, troca de e-mail). Categorias globais ficam.
 - **Quando (proposta):** na hora, sem período de arrependimento.
 - **Depois:** a sessão atual e as outras são encerradas, a pessoa volta para a tela de login com a mensagem "Sua conta foi excluída". Um e-mail de aviso vai para o endereço da conta.
 - O e-mail fica livre para um novo cadastro.

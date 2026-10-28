@@ -34,6 +34,7 @@ services:
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:?defina MAIL_FROM_ADDRESS no .env}
       RESEND_API_KEY: ${RESEND_API_KEY:?defina RESEND_API_KEY no .env}
       SUPPORT_EMAIL: ${SUPPORT_EMAIL:?defina SUPPORT_EMAIL no .env}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       COOKIE_SECURE: "true"
     depends_on:
