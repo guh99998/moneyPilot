@@ -11,9 +11,10 @@ public record ProfileResponse(
         @Schema(description = "Se a conta tem senha (conta só com Google não tem)", example = "true") boolean hasPassword,
         @Schema(description = "E-mail da conta Google vinculada, se houver", example = "ana@gmail.com") String googleEmail,
         @Schema(description = "Endereço da foto do Google, se houver e não estiver escondida", example = "https://lh3.googleusercontent.com/a/exemplo") String avatarUrl,
-        @Schema(description = "Se a pessoa escondeu a foto do Google", example = "false") boolean avatarHidden
+        @Schema(description = "Se a pessoa escondeu a foto do Google", example = "false") boolean avatarHidden,
+        @Schema(description = "Se a conta é administradora do painel de chamados do suporte", example = "false") boolean admin
 ) {
-    public ProfileResponse(User user, String pendingEmail) {
+    public ProfileResponse(User user, String pendingEmail, boolean admin) {
         this(
                 user.getName(),
                 user.getEmail(),
@@ -22,7 +23,8 @@ public record ProfileResponse(
                 user.hasPassword(),
                 user.getGoogleEmail(),
                 user.isAvatarHidden() ? null : user.getAvatarUrl(),
-                user.isAvatarHidden()
+                user.isAvatarHidden(),
+                admin
         );
     }
 }

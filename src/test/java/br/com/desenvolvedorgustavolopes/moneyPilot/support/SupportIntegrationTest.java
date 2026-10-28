@@ -243,23 +243,25 @@ class SupportIntegrationTest extends AbstractIntegrationTest {
         ticket(null, body("DUVIDA", MESSAGE, newAddress()), ip).andExpect(status().isOk());
     }
 
-    // CA5
+    // CA7 (017): a falha no e-mail não perde o chamado
 
     @Test
-    void sendFailure_isBadGateway_andDoesNotSpendTheQuota() throws Exception {
+    void sendFailure_savesTheTicket_answersOk_andSpendsTheQuota() throws Exception {
         String email = newAddress();
         String ip = uniqueIp();
 
         emailSender.failFromNowOn(true);
-        for (int i = 0; i < 4; i++) {
-            ticket(null, body("PROBLEMA", MESSAGE, email), ip).andExpect(status().isBadGateway());
-        }
-
-        emailSender.failFromNowOn(false);
         for (int i = 0; i < 3; i++) {
-            ticket(null, body("PROBLEMA", MESSAGE, email), ip).andExpect(status().isOk());
+            ticket(null, body("PROBLEMA", MESSAGE, email), ip)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.reference").value(org.hamcrest.Matchers.matchesPattern(REFERENCE)));
         }
-        assertEquals(3, emailSender.sent().size());
+        ticket(null, body("PROBLEMA", MESSAGE, email), ip).andExpect(status().isTooManyRequests());
+
+        assertEquals(0, emailSender.sent().size());
+        assertEquals(3, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM support_tickets WHERE reply_to = ? AND status = 'OPEN' AND email_sent = FALSE",
+                Integer.class, email));
     }
 
     // Bordas
