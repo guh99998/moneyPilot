@@ -209,6 +209,9 @@ h3 { font-size: .92rem; }
 .user-chip-avatar { display: inline-flex; flex: none; }
 .user-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-chip:hover, .user-chip.active { background: var(--navy-2); color: #fff; }
+.support-card { width: min(560px, 100%); }
+.support-card textarea { resize: vertical; min-height: 8rem; }
+.support-count { align-self: flex-end; }
 .sidebar-foot button { color: #dbe4f0; border-color: var(--navy-3); background: transparent; }
 .sidebar-foot button:hover:not(:disabled) { background: var(--navy-2); color: #fff; }
 
