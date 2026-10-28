@@ -10,12 +10,15 @@ const { renderResetPassword } = await import('../../main/resources/static/js/vie
 
 const LEAKED = 'Essa senha aparece em listas públicas de senhas vazadas na internet. Escolha outra, de preferência uma frase.';
 
-/** Fake backend: serves the password list and answers the other calls with `answer()`. */
+/** Fake backend: serves the password list, says Google is off, and answers the other calls with `answer()`. */
 function startServer(answer = () => ({ status: 204 })) {
     let sent = 0;
     globalThis.fetch = async (url) => {
         if (new URL(url, 'http://localhost').pathname === '/data/common-passwords.txt') {
             return new Response('senha12345\n');
+        }
+        if (new URL(url, 'http://localhost').pathname === '/api/v1/auth/google/config') {
+            return Response.json({ clientId: '' });
         }
         sent += 1;
         const { status, body } = answer();
