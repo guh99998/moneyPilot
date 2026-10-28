@@ -3,7 +3,6 @@ import { el, toast } from '../ui.js';
 import { forgotPasswordForm } from './auth.js';
 
 const INVALID_LINK = 'Link inválido ou expirado. Informe seu e-mail para receber outro.';
-const SHORT_PASSWORD = 'A senha precisa ter pelo menos 8 caracteres.';
 
 // O token sai da barra de endereço na primeira renderização e fica aqui até a senha ser trocada:
 // a tela pode ser renderizada de novo (hashchange) sem perder o link. Um link novo substitui o anterior.
@@ -74,6 +73,7 @@ export function renderResetPassword() {
             autocomplete: 'new-password',
             required: true,
             minlength: '8',
+            maxlength: '64',
             'aria-describedby': `${hintId} ${errorId}`
         });
         const submitBtn = el('button', {
@@ -96,9 +96,8 @@ export function renderResetPassword() {
                     await api.resetPassword(currentToken, passwordInput.value);
                     showDone();
                 } catch (error) {
-                    // A mensagem do servidor vem da validação, em inglês; a regra é uma só.
                     if (error instanceof ApiError && error.fieldErrors?.newPassword) {
-                        fieldError.textContent = SHORT_PASSWORD;
+                        fieldError.textContent = error.fieldErrors.newPassword;
                         passwordInput.setAttribute('aria-invalid', 'true');
                         passwordInput.focus();
                     } else if (error instanceof ApiError && error.status === 400) {
@@ -117,7 +116,7 @@ export function renderResetPassword() {
             el('div', { class: 'field' }, [
                 el('label', { for: inputId, text: 'Nova senha' }),
                 passwordInput,
-                el('span', { class: 'meter-foot', id: hintId, text: 'Mínimo de 8 caracteres.' }),
+                el('span', { class: 'meter-foot', id: hintId, text: 'De 8 a 64 caracteres.' }),
                 fieldError
             ]),
             submitBtn
