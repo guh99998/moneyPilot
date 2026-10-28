@@ -3,6 +3,7 @@ const TOKEN_KEY = 'moneypilot.token';
 const EMAIL_KEY = 'moneypilot.email';
 const NAME_KEY = 'moneypilot.name';
 const AVATAR_KEY = 'moneypilot.avatar';
+const ADMIN_KEY = 'moneypilot.admin';
 
 export class ApiError extends Error {
     constructor(status, message, fieldErrors) {
@@ -32,6 +33,14 @@ export const session = {
     setAvatar(url) {
         localStorage.setItem(AVATAR_KEY, url || '');
     },
+    // Nulo = ainda não se sabe. Só decide se o menu mostra o painel; quem protege as rotas é o servidor.
+    get admin() {
+        const stored = localStorage.getItem(ADMIN_KEY);
+        return stored === null ? null : stored === 'true';
+    },
+    setAdmin(admin) {
+        localStorage.setItem(ADMIN_KEY, String(Boolean(admin)));
+    },
     start(token, email) {
         localStorage.setItem(TOKEN_KEY, token);
         if (email) localStorage.setItem(EMAIL_KEY, email);
@@ -41,6 +50,7 @@ export const session = {
         localStorage.removeItem(EMAIL_KEY);
         localStorage.removeItem(NAME_KEY);
         localStorage.removeItem(AVATAR_KEY);
+        localStorage.removeItem(ADMIN_KEY);
     },
     get active() {
         return Boolean(localStorage.getItem(TOKEN_KEY));
@@ -198,13 +208,24 @@ export const api = {
     sendSupportTicket: (body) =>
         request('/support/tickets', { method: 'POST', body, anonymous: !session.active }),
 
+    admin: {
+        tickets: {
+            list: (status, page = 0) => request('/admin/support/tickets', { query: { status, page, size: 20 } }),
+            get: (id) => request(`/admin/support/tickets/${id}`),
+            updateStatus: (id, status) => request(`/admin/support/tickets/${id}`, { method: 'PATCH', body: { status } })
+        }
+    },
+
     alerts: {
         list: () => request('/alerts'),
         dismiss: (key) => request('/alerts/dismiss', { method: 'POST', body: { key } })
     },
 
     profile: {
-        get: () => request('/profile'),
+        get: () => request('/profile').then((profile) => {
+            session.setAdmin(profile.admin);
+            return profile;
+        }),
         update: (name) => request('/profile', { method: 'PUT', body: { name } }),
         // Autenticadas: um credential recusado volta como 400 no campo, nunca como sessão expirada.
         linkGoogle: (credential, currentPassword) =>

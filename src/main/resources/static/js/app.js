@@ -13,6 +13,7 @@ import { renderConfirmEmail } from './views/confirm-email.js';
 import { renderVerifyEmail } from './views/verify-email.js';
 import { renderResetPassword } from './views/reset-password.js';
 import { renderSupport } from './views/support.js';
+import { renderAdminTickets } from './views/admin-tickets.js';
 import { renderAiGuide } from './views/ai-guide.js';
 import { renderBell, refreshAlerts, resetAlerts } from './alerts.js';
 
@@ -35,6 +36,7 @@ const NAV_ICONS = {
     accounts: svgIcon('<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>'),
     categories: svgIcon('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>'),
     ai: svgIcon('<rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/>'),
+    tickets: svgIcon('<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12"/>'),
     support: svgIcon('<path d="M21 12a9 9 0 0 1-9 9H4l2.2-3.3A9 9 0 1 1 21 12z"/><path d="M9 10h6M9 14h4"/>'),
     budgets: svgIcon('<path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5a9 9 0 0 1 5.5 5.5H15z"/>')
 };
@@ -42,6 +44,8 @@ const NAV_ICONS = {
 // Tela fora do menu: o acesso é pelo nome do usuário no rodapé.
 const PROFILE_ROUTE = { path: 'profile', label: 'Perfil', render: renderProfile };
 const SUPPORT_ROUTE = { path: 'suporte', label: 'Falar com o suporte', render: renderSupport };
+// Só para administrador: sem o papel, a rota cai na Visão geral e o servidor responde 404 de qualquer jeito.
+const ADMIN_TICKETS_ROUTE = { path: 'admin/chamados', label: 'Chamados', render: renderAdminTickets };
 const AI_ROUTE = { path: 'usando-com-ia', label: 'Usando com IA', render: renderAiGuide };
 
 // O app tem só o tema claro; limpa a preferência que versões antigas gravavam.
@@ -52,6 +56,7 @@ function currentRoute() {
     if (path === PROFILE_ROUTE.path) return PROFILE_ROUTE;
     if (path === SUPPORT_ROUTE.path) return SUPPORT_ROUTE;
     if (path === AI_ROUTE.path) return AI_ROUTE;
+    if (path === ADMIN_TICKETS_ROUTE.path && session.admin) return ADMIN_TICKETS_ROUTE;
     return ROUTES.find((route) => route.path === path) || ROUTES[0];
 }
 
@@ -104,6 +109,15 @@ function buildSidebar(active) {
                     el('span', { class: 'user-chip-avatar', 'aria-hidden': 'true', html: NAV_ICONS.ai }),
                     el('span', { class: 'user-chip-name', text: AI_ROUTE.label })
                 ]),
+                session.admin ? el('a', {
+                    class: 'user-chip' + (active.path === ADMIN_TICKETS_ROUTE.path ? ' active' : ''),
+                    href: '#/' + ADMIN_TICKETS_ROUTE.path,
+                    // Tocar na página atual não dispara hashchange, então fecha à mão.
+                    onClick: () => sidebar.classList.remove('open')
+                }, [
+                    el('span', { class: 'user-chip-avatar', 'aria-hidden': 'true', html: NAV_ICONS.tickets }),
+                    el('span', { class: 'user-chip-name', text: ADMIN_TICKETS_ROUTE.label })
+                ]) : null,
                 el('a', {
                     class: 'user-chip' + (active.path === SUPPORT_ROUTE.path ? ' active' : ''),
                     href: '#/' + SUPPORT_ROUTE.path,
@@ -147,7 +161,7 @@ async function render() {
     // Sessões abertas antes do perfil existir (ou do login com Google) não têm o nome e a foto guardados:
     // busca uma vez. A espera vem antes de limpar a tela: duas renderizações concorrentes (login + hashchange)
     // montariam o menu duas vezes.
-    if (session.active && (!session.name || session.avatar === null)) {
+    if (session.active && (!session.name || session.avatar === null || session.admin === null)) {
         await api.profile.get().then((profile) => {
             session.setName(profile.name);
             session.setAvatar(profile.avatarUrl);
