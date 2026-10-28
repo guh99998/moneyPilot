@@ -18,7 +18,7 @@ public class AuthService {
 
     public AuthTokens login(LoginRequest request, String clientIp) {
         String ipKey = "login-ip:" + clientIp;
-        String emailKey = "login-email:" + request.email().trim().toLowerCase();
+        String emailKey = "login-email:" + request.email();
 
         attemptLimiter.check(ipKey, rateLimit.loginPerIp());
         attemptLimiter.check(emailKey, rateLimit.loginFailuresPerEmail());

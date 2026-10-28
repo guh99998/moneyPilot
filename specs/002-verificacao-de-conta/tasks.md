@@ -3,8 +3,8 @@
 **Plano:** [plan.md](plan.md)
 
 - [x] **T1** — Spec com as decisões, plano e tarefas
-- [ ] **T2** — Migration V12 (verificados, minúsculas, CHECK, tabela de tokens) + `MigrationV12Test` (CA5, CA8)
-- [ ] **T3** — `EmailAddress.normalize` nos requests de cadastro, login, reenvio e troca de e-mail (CA8)
+- [x] **T2** — Migration V12 (verificados, minúsculas, CHECK, tabela de tokens) + `MigrationV12Test` (CA5, CA8)
+- [x] **T3** — `EmailAddress.normalize` nos requests de cadastro, login, reenvio e troca de e-mail (CA8)
 - [ ] **T4** — Helper `markVerified` e ajuste dos testes existentes que cadastram e logam
 - [ ] **T5** — Cadastro com resposta genérica, link, reaproveitamento de não verificada e aviso ao dono (CA1, CA7)
 - [ ] **T6** — Login recusa conta não verificada com `403` (CA2)
@@ -16,3 +16,5 @@
 - [ ] **T12** — Consulta de duplicatas e backup antes do deploy (Gustavo)
 
 ## Notas de implementação
+
+- T2: o `MigrationV12Test` confere os dados depois da V12 (verificados, e-mails normalizados, `CHECK` ativo) e que duplicatas por maiúsculas fazem a migration falhar sem alterar nada. Que esses usuários conseguem logar fica para o teste de integração da T8, porque o app só enxerga o schema principal.

@@ -15,4 +15,8 @@ public record RegisterRequest(
 
         @NotBlank
         String name) {
+
+    public RegisterRequest {
+        email = EmailAddress.normalize(email);
+    }
 }
