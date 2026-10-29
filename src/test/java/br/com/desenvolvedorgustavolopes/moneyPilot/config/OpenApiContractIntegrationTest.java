@@ -35,7 +35,7 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
             "/api/v1/auth/password/forgot", "/api/v1/auth/password/reset");
 
     // Rotas públicas só em um método: o mesmo caminho tem GET protegido (018).
-    private static final Set<String> PUBLIC_OPERATIONS = Set.of("POST /api/v1/support/tickets");
+    private static final Set<String> PUBLIC_OPERATIONS = Set.of("POST /api/v1/support/tickets", "GET /api/v1/contribution/pix");
 
     @Autowired
     private MockMvc mockMvc;

@@ -109,3 +109,24 @@ test('on desktop the sidebar footer is a single column, so the support link does
     assert.match(foot, /flex-wrap:\s*nowrap/);
     assert.match(desktop, /\.foot-link\s*\{[^}]*flex-basis:\s*auto/);
 });
+
+// CA7
+
+test('without a session the screen opens on its own page, with the key and a link back', async () => {
+    session.clear();
+    startServer({ status: 200, body: { key: KEY, qrImage: null } });
+    const view = await renderContribution();
+
+    assert.equal(findByTag(view, 'h1')[0].textContent, 'Apoie o projeto');
+    assert.equal(findByTag(view, 'input')[0].value, KEY);
+    assert.equal(findByText(view, 'a', 'Voltar para o moneyPilot').getAttribute('href'), '/');
+});
+
+test('without a session and without a configured key the screen says the support is unavailable', async () => {
+    session.clear();
+    startServer({ status: 404 });
+    const view = await renderContribution();
+
+    assert.match(textOf(view), /O apoio não está disponível agora\./);
+    assert.equal(findByTag(view, 'input').length, 0);
+});
