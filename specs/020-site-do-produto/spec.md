@@ -1,6 +1,6 @@
 # 020 — Site do produto
 
-**Status:** rascunho (decisões de negócio registradas em 28/10/2026, aguardando aprovação)
+**Status:** aprovada
 **Branch:** feature/020-site-do-produto
 **Depende de:** nenhuma (combina com a 019, a 021 e a 024)
 

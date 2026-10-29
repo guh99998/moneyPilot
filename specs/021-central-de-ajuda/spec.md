@@ -1,6 +1,6 @@
 # 021 — Central de ajuda
 
-**Status:** rascunho (decisões de negócio registradas em 28/10/2026, aguardando aprovação)
+**Status:** aprovada
 **Branch:** feature/021-central-de-ajuda
 **Depende de:** 020 (site do produto, onde as páginas vivem); 011 (API para automação)
 
