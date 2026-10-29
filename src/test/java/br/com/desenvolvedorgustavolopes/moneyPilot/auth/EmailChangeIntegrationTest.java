@@ -78,7 +78,7 @@ class EmailChangeIntegrationTest extends AbstractIntegrationTest {
         List<EmailMessage> sent = emailSender.sent();
         assertEquals(1, sent.size());
         assertEquals(newEmail, sent.get(0).to());
-        assertTrue(sent.get(0).text().contains("http://localhost:8080/#/confirmar-email?token="));
+        assertTrue(sent.get(0).text().contains("http://localhost:8080/app/#/confirmar-email?token="));
 
         mockMvc.perform(get("/api/v1/profile").header(HttpHeaders.AUTHORIZATION, bearer(session)))
                 .andExpect(status().isOk())

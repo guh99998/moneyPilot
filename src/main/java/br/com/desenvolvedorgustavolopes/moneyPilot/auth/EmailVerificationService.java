@@ -134,7 +134,7 @@ public class EmailVerificationService {
     }
 
     private EmailMessage verificationMessage(User user, String rawToken) {
-        String link = appProperties.publicUrl() + "/#/verificar-email?token=" + rawToken;
+        String link = appProperties.publicUrl() + "/app/#/verificar-email?token=" + rawToken;
         String text = """
                 Olá, %s!
 

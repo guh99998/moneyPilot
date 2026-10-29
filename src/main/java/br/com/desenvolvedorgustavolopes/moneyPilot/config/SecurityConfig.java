@@ -50,6 +50,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/support/tickets").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/index.html").permitAll()
+                        .requestMatchers("/app", "/app/", "/app/index.html").permitAll()
+                        .requestMatchers("/ajuda", "/ajuda/**", "/privacidade/**", "/termos/**").permitAll()
                         .requestMatchers("/css/**").permitAll()
                         .requestMatchers("/js/**").permitAll()
                         .requestMatchers("/image/**").permitAll()

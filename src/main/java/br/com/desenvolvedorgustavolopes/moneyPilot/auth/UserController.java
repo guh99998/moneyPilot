@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
 
-@Tag(name = "Autenticação", description = "Cadastro, login e sessão. Para usar a API fora do navegador, entre com refreshTokenInBody=true: veja a página #/usando-com-ia.")
+@Tag(name = "Autenticação", description = "Cadastro, login e sessão. Para usar a API fora do navegador, entre com refreshTokenInBody=true: veja a página /app/#/usando-com-ia.")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

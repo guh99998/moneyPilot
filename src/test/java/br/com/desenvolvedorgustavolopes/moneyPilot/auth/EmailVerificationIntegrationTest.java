@@ -94,7 +94,7 @@ class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
         List<EmailMessage> sent = emailSender.sent();
         assertEquals(1, sent.size());
         assertEquals(email, sent.get(0).to());
-        assertTrue(sent.get(0).text().contains("/#/verificar-email?token="));
+        assertTrue(sent.get(0).text().contains("/app/#/verificar-email?token="));
     }
 
     // CA2
@@ -194,7 +194,7 @@ class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
         List<EmailMessage> sent = emailSender.sent();
         assertEquals(2, sent.size());
         assertEquals(unverified, sent.get(0).to());
-        assertTrue(sent.get(0).text().contains("/#/verificar-email?token="));
+        assertTrue(sent.get(0).text().contains("/app/#/verificar-email?token="));
         assertEquals(verified, sent.get(1).to());
         assertTrue(sent.get(1).text().contains("já está ativa"));
     }
