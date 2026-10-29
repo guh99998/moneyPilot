@@ -217,6 +217,8 @@ h3 { font-size: .92rem; }
 /* Dentro do app o cartão ocupa toda a área de conteúdo, como o de suporte. */
 .contribution-card { width: 100%; }
 .contribution-card h2 { margin-top: 0; }
+.contribution-title { display: flex; align-items: center; gap: .6rem; }
+.contribution-icon { display: inline-flex; flex: none; color: var(--green); }
 .contribution-key { display: flex; flex-wrap: wrap; gap: .5rem; }
 .contribution-key input { flex: 1 1 14rem; min-width: 0; }
 .contribution-qr { display: block; width: min(220px, 100%); height: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 9px; background: #fff; }

@@ -1,5 +1,8 @@
 import { api } from '../api.js';
-import { el, pageHead, emptyState, reportError } from '../ui.js';
+import { el, pageHead, emptyState, reportError, svgIcon } from '../ui.js';
+
+const COFFEE_ICON = svgIcon('<path d="M6 2v2M10 2v2M14 2v2"/><path d="M16 8h1a4 4 0 0 1 0 8h-1"/>'
+    + '<path d="M3 8h13v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/>', 28);
 
 /**
  * "Apoie o projeto": a chave Pix e o QR code de quem quiser ajudar a manter o moneyPilot. O pagamento acontece
@@ -42,7 +45,10 @@ export async function renderContribution() {
     return el('div', {}, [
         head,
         el('div', { class: 'card contribution-card' }, [
-            el('h2', { text: 'O moneyPilot é um projeto gratuito, e sempre vai ser.' }),
+            el('h2', { class: 'contribution-title' }, [
+                el('span', { class: 'contribution-icon', 'aria-hidden': 'true', html: COFFEE_ICON }),
+                'O moneyPilot é um projeto gratuito, e sempre vai ser.'
+            ]),
             el('p', {
                 text: 'Apoiar é só um agradecimento, totalmente opcional. Se ele te ajuda e você quiser pagar um cafezinho para '
                     + 'ajudar a manter o projeto, qualquer valor é bem-vindo. Nada no app muda para quem apoia.'
