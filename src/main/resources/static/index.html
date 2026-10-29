@@ -4,17 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>moneyPilot — controle financeiro pessoal, grátis</title>
-    <meta name="description" content="Organize contas, lançamentos, orçamento e contas a pagar e a receber, e veja a previsão do seu fluxo de caixa. O moneyPilot é um projeto gratuito.">
+    <meta name="description" content="Veja como o mês termina antes de ele acabar. Contas, lançamentos, orçamento, contas a pagar e a receber e previsão de fluxo de caixa. O moneyPilot é um projeto gratuito.">
     <meta property="og:type" content="website">
     <meta property="og:title" content="moneyPilot — controle financeiro pessoal, grátis">
-    <meta property="og:description" content="Contas, lançamentos, orçamento, contas a pagar e a receber e previsão de fluxo de caixa em um só lugar.">
+    <meta property="og:description" content="Saiba como o mês termina antes de ele acabar: contas, orçamento, contas a pagar e a receber e previsão de caixa em um só lugar.">
     <meta property="og:image" content="/image/money-pilot-logo.png">
     <meta name="twitter:card" content="summary">
     <meta name="theme-color" content="#13294b">
     <link rel="icon" href="/image/money-pilot-logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="/css/app.css">
     <link rel="stylesheet" href="/css/site.css">
 </head>
@@ -32,44 +32,94 @@
 
 <main>
     <section class="site-hero" aria-labelledby="site-what">
-        <h1 id="site-what">Seu dinheiro sob controle, sem complicação.</h1>
-        <p>O moneyPilot reúne suas contas, lançamentos, orçamento e contas a pagar e a receber, e mostra como o mês vai terminar. É um projeto gratuito.</p>
-        <a class="btn btn-primary site-cta" href="/app/">Começar agora</a>
+        <div class="site-hero-text">
+            <h1 id="site-what">Saiba como o mês termina antes de ele acabar.</h1>
+            <p>O moneyPilot junta suas contas, o que você vai pagar e o que vai receber, e mostra o saldo dos próximos dias e meses. Grátis, no navegador do computador e do celular.</p>
+            <div class="site-hero-actions">
+                <a class="btn btn-primary site-cta" href="/app/">Criar conta grátis</a>
+                <a class="site-link-light" href="/app/">Já tenho conta</a>
+            </div>
+        </div>
+        <svg class="site-horizon" viewBox="0 0 560 220" aria-hidden="true" focusable="false">
+            <path class="site-horizon-line" d="M6 196 C 90 190, 130 150, 200 154 S 320 118, 372 96 S 470 52, 548 30" pathLength="1"/>
+            <circle class="site-horizon-dot" cx="548" cy="30" r="7"/>
+        </svg>
+        <div class="site-hero-shot">
+            <img class="site-frame" src="/image/site/visao-geral.webp" width="2160" height="1350"
+                 alt="Tela Visão geral do moneyPilot com o saldo em contas, as receitas e despesas do mês e o gráfico do fluxo de caixa projetado.">
+            <div class="site-phone">
+                <img src="/image/site/celular.webp" width="780" height="1688" loading="lazy"
+                     alt="A mesma tela Visão geral no celular, com o saldo em contas em destaque.">
+            </div>
+        </div>
     </section>
 
     <section class="site-section" aria-labelledby="site-features">
-        <h2 id="site-features">Recursos</h2>
-        <ul class="site-features">
-            <li class="site-feature">
-                <h3>Lançamentos e contas</h3>
-                <p>Registre receitas, despesas e transferências entre contas. O saldo de cada conta é sempre calculado a partir dos lançamentos.</p>
-            </li>
-            <li class="site-feature">
-                <h3>A pagar e a receber</h3>
-                <p>Cadastre contas com vencimento, parcele, repita todo mês e dê baixa quando pagar ou receber. Os vencimentos próximos viram avisos.</p>
-            </li>
-            <li class="site-feature">
-                <h3>Previsão mensal</h3>
-                <p>Veja o saldo previsto dia a dia, com o que ainda vai entrar e sair, e saiba se o mês fecha no azul.</p>
-            </li>
-            <li class="site-feature">
-                <h3>Orçamento por categoria</h3>
-                <p>Defina um limite por categoria e acompanhe quanto já gastou, com alerta antes de estourar.</p>
-            </li>
-        </ul>
+        <h2 class="site-section-title" id="site-features">O que você consegue fazer</h2>
+
+        <article class="site-row">
+            <div class="site-row-text">
+                <h3>O saldo de daqui a 30, 60 ou 90 dias</h3>
+                <p>O moneyPilot soma o saldo de hoje às contas a pagar e a receber em aberto e desenha a curva do seu caixa. A previsão mensal vai até 12 meses e já inclui as recorrências que você ainda não lançou.</p>
+            </div>
+            <img class="site-shot" src="/image/site/previsao.webp" width="2160" height="1350" loading="lazy"
+                 alt="Tela Previsão mensal, com barras de contas a receber e a pagar por mês e a linha do saldo projetado.">
+        </article>
+
+        <article class="site-row site-row-flip">
+            <div class="site-row-text">
+                <h3>Pague, receba e o lançamento entra no extrato</h3>
+                <p>Cadastre o vencimento, parcele ou repita todo mês. Ao dar baixa, o lançamento entra no extrato no dia em que o dinheiro saiu ou entrou. Pagou com juros? Baixe pelo valor que você pagou de verdade.</p>
+            </div>
+            <img class="site-shot" src="/image/site/contas-a-pagar.webp" width="2160" height="1350" loading="lazy"
+                 alt="Tela A pagar e receber, com a lista de contas em aberto, seus vencimentos e os botões Pagar e Receber.">
+        </article>
+
+        <article class="site-row">
+            <div class="site-row-text">
+                <h3>Um teto de gasto por categoria, mês a mês</h3>
+                <p>Defina quanto pode gastar com Alimentação, Moradia ou Lazer e acompanhe o que já foi usado e o que sobra. O moneyPilot avisa quando o limite está chegando.</p>
+            </div>
+            <img class="site-shot" src="/image/site/orcamentos.webp" width="2160" height="1350" loading="lazy"
+                 alt="Tela Orçamentos, com o limite, o gasto e o saldo de cada categoria no mês.">
+        </article>
+
+        <article class="site-row site-row-flip">
+            <div class="site-row-text">
+                <h3>Cada conta com o saldo certo</h3>
+                <p>Registre receitas, despesas e transferências entre carteira, banco, poupança e cartão. O saldo é calculado a partir dos lançamentos, nunca digitado à mão, então bate com o seu extrato.</p>
+            </div>
+            <img class="site-shot" src="/image/site/lancamentos.webp" width="2160" height="1350" loading="lazy"
+                 alt="Tela Lançamentos, com o extrato de receitas e despesas por conta e categoria.">
+        </article>
+    </section>
+
+    <section class="site-pillars" aria-label="Princípios do projeto">
+        <div>
+            <h2>Grátis</h2>
+            <p>É um projeto pessoal e vai continuar sendo. Quem quiser pode apoiar com um cafezinho, mas é opcional e nada muda para quem apoia.</p>
+        </div>
+        <div>
+            <h2>Só seu</h2>
+            <p>Cada pessoa enxerga apenas os próprios dados. O moneyPilot nunca pede senha nem acesso ao seu banco: você lança, ele calcula.</p>
+        </div>
+        <div>
+            <h2>Código aberto</h2>
+            <p>O código está no GitHub, para quem quiser conferir como tudo funciona por dentro.</p>
+        </div>
     </section>
 
     <section class="site-section" aria-labelledby="site-start">
-        <h2 id="site-start">Como começar</h2>
+        <h2 class="site-section-title" id="site-start">Como começar</h2>
         <ol class="site-steps">
-            <li><strong>Crie sua conta</strong> com e-mail e senha, ou entre com o Google.</li>
+            <li><strong>Crie sua conta e confirme o e-mail.</strong> Dá para entrar também com o Google.</li>
             <li><strong>Cadastre suas contas</strong> (carteira, banco, poupança) com o saldo de hoje.</li>
-            <li><strong>Lance o dia a dia</strong> e as contas a pagar. O resto o moneyPilot calcula.</li>
+            <li><strong>Lance o dia a dia e o que vence.</strong> O resto o moneyPilot calcula.</li>
         </ol>
     </section>
 
     <section class="site-section" aria-labelledby="site-faq">
-        <h2 id="site-faq">Perguntas frequentes</h2>
+        <h2 class="site-section-title" id="site-faq">Perguntas frequentes</h2>
         <div class="site-faq">
             <details>
                 <summary>O moneyPilot é gratuito?</summary>
@@ -92,6 +142,11 @@
                 <p>Dentro do app, use "Falar com o suporte". O chamado chega direto ao responsável pelo projeto.</p>
             </details>
         </div>
+    </section>
+
+    <section class="site-final" aria-labelledby="site-final-title">
+        <h2 id="site-final-title">Comece pelo saldo de hoje.</h2>
+        <a class="btn btn-primary site-cta" href="/app/">Criar conta grátis</a>
     </section>
 </main>
 
