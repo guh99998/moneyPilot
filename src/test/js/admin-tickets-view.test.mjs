@@ -108,7 +108,7 @@ test('an opened ticket offers a mailto link to reply and the account name', asyn
 
     await buttonsNamed(view, 'Abrir')[0].dispatch('click');
 
-    const link = findByTag(view, 'a')[0];
+    const link = findByTag(view, 'a').find((a) => a.getAttribute('href').startsWith('mailto:'));
     assert.equal(link.getAttribute('href'), 'mailto:ana@example.com');
     assert.ok(view.textContent.includes('Ana Souza'));
 });

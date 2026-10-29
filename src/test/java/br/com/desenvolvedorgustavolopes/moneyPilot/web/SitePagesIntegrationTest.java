@@ -44,6 +44,29 @@ class SitePagesIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(forwardedUrl("/app/index.html"));
     }
 
+    // Spec 021 CA1
+    @Test
+    void ajuda_redirectsToTheTrailingSlash() throws Exception {
+        mockMvc.perform(get("/ajuda"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/ajuda/"));
+    }
+
+    // Spec 021 CA1
+    @Test
+    void ajudaSlash_servesTheIndexWithoutLogin() throws Exception {
+        mockMvc.perform(get("/ajuda/"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/ajuda/index.html"));
+    }
+
+    // Spec 021 CA1
+    @Test
+    void tutorial_isReadableWithoutLogin() throws Exception {
+        mockMvc.perform(get("/ajuda/contas.html"))
+                .andExpect(status().isOk());
+    }
+
     // CA7
     @Test
     void helpPath_isNotBehindLogin() throws Exception {
