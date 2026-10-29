@@ -547,3 +547,20 @@ test('session keeps the photo URL, tells "no photo" from "not known yet", and cl
     session.clear();
     assert.equal(session.avatar, null);
 });
+
+test('the contribution flag is unknown until the profile says, is stored from it and cleared with the session', async () => {
+    session.clear();
+    assert.equal(session.contribution, null);
+
+    globalThis.fetch = async () => Response.json({ name: 'Ana', admin: false, contributionEnabled: true });
+    session.start('token-123', 'ana@example.com');
+    await api.profile.get();
+    assert.equal(session.contribution, true);
+
+    globalThis.fetch = async () => Response.json({ name: 'Ana', admin: false, contributionEnabled: false });
+    await api.profile.get();
+    assert.equal(session.contribution, false);
+
+    session.clear();
+    assert.equal(session.contribution, null);
+});
