@@ -16,13 +16,13 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende.
 - [x] **T10** — `js/alerts.js`: frase, destino, `presetOpenTicket` e `dismissIfActive`; detalhe dispensa o alerta ao abrir (CA6, CA8)
 - [x] **T11** — Testes JS: `support-view.test.mjs` e `alert-targets.test.mjs` (CA1, CA3, CA8)
 - [x] **T12** — README: rotas novas e alerta novo na tabela da 007 (CA1–CA8)
-- [ ] **T13** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`, e a checagem manual do plano (suítes rodadas; falta a checagem manual no navegador)
+- [x] **T13** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`, e a checagem manual do plano
 - [x] **T14** — Validação com as skills do projeto (`api-design-principles`, `web-design-guidelines`, `accessibility-compliance`, `responsive-design`) e anotar a revisão aqui
 
 ## Verificação
 
 - `./mvnw verify`: 445 testes, nenhuma falha. `node --test "src/test/js/*.test.mjs"`: 153 testes, nenhuma falha.
-- **Pendente:** a checagem manual do plano (abrir chamado logado, mudar o status como administrador, ver o alerta no sino, clicar e chegar ao detalhe, conferir no celular e no desktop) ainda não foi feita no navegador.
+- Checagem manual do plano (abrir chamado logado, mudar o status como administrador, ver o alerta no sino, clicar e chegar ao detalhe, conferir no celular e no desktop) aprovada pelo Gustavo no navegador.
 
 ## Notas de implementação
 
@@ -35,4 +35,4 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende.
 
 - `api-design-principles`: recursos em plural, `GET` paginado com `page`, `401` sem login e `404` para inexistente ou de outra conta (não revela o que existe), respostas sem `id` e `emailSent`, campos novos do alerta opcionais (sem quebra), contrato coberto pelo `OpenApiContractIntegrationTest`.
 - `web-design-guidelines` e `accessibility-compliance`: `h1`/`h2` em ordem, tabela semântica, botão "Abrir" com `aria-label` com a referência, selo de status com texto (não só cor), mensagem como texto, estados vazio, de carga e de erro. Corrigido: ao voltar do detalhe para a lista, o foco vai para o título do card.
-- `responsive-design`: lista no padrão `table-stack` (vira cartões no celular), mensagem com `overflow-wrap: anywhere` e `pre-wrap`, sem largura fixa. Falta conferir visualmente em navegador.
+- `responsive-design`: lista no padrão `table-stack` (vira cartões no celular), mensagem com `overflow-wrap: anywhere` e `pre-wrap`, sem largura fixa. Conferido no navegador; o card da lista passou a usar a largura toda no desktop.

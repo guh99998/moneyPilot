@@ -1,6 +1,6 @@
 # 018 — Meus chamados
 
-**Status:** em implementação
+**Status:** entregue
 **Branch:** feature/018-meus-chamados
 **Depende de:** 007 (notificações), 010 (falar com o suporte), 017 (painel de chamados)
 
