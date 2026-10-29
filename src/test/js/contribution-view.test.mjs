@@ -1,5 +1,6 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { installFakeDom, findAll, findByTag, findByText } from './fake-dom.mjs';
 
@@ -96,4 +97,15 @@ test('when the server says there is no support configured the screen shows a mes
 
     assert.equal(findByTag(view, 'input').length, 0);
     assert.equal(findAll(view, (node) => node.className === 'empty').length, 1);
+});
+
+test('on desktop the sidebar footer is a single column, so the support link does not wrap into a second one', () => {
+    const css = readFileSync(new URL('../../main/resources/static/css/app.css', import.meta.url), 'utf8');
+    const desktop = css.slice(css.indexOf('@media (min-width: 900px)'));
+    const foot = desktop.match(/\.sidebar-foot\s*\{([^}]*)\}/)[1];
+
+    assert.match(foot, /flex-direction:\s*column/);
+    // In a column, `flex-basis: 100%` of the link is a height: with wrapping on it would spill into a second column.
+    assert.match(foot, /flex-wrap:\s*nowrap/);
+    assert.match(desktop, /\.foot-link\s*\{[^}]*flex-basis:\s*auto/);
 });
