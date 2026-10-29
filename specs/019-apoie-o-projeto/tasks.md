@@ -17,9 +17,9 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende.
 - [x] **T11** — Conferir que nenhuma chave Pix nem imagem de QR code entrou no repositório (CA6)
 - [ ] **T12** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`, e a checagem manual do plano (CA1–CA5) (suítes rodadas; falta a checagem manual no navegador)
 - [x] **T13** — Validação com as skills do projeto (`api-design-principles`, `web-design-guidelines`, `accessibility-compliance`, `responsive-design`) e anotar a revisão aqui
-- [ ] **T14** — Deixar para o Gustavo o passo a passo do deploy: colocar a imagem no servidor, montar o volume e definir `PIX_KEY` e `PIX_QR_FILE`
+- [x] **T14** — `PIX_KEY` e `PIX_QR_FILE` já definidas no servidor — Gustavo
 - [ ] **T15** — Refazer a imagem do QR code: a atual veio com recorte ruim e quebrou o layout do cartão. Gerar de novo no app do banco, só o QR (sem a tela em volta), e conferir que a leitura pelo celular funciona. Enquanto isso, `PIX_QR_FILE` pode ficar vazio e a tela mostra só a chave
-- [ ] **T16** — Melhorar a tela `#/apoie` no desktop e no celular (hoje funciona, mas o visual é simples). Conferir também a chave: a configurada hoje é o Pix "copia e cola" (BR Code), e a spec pede a chave aleatória
+- [x] **T16** — Melhorar a tela `#/apoie` no desktop e no celular: logo menor, ícone em destaque, chave em fonte monoespaçada, botão em linha inteira no celular, link de volta legível e cartão limitado a 40rem dentro do app (conferido a 1280 e 500px). **Pendente (Gustavo):** conferir qual chave está no servidor — hoje é o Pix "copia e cola" (BR Code), e a spec pede a chave aleatória
 
 - [x] **T17** — Apoio aberto (aditivo, CA7): `GET /contribution/pix` público (`SecurityConfig`, `@SecurityRequirements`, `PUBLIC_OPERATIONS` do contrato), tela `#/apoie` sem login com link para o site, README e testes
 

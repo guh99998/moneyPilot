@@ -215,14 +215,23 @@ h3 { font-size: .92rem; }
 .support-count { align-self: flex-end; }
 
 /* apoie o projeto */
-/* Dentro do app o cartão ocupa toda a área de conteúdo, como o de suporte. */
-.contribution-card { width: 100%; }
+/* Dentro do app o cartão ocupa a área de conteúdo, mas sem esticar o texto e o campo da chave. */
+.contribution-card { width: 100%; max-width: 40rem; }
+.auth-card.contribution-card { width: min(520px, 100%); padding: 1.5rem 1.25rem 1.25rem; }
+.auth-card.contribution-card .auth-logo { width: 160px; margin-bottom: .5rem; }
+.auth-card.contribution-card h1 { font-size: 1.35rem; margin-bottom: 1rem; text-align: center; }
 .contribution-card h2 { margin-top: 0; }
-.contribution-title { display: flex; align-items: center; gap: .6rem; }
-.contribution-icon { display: inline-flex; flex: none; color: var(--green); }
+.contribution-title { display: flex; align-items: center; gap: .85rem; font-size: 1.15rem; line-height: 1.3; }
+.contribution-icon { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; background: var(--green-soft); color: var(--green); }
+.contribution-card > p, .contribution-card .field + p { color: var(--text-secondary); }
 .contribution-key { display: flex; flex-wrap: wrap; gap: .5rem; }
-.contribution-key input { flex: 1 1 14rem; min-width: 0; }
-.contribution-qr { display: block; width: min(220px, 100%); height: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 9px; background: #fff; }
+.contribution-key input { flex: 1 1 14rem; min-width: 0; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .85rem; }
+.contribution-key button { flex: 0 0 auto; min-height: 44px; }
+.contribution-qr { display: block; width: min(220px, 100%); height: auto; margin: 1rem auto 0; padding: .5rem; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.contribution-card .auth-switch a { display: inline-flex; align-items: center; min-height: 44px; color: var(--navy-3); font-weight: 700; }
+@media (max-width: 480px) {
+    .contribution-key button { flex: 1 1 100%; }
+}
 
 /* painel de chamados (admin) */
 .ticket-filter { max-width: 14rem; }

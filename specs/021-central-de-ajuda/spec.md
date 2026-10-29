@@ -1,6 +1,6 @@
 # 021 — Central de ajuda
 
-**Status:** aprovada
+**Status:** entregue
 **Branch:** feature/021-central-de-ajuda
 **Depende de:** 020 (site do produto, onde as páginas vivem); 011 (API para automação)
 
