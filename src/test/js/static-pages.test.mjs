@@ -27,7 +27,7 @@ test('the site sections come in the order of the spec', () => {
 // CA10
 test('the footer links support, the project support, help, GitHub and privacy', () => {
     const footer = site.slice(site.indexOf('<footer'));
-    for (const href of ['/app/#/suporte', '/app/#/apoie', 'github.com/guh99998/moneyPilot']) {
+    for (const href of ['/ajuda/', '/app/#/suporte', '/app/#/apoie', 'github.com/guh99998/moneyPilot']) {
         assert.ok(footer.includes(`href="${href}`) || footer.includes(href), href);
     }
 });

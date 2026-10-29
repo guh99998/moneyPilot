@@ -17,25 +17,18 @@ beforeEach(() => {
 const textOf = (view) => view.textContent;
 const promptBox = (view) => findByTag(view, 'textarea')[0];
 
-test('opens without a session and shows the step-by-step', () => {
+// Spec 021 CA5
+test('points to the help tutorial instead of repeating the technical steps', () => {
     const view = renderAiGuide();
     const text = textOf(view);
-
-    for (const step of ['1. Entrar', '2. Renovar', '3. Listar contas e categorias', '4. Lançar uma despesa', '5. Sair']) {
-        assert.ok(text.includes(step), `missing step: ${step}`);
-    }
-    assert.ok(text.includes('refreshTokenInBody'));
-    assert.ok(text.includes('http://localhost/api/v1/auth/login'), 'examples use the app origin');
-    assert.ok(text.includes('Criar senha'), 'explains Google-only accounts');
-    assert.ok(text.includes('encerra as sessões da API'), 'warns that changing the password ends API sessions');
-});
-
-test('links to the Swagger UI and to the OpenAPI contract', () => {
-    const view = renderAiGuide();
     const hrefs = findAll(view, (node) => node.tagName === 'A').map((a) => a.getAttribute('href'));
 
-    assert.ok(hrefs.includes('/swagger-ui.html'));
-    assert.ok(hrefs.includes('/v3/api-docs'));
+    assert.ok(hrefs.includes('/ajuda/usando-com-ia.html'));
+    assert.ok(text.includes('Guia completo na central de ajuda'));
+    for (const technical of ['1. Entrar', '2. Renovar', 'Cuidados', 'Swagger', 'Criar senha']) {
+        assert.ok(!text.includes(technical), `should not repeat: ${technical}`);
+    }
+    assert.ok(!hrefs.includes('/swagger-ui.html'));
 });
 
 test('shows the ready-made assistant text with the app URLs', () => {
