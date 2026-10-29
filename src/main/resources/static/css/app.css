@@ -245,7 +245,7 @@ h3 { font-size: .92rem; }
 .ai-guide a { display: inline-block; padding: .65rem .25rem; }
 .sidebar-foot button { color: #dbe4f0; border-color: var(--navy-3); background: transparent; }
 .sidebar-foot button:hover:not(:disabled) { background: var(--navy-2); color: #fff; }
-.foot-link { flex-basis: 100%; padding: .55rem .25rem; color: #9fb0c6; font-size: .78rem; text-decoration: none; }
+.foot-link { flex-basis: 100%; padding: .85rem .25rem; color: #9fb0c6; font-size: .78rem; text-decoration: none; }
 .foot-link:hover, .foot-link[aria-current="page"] { color: #fff; text-decoration: underline; }
 
 .main { padding: 1.1rem var(--gutter) 3rem; width: 100%; max-width: 1680px; margin: 0 auto; min-width: 0; }
