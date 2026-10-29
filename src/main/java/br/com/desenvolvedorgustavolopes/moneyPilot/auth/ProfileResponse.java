@@ -12,9 +12,10 @@ public record ProfileResponse(
         @Schema(description = "E-mail da conta Google vinculada, se houver", example = "ana@gmail.com") String googleEmail,
         @Schema(description = "Endereço da foto do Google, se houver e não estiver escondida", example = "https://lh3.googleusercontent.com/a/exemplo") String avatarUrl,
         @Schema(description = "Se a pessoa escondeu a foto do Google", example = "false") boolean avatarHidden,
-        @Schema(description = "Se a conta é administradora do painel de chamados do suporte", example = "false") boolean admin
+        @Schema(description = "Se a conta é administradora do painel de chamados do suporte", example = "false") boolean admin,
+        @Schema(description = "Se o servidor tem a chave Pix de apoio ao projeto configurada; sem ela o app não mostra o apoio", example = "false") boolean contributionEnabled
 ) {
-    public ProfileResponse(User user, String pendingEmail, boolean admin) {
+    public ProfileResponse(User user, String pendingEmail, boolean admin, boolean contributionEnabled) {
         this(
                 user.getName(),
                 user.getEmail(),
@@ -24,7 +25,8 @@ public record ProfileResponse(
                 user.getGoogleEmail(),
                 user.isAvatarHidden() ? null : user.getAvatarUrl(),
                 user.isAvatarHidden(),
-                admin
+                admin,
+                contributionEnabled
         );
     }
 }

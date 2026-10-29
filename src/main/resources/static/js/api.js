@@ -4,6 +4,7 @@ const EMAIL_KEY = 'moneypilot.email';
 const NAME_KEY = 'moneypilot.name';
 const AVATAR_KEY = 'moneypilot.avatar';
 const ADMIN_KEY = 'moneypilot.admin';
+const CONTRIBUTION_KEY = 'moneypilot.contribution';
 
 export class ApiError extends Error {
     constructor(status, message, fieldErrors) {
@@ -41,6 +42,14 @@ export const session = {
     setAdmin(admin) {
         localStorage.setItem(ADMIN_KEY, String(Boolean(admin)));
     },
+    // Nulo = ainda não se sabe. Só decide se o menu mostra o link de apoio; sem chave Pix no servidor, o apoio não existe.
+    get contribution() {
+        const stored = localStorage.getItem(CONTRIBUTION_KEY);
+        return stored === null ? null : stored === 'true';
+    },
+    setContribution(enabled) {
+        localStorage.setItem(CONTRIBUTION_KEY, String(Boolean(enabled)));
+    },
     start(token, email) {
         localStorage.setItem(TOKEN_KEY, token);
         if (email) localStorage.setItem(EMAIL_KEY, email);
@@ -51,6 +60,7 @@ export const session = {
         localStorage.removeItem(NAME_KEY);
         localStorage.removeItem(AVATAR_KEY);
         localStorage.removeItem(ADMIN_KEY);
+        localStorage.removeItem(CONTRIBUTION_KEY);
     },
     get active() {
         return Boolean(localStorage.getItem(TOKEN_KEY));
@@ -208,6 +218,15 @@ export const api = {
     sendSupportTicket: (body) =>
         request('/support/tickets', { method: 'POST', body, anonymous: !session.active }),
 
+    support: {
+        mine: (page = 0) => request('/support/tickets', { query: { page } }),
+        get: (reference) => request(`/support/tickets/${encodeURIComponent(reference)}`)
+    },
+
+    contribution: {
+        pix: () => request('/contribution/pix')
+    },
+
     admin: {
         tickets: {
             list: (status, page = 0) => request('/admin/support/tickets', { query: { status, page, size: 20 } }),
@@ -224,6 +243,7 @@ export const api = {
     profile: {
         get: () => request('/profile').then((profile) => {
             session.setAdmin(profile.admin);
+            session.setContribution(profile.contributionEnabled);
             return profile;
         }),
         update: (name) => request('/profile', { method: 'PUT', body: { name } }),

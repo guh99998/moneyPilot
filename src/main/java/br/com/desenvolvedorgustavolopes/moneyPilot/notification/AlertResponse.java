@@ -2,13 +2,15 @@ package br.com.desenvolvedorgustavolopes.moneyPilot.notification;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillType;
+import br.com.desenvolvedorgustavolopes.moneyPilot.support.SupportTicketStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
  * Alerta de títulos preenche billType, count, total (e dueUntil nos a vencer); alerta de orçamento preenche
- * categoryId, categoryName, spent, budgeted, percentUsed, month e year.
+ * categoryId, categoryName, spent, budgeted, percentUsed, month e year; alerta de chamado preenche
+ * ticketReference e ticketStatus.
  */
 public record AlertResponse(
         @Schema(description = "Chave do alerta", example = "PAYABLE_OVERDUE") String key,
@@ -23,6 +25,8 @@ public record AlertResponse(
         @Schema(description = "Limite, se o alerta for de orçamento. Valor em reais, número com 2 casas decimais e ponto decimal.", example = "800.00") BigDecimal budgeted,
         @Schema(description = "Percentual do limite gasto, se o alerta for de orçamento", example = "80") Integer percentUsed,
         @Schema(description = "Mês do orçamento, se o alerta for de orçamento", example = "10") Integer month,
-        @Schema(description = "Ano do orçamento, se o alerta for de orçamento", example = "2026") Integer year
+        @Schema(description = "Ano do orçamento, se o alerta for de orçamento", example = "2026") Integer year,
+        @Schema(description = "Referência do chamado, se o alerta for de chamado", example = "K7P3XN") String ticketReference,
+        @Schema(description = "Status atual do chamado, se o alerta for de chamado", enumAsRef = true) SupportTicketStatus ticketStatus
 ) {
 }

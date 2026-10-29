@@ -35,6 +35,8 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:?defina RESEND_API_KEY no .env}
       SUPPORT_EMAIL: ${SUPPORT_EMAIL:?defina SUPPORT_EMAIL no .env}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      PIX_KEY: ${PIX_KEY:-}
+      PIX_QR_FILE: ${PIX_QR_FILE:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       COOKIE_SECURE: "true"
     depends_on:
