@@ -143,7 +143,7 @@ public class EmailChangeService {
     }
 
     private EmailMessage confirmationMessage(String newEmail, String name, String rawToken) {
-        String link = appProperties.publicUrl() + "/#/confirmar-email?token=" + rawToken;
+        String link = appProperties.publicUrl() + "/app/#/confirmar-email?token=" + rawToken;
         String text = """
                 Olá, %s!
 

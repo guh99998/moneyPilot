@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/contribution/pix").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/index.html").permitAll()
+                        .requestMatchers("/app", "/app/", "/app/index.html").permitAll()
+                        .requestMatchers("/ajuda", "/ajuda/**", "/privacidade/**", "/termos/**").permitAll()
                         .requestMatchers("/css/**").permitAll()
                         .requestMatchers("/js/**").permitAll()
                         .requestMatchers("/image/**").permitAll()

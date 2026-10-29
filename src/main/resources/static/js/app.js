@@ -88,7 +88,7 @@ function buildSidebar(active) {
     const sidebar = el('aside', { class: 'sidebar' }, [
         el('div', { class: 'sidebar-top' }, [
             el('div', { class: 'brand' }, [
-                el('span', { class: 'brand-mark' }, el('img', { src: 'image/money-pilot-logo.png', alt: '' })),
+                el('span', { class: 'brand-mark' }, el('img', { src: '/image/money-pilot-logo.png', alt: '' })),
                 el('span', {}, ['money', el('span', { class: 'pilot', text: 'Pilot' })])
             ]),
             el('div', { class: 'sidebar-actions' }, [renderBell(), menuToggle])
