@@ -51,5 +51,5 @@ Para o Gustavo executar, junto com a troca do e-mail de envio:
 3. Subir a imagem (merge em `main` só com o seu ok).
 4. Antes de subir, deixar um navegador logado na versão antiga. Depois do deploy, abrir `/app/` nele (CA4) e testar o login com Google em `/app/` (CA5).
 5. Abrir `/`, `/app`, `/#/transacoes` e um link de e-mail novo (`/app/#/verificar-email?token=...`).
-6. `/ajuda/` e `/privacidade/` só existirão com as specs 021 e 024; até lá os links do rodapé levam a um 404. Decidir se o site sobe assim ou se esses dois links ficam escondidos.
+6. `/ajuda/` e `/privacidade/` só existirão com as specs 021 e 024; por isso os dois links **saíram do rodapé** por enquanto (decisão do Gustavo). Quando a 021 e a 024 entrarem, voltam ao rodapé, junto com a menção à política de privacidade na pergunta "Meus dados ficam protegidos?".
 7. **Rollback:** voltar a imagem anterior. E-mails enviados depois do deploy levam `/app/#/...`, e a versão antiga responde 401 em `/app/`. Se isso importar, subir antes um forward temporário de `/app/` na versão antiga, ou aceitar que esses links falhem.

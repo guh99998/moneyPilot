@@ -36,7 +36,7 @@ Quem acessa o endereço do moneyPilot vê uma página de apresentação do produ
 - [ ] **CA7** — Dadas as rotas `/`, `/app`, `/app/` e `/ajuda/**`, quando acessadas sem autenticação, então respondem sem exigir login (`/app` e `/app/` entregam o `index.html` do app).
 - [ ] **CA8** — Dada a página do site, então tem `<title>`, `description` e meta tags de prévia de link, e as seções listadas acima, na ordem das regras.
 - [ ] **CA9** — Dadas telas de 390px e 1280px, então o site não tem rolagem horizontal e o topo, os prints e o rodapé se reorganizam sem sobreposição.
-- [ ] **CA10** — Dado o rodapé, então tem os links de suporte, "Apoie o projeto" (quando a 019 estiver configurada), GitHub e política de privacidade e termos.
+- [ ] **CA10** — Dado o rodapé, então tem os links de suporte, "Apoie o projeto" (quando a 019 estiver configurada), GitHub. Ajuda (021) e política de privacidade e termos (024) entram no rodapé quando essas specs existirem.
 
 ## Casos de borda
 
