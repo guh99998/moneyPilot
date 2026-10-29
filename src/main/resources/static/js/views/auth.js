@@ -75,7 +75,7 @@ export function renderAuth(onAuthenticated) {
         });
 
         wrap.replaceChildren(el('div', { class: 'card auth-card' }, [
-            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
             el('h2', { text: 'Confira seu e-mail', style: 'text-align:center; margin:0 0 .5rem;' }),
             el('p', {
                 class: 'auth-tagline',
@@ -105,7 +105,7 @@ export function renderAuth(onAuthenticated) {
         });
 
         wrap.replaceChildren(el('div', { class: 'card auth-card' }, [
-            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
             el('h2', { text: 'Redefinir senha', style: 'text-align:center; margin:0 0 .5rem;' }),
             el('p', { class: 'auth-tagline', text: 'Informe o e-mail da sua conta. Enviaremos um link para criar uma senha nova.' }),
             form,
@@ -123,7 +123,7 @@ export function renderAuth(onAuthenticated) {
             text: `Se houver uma conta com ${pendingEmail}, enviamos um link para redefinir a senha (vale por 30 minutos). Confira também a caixa de spam.`
         });
         wrap.replaceChildren(el('div', { class: 'card auth-card' }, [
-            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
             el('h2', { text: 'Confira seu e-mail', style: 'text-align:center; margin:0 0 .5rem;' }),
             message,
             el('p', { class: 'auth-switch' }, [el('span', { text: 'Já redefiniu?' }), loginButton()])
@@ -276,7 +276,7 @@ export function renderAuth(onAuthenticated) {
         });
 
         const card = el('div', { class: 'card auth-card' }, [
-            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
             form,
             google,
             isLogin ? el('p', { class: 'auth-note', text: 'Criou a conta com o Google? Use Entrar com Google.' }) : null,

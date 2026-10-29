@@ -26,7 +26,7 @@ export function renderResetPassword() {
     const status = el('p', { class: 'auth-tagline', role: 'status', 'aria-live': 'polite', tabindex: '-1' });
     const body = el('div');
     const card = el('div', { class: 'card auth-card' }, [
-        el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+        el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
         el('h2', { text: 'Redefinir senha', style: 'text-align:center; margin:0 0 .5rem;' }),
         status,
         body

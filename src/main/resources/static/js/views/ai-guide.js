@@ -131,7 +131,7 @@ export function renderAiGuide() {
 
     return el('div', { class: 'auth-wrap' }, [
         el('div', { class: 'card auth-card ai-card' }, [
-            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
             el('h2', { text: title, style: 'text-align:center; margin:0 0 .5rem;' }),
             el('p', { class: 'auth-tagline', text: subtitle }),
             body,

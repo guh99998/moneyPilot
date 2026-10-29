@@ -280,7 +280,7 @@ export function renderSupport() {
 
     return el('div', { class: 'auth-wrap' }, [
         el('div', { class: 'card auth-card' }, [
-            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
             el('h2', { text: 'Falar com o suporte', style: 'text-align:center; margin:0 0 .5rem;' }),
             el('p', { class: 'auth-tagline', text: 'Conte o que está acontecendo. Respondemos no e-mail que você informar.' }),
             body,
