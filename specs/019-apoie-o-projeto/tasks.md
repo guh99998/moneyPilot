@@ -21,6 +21,8 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende.
 - [ ] **T15** — Refazer a imagem do QR code: a atual veio com recorte ruim e quebrou o layout do cartão. Gerar de novo no app do banco, só o QR (sem a tela em volta), e conferir que a leitura pelo celular funciona. Enquanto isso, `PIX_QR_FILE` pode ficar vazio e a tela mostra só a chave
 - [ ] **T16** — Melhorar a tela `#/apoie` no desktop e no celular (hoje funciona, mas o visual é simples). Conferir também a chave: a configurada hoje é o Pix "copia e cola" (BR Code), e a spec pede a chave aleatória
 
+- [x] **T17** — Apoio aberto (aditivo, CA7): `GET /contribution/pix` público (`SecurityConfig`, `@SecurityRequirements`, `PUBLIC_OPERATIONS` do contrato), tela `#/apoie` sem login com link para o site, README e testes
+
 ## Verificação
 
 - `./mvnw verify`: 455 testes, nenhuma falha. `node --test "src/test/js/*.test.mjs"`: 161 testes, nenhuma falha.

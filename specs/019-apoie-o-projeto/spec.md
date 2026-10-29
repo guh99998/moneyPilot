@@ -20,6 +20,7 @@ Quem quiser contribui com o valor que escolher, por Pix, de forma voluntária, s
 - **A tela mostra, nesta ordem:** primeiro, em destaque, que o moneyPilot é um projeto gratuito e sempre vai ser, e que apoiar é só um agradecimento opcional; depois a chave Pix e o QR code. O botão "Copiar chave" fica junto da chave. Valor livre, sem quantia sugerida (texto proposto: "O moneyPilot é gratuito e sempre vai ser. Se ele te ajuda e você quiser pagar um cafezinho para ajudar a manter o projeto, qualquer valor é bem-vindo. Totalmente opcional.").
 - **Configuração fora do repositório:** a chave Pix é uma **chave aleatória** (nunca CPF, telefone ou e-mail pessoal) e vem de variável de ambiente, nunca do código, porque o repositório é público. A imagem do QR code também fica fora do git, no servidor. O valor é livre: nenhum valor é pré-preenchido.
 - **Sem configuração, sem apoio:** se a chave não estiver configurada, o item do menu não aparece e a tela `#/apoie` cai na Visão geral. O resto do app não muda.
+- **Apoio aberto (aditivo):** a tela e a rota não exigem login. Quem chega pelo site (020) vê a mesma tela, fora do menu do app, com um link para voltar. A chave Pix já é feita para ser mostrada a quem quer pagar, então expô-la não revela nada que o apoio não precise mostrar. Sem login, a tela só mostra a chave se ela estiver configurada; se não estiver, diz que o apoio não está disponível.
 - **Sem registro:** o app não sabe quem contribuiu, quando nem quanto.
 
 ## Critérios de aceite
@@ -29,6 +30,7 @@ Quem quiser contribui com o valor que escolher, por Pix, de forma voluntária, s
 - [ ] **CA3** — Dado o botão "Copiar chave", quando a pessoa o aciona, então a chave vai para a área de transferência e a tela confirma que foi copiada.
 - [ ] **CA4** — Dado o app sem a chave configurada, quando uma pessoa entra, então o link não aparece, `#/apoie` cai na Visão geral e o resto do app funciona igual.
 - [ ] **CA5** — Dado qualquer uso do app, então nenhuma tela é bloqueada, limitada ou interrompida por causa do apoio (sem pop-up, banner ou lembrete).
+- [ ] **CA7** — Dada uma pessoa sem login, quando abre `/app/#/apoie` (por exemplo, pelo rodapé do site), então vê a mesma tela, com a chave e o QR code e um link para voltar; `GET /contribution/pix` responde `200` sem token e `404` sem a chave configurada.
 - [ ] **CA6** — Dado o repositório, então nenhum arquivo versionado contém a chave Pix nem a imagem do QR code; só o nome da variável de ambiente, com placeholder no exemplo.
 
 ## Casos de borda
@@ -36,7 +38,7 @@ Quem quiser contribui com o valor que escolher, por Pix, de forma voluntária, s
 - Imagem do QR code ausente com a chave configurada: a tela mostra só a chave e o botão, sem imagem quebrada
 - Navegador que bloqueia a área de transferência: a chave fica visível e selecionável, e a tela avisa que a cópia não funcionou
 - Celular: o botão "Copiar chave" é o caminho principal; o QR code serve para escanear de outro aparelho
-- Pessoa sem login: não vê o item (o site da 020 cuida de quem não está logado)
+- Pessoa sem login: não vê o item no menu (ela nem tem menu), mas a tela abre pelo link do site (aditivo, CA7)
 - Chave Pix trocada no servidor: vale depois de reiniciar o app, sem novo build
 
 ## Fora de escopo
@@ -45,7 +47,7 @@ Quem quiser contribui com o valor que escolher, por Pix, de forma voluntária, s
 - Saber, registrar ou confirmar quem contribuiu, quanto e quando
 - Selo ou badge de contribuidor, data da contribuição no perfil e qualquer recompensa para quem apoiou
 - Recibo e valor sugerido
-- Link no perfil, no site (020) e no README (a 020 e o README podem apontar para a tela depois)
+- Link no perfil (o site 020 já aponta para a tela)
 
 ## Perguntas em aberto
 
