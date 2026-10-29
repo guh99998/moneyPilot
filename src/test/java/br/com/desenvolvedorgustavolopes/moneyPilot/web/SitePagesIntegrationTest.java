@@ -7,11 +7,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Spec 020: o site na raiz e o app em /app/, ambos sem exigir login. */
+/**
+ * Spec 020: o site na raiz e o app em /app/, ambos sem exigir login. O MockMvc não executa o forward, então o teste
+ * confere o destino; o conteúdo das duas páginas é coberto por static-pages.test.mjs.
+ */
 class SitePagesIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -22,7 +25,7 @@ class SitePagesIntegrationTest extends AbstractIntegrationTest {
     void root_servesTheSiteWithoutLogin() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("data-page=\"site\"")));
+                .andExpect(forwardedUrl("index.html"));
     }
 
     // CA7
@@ -38,7 +41,7 @@ class SitePagesIntegrationTest extends AbstractIntegrationTest {
     void appSlash_servesTheAppWithoutLogin() throws Exception {
         mockMvc.perform(get("/app/"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"app\"")));
+                .andExpect(forwardedUrl("/app/index.html"));
     }
 
     // CA7
