@@ -15,6 +15,9 @@
 .site-brand { display: inline-flex; align-items: center; gap: .55rem; color: #fff; font-weight: 800; text-decoration: none; }
 .site-session { display: flex; gap: .5rem; }
 .site-session .btn { font-size: .85rem; text-decoration: none; }
+/* O botão principal do app é azul-marinho, o mesmo fundo do topo: aqui ele vira verde para aparecer. */
+.site-session .btn-primary { background: var(--green); border-color: var(--green); color: #0e2a1b; }
+.site-session .btn-primary:hover:not(:disabled) { background: #52b983; }
 
 main { width: min(1100px, 100%); margin: 0 auto; padding: 0 var(--gutter); }
 
