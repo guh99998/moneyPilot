@@ -91,7 +91,7 @@ class PasswordResetIntegrationTest extends AbstractIntegrationTest {
         List<EmailMessage> sent = emailSender.sent();
         assertEquals(1, sent.size());
         assertEquals(email, sent.get(0).to());
-        assertTrue(sent.get(0).text().contains("/#/redefinir-senha?token="));
+        assertTrue(sent.get(0).text().contains("/app/#/redefinir-senha?token="));
     }
 
     // CA2

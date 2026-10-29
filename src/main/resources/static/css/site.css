@@ -1,0 +1,186 @@
+/* Site do produto (spec 020). Reaproveita os tokens, a fonte do texto e os botões de app.css; mobile-first. */
+
+:root {
+    --site-display: 'Bricolage Grotesque', var(--font);
+    --site-width: 1100px;
+}
+
+/* O topo é fixo: ao focar ou saltar para uma âncora, o destino não pode ficar atrás dele. */
+html { scroll-padding-top: 4.5rem; }
+
+.site-skip { position: absolute; left: var(--gutter); top: -4rem; z-index: 30; padding: .6rem 1rem; border-radius: 8px; background: #fff; color: var(--navy); font-weight: 700; }
+.site-skip:focus { top: .5rem; }
+
+h1, h2, h3 { text-wrap: balance; }
+
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .6rem var(--gutter);
+    background: var(--navy);
+    color: #fff;
+}
+.site-brand { display: inline-flex; align-items: center; gap: .55rem; color: #fff; font-family: var(--site-display); font-size: 1.1rem; font-weight: 700; text-decoration: none; }
+.site-session { display: flex; gap: .5rem; }
+.site-session .btn { min-height: 44px; font-size: .85rem; text-decoration: none; }
+/* O botão principal do app é azul-marinho, o mesmo fundo do topo: aqui ele vira verde para aparecer. */
+.site-session .btn-primary, .site-cta { background: var(--green); border-color: var(--green); color: #0e2a1b; }
+.site-session .btn-primary:hover:not(:disabled), .site-cta:hover:not(:disabled) { background: #52b983; }
+
+main { overflow-x: clip; }
+
+/* ---------- abertura: faixa azul-marinho com o produto saindo dela ---------- */
+.site-hero {
+    position: relative;
+    padding: 2.75rem var(--gutter) 0;
+    background: linear-gradient(to bottom, var(--navy) 0, var(--navy) calc(100% - 4.5rem), var(--page) calc(100% - 4.5rem));
+}
+.site-hero-text { position: relative; z-index: 1; width: min(var(--site-width), 100%); margin: 0 auto; }
+.site-hero h1 {
+    max-width: 15ch;
+    color: #fff;
+    font-family: var(--site-display);
+    font-size: clamp(2.3rem, 9vw, 4.6rem);
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: -.02em;
+}
+.site-hero p { max-width: 44ch; margin: 1.25rem 0 0; color: #c9d5e5; font-size: 1.05rem; line-height: 1.6; }
+.site-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.5rem; margin-top: 1.75rem; }
+.site-cta { display: inline-flex; padding: .75rem 1.5rem; font-size: 1rem; font-weight: 700; text-decoration: none; }
+.site-link-light { display: inline-flex; align-items: center; min-height: 44px; padding: .6rem 0; color: #fff; font-weight: 600; text-decoration: none; }
+.site-link-light:hover { color: var(--green); }
+
+/* A linha de projeção: o saldo "de hoje" subindo até o fim do mês. Desenha uma vez e fica. */
+.site-horizon { display: none; }
+.site-horizon-line { fill: none; stroke: var(--green); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.site-horizon-dot { fill: var(--green); stroke: var(--navy); stroke-width: 4; }
+
+.site-hero-shot { position: relative; z-index: 1; width: min(var(--site-width), 100%); margin: 2.25rem auto 0; }
+.site-frame, .site-shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid rgba(19, 41, 75, .14);
+    border-radius: 14px;
+    background: #fff;
+}
+.site-frame { box-shadow: 0 28px 60px rgba(19, 41, 75, .3); }
+.site-shot { box-shadow: 0 14px 34px rgba(19, 41, 75, .12); }
+
+/* No celular o print do computador ficaria ilegível: mostra só o do celular. */
+.site-frame { display: none; }
+.site-phone { width: min(240px, 68%); margin: 0 auto; padding: 6px; border-radius: 30px; background: #0c1b33; box-shadow: 0 24px 48px rgba(19, 41, 75, .35); }
+.site-phone img { display: block; width: 100%; height: auto; border-radius: 24px; }
+
+/* ---------- recursos ---------- */
+.site-section, .site-pillars, .site-final { width: min(var(--site-width), calc(100% - 2 * var(--gutter))); margin-left: auto; margin-right: auto; }
+.site-section { padding-top: 3.5rem; }
+.site-section-title { margin-bottom: 2rem; font-family: var(--site-display); font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 700; letter-spacing: -.025em; }
+
+.site-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin-bottom: 3.5rem; }
+.site-row h3 { margin-bottom: .6rem; font-family: var(--site-display); font-size: 1.45rem; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; }
+.site-row p { max-width: 46ch; margin: 0; color: var(--text-secondary); font-size: 1rem; line-height: 1.65; }
+
+/* ---------- princípios: três colunas separadas por filete, sem cartões ---------- */
+.site-pillars { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.75rem; margin-top: 1rem; padding-top: 2.5rem; padding-bottom: 2.5rem; border-top: 1px solid var(--border-strong); }
+.site-pillars h2 { margin-bottom: .4rem; font-family: var(--site-display); font-size: 1.35rem; font-weight: 700; letter-spacing: -.02em; }
+.site-pillars p { max-width: 36ch; margin: 0; color: var(--text-secondary); line-height: 1.6; }
+
+/* ---------- como começar: aqui sim é uma sequência ---------- */
+.site-steps { display: grid; gap: 1.1rem; margin: 0; padding: 0; list-style: none; counter-reset: passo; }
+.site-steps li { position: relative; padding-left: 3.4rem; counter-increment: passo; max-width: 60ch; font-size: 1.05rem; line-height: 1.55; }
+.site-steps li::before { content: counter(passo); position: absolute; left: 0; top: -.25rem; font-family: var(--site-display); font-size: 2.1rem; font-weight: 800; line-height: 1; color: var(--income); }
+
+.site-faq { display: grid; gap: .5rem; max-width: 760px; }
+.site-faq details { padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.site-faq summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+.site-faq p { margin: .6rem 0 0; color: var(--text-secondary); line-height: 1.6; }
+
+.site-final { display: flex; flex-direction: column; align-items: flex-start; gap: 1.25rem; margin-top: 3.5rem; padding-top: 3rem; padding-bottom: 4rem; border-top: 1px solid var(--border-strong); }
+.site-final h2 { font-family: var(--site-display); font-size: clamp(1.8rem, 6vw, 2.8rem); font-weight: 800; letter-spacing: -.03em; }
+.site-final .site-cta { background: var(--navy); border-color: var(--navy); color: #fff; }
+.site-final .site-cta:hover:not(:disabled) { background: var(--navy-2); }
+
+.site-footer { padding: 2rem var(--gutter); background: var(--navy); color: #c3cfdf; }
+.site-footer > * { width: min(var(--site-width), 100%); margin-left: auto; margin-right: auto; }
+.site-footer nav { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; }
+.site-footer a { display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; padding: .4rem .25rem; color: #fff; text-decoration: none; }
+.site-footer a:hover { text-decoration: none; color: var(--green); }
+.site-footer a svg { flex: none; color: var(--green); }
+.site-footer p { margin-top: 1.25rem; margin-bottom: 0; font-size: .8rem; }
+
+/* ---------- telas maiores ---------- */
+@media (min-width: 700px) {
+    .site-frame { display: block; }
+    /* O celular passa a sobrepor o canto do print do computador. */
+    .site-phone { position: absolute; right: 3%; bottom: -3rem; width: 21%; margin: 0; padding: 5px; border-radius: 26px; }
+    .site-phone img { border-radius: 21px; }
+    .site-hero { padding-top: 3.5rem; background: linear-gradient(to bottom, var(--navy) 0, var(--navy) calc(100% - 9rem), var(--page) calc(100% - 9rem)); }
+    .site-hero-shot { margin-top: 3rem; margin-bottom: 4.5rem; }
+    .site-hero h1 { max-width: 15ch; }
+    .site-pillars { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5rem; }
+    .site-pillars > div + div { padding-left: 2.5rem; border-left: 1px solid var(--border-strong); }
+}
+
+@media (min-width: 900px) {
+    .site-header { padding: .75rem 2rem; }
+    .site-section { padding-top: 5rem; }
+    .site-row { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; gap: 3.5rem; margin-bottom: 5rem; }
+    .site-row-flip { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+    .site-row-flip .site-row-text { order: 2; }
+    .site-row h3 { font-size: 1.8rem; }
+    .site-steps li { font-size: 1.15rem; }
+}
+
+@media (min-width: 1100px) {
+    .site-horizon {
+        display: block;
+        position: absolute;
+        top: 1.5rem;
+        right: max(var(--gutter), calc((100% - var(--site-width)) / 2));
+        width: min(34vw, 440px);
+        height: auto;
+    }
+}
+
+/* A linha só se anima quando a pessoa aceita movimento: desenha uma vez, ao abrir a página. */
+@media (prefers-reduced-motion: no-preference) {
+    .site-horizon-line { stroke-dashoffset: 1; animation: site-draw 2.2s .35s cubic-bezier(.45, .05, .25, 1) forwards; }
+    .site-horizon-dot { opacity: 0; animation: site-appear .3s 2.45s forwards; }
+}
+@keyframes site-draw { to { stroke-dashoffset: 0; } }
+@keyframes site-appear { to { opacity: 1; } }
+
+/* ---------- central de ajuda (spec 021) ---------- */
+.help-main { width: min(46rem, calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: 1.5rem 0 4rem; }
+.help-main .help-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; margin: 0 0 1rem; padding: 0; list-style: none; font-size: .9rem; color: var(--text-secondary); }
+.help-crumbs li + li::before { content: '›'; margin-right: .25rem; }
+.help-crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
+.help-main h1 { font-family: var(--site-display); font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; margin: 0 0 1rem; }
+.help-main h2 { margin: 2.25rem 0 .75rem; font-family: var(--site-display); font-size: 1.3rem; font-weight: 700; color: var(--navy); }
+.help-main p, .help-main li { max-width: 70ch; line-height: 1.65; overflow-wrap: anywhere; }
+.help-lead { font-size: 1.1rem; color: var(--text-secondary); }
+.help-main ol, .help-main ul { padding-left: 1.4rem; }
+.help-main li + li { margin-top: .5rem; }
+.help-main .help-list { display: grid; gap: .75rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
+.help-list a { display: block; min-height: 44px; padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; text-decoration: none; }
+.help-list a:hover { border-color: var(--navy); }
+.help-list strong { display: block; color: var(--navy); }
+.help-list span { color: var(--text-secondary); font-size: .95rem; }
+.help-main details { padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.help-main details + details { margin-top: .5rem; }
+.help-main summary { cursor: pointer; padding: .4rem 0; font-weight: 700; color: var(--navy); }
+.help-main details p { margin: .6rem 0 0; color: var(--text-secondary); }
+.help-code { margin: .75rem 0; padding: .75rem; overflow-x: auto; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 9px; font-size: .82rem; }
+.help-code code { white-space: pre; }
+.help-code:focus-visible, .help-prompt:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.help-prompt { width: 100%; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
+.help-actions { margin-top: .5rem; }
+.help-actions button { min-height: 44px; padding-inline: 1.1rem; }
+.help-warning { font-weight: 700; color: var(--critical); }

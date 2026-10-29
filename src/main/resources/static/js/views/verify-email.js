@@ -60,7 +60,7 @@ export function renderVerifyEmail() {
     const status = el('p', { class: 'auth-tagline', role: 'status', 'aria-live': 'polite', text: 'Ativando sua conta…' });
     const actions = el('div');
     const card = el('div', { class: 'card auth-card' }, [
-        el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+        el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
         el('h2', { text: 'Ativação da conta', style: 'text-align:center; margin:0 0 .5rem;' }),
         status,
         actions

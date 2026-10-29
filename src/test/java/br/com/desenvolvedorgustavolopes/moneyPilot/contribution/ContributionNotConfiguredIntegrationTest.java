@@ -43,6 +43,13 @@ class ContributionNotConfiguredIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.contributionEnabled").value(false));
     }
 
+    // CA7
+
+    @Test
+    void withoutKey_pixIsNotFoundEvenWithoutLogin() throws Exception {
+        mockMvc.perform(get("/api/v1/contribution/pix")).andExpect(status().isNotFound());
+    }
+
     private String loginAs(String email) throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)

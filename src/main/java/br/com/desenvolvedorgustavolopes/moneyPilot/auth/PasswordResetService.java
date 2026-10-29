@@ -113,7 +113,7 @@ public class PasswordResetService {
     }
 
     private EmailMessage resetMessage(User user, String rawToken) {
-        String link = appProperties.publicUrl() + "/#/redefinir-senha?token=" + rawToken;
+        String link = appProperties.publicUrl() + "/app/#/redefinir-senha?token=" + rawToken;
         String text = """
                 Olá, %s!
 

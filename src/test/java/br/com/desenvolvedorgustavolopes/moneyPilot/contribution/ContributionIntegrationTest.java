@@ -56,8 +56,10 @@ class ContributionIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void pix_withoutLogin_isUnauthorized() throws Exception {
-        mockMvc.perform(get("/api/v1/contribution/pix")).andExpect(status().isUnauthorized());
+    void pix_withoutLogin_isPublic() throws Exception {
+        mockMvc.perform(get("/api/v1/contribution/pix"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.key").value("00000000-0000-4000-8000-000000000000"));
     }
 
     // helpers

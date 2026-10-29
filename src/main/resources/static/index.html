@@ -3,17 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>moneyPilot</title>
-    <link rel="icon" href="image/money-pilot-logo.png">
+    <title>moneyPilot — controle financeiro pessoal, grátis</title>
+    <meta name="description" content="Veja como o mês termina antes de ele acabar. Contas, lançamentos, orçamento, contas a pagar e a receber e previsão de fluxo de caixa. O moneyPilot é um projeto gratuito.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="moneyPilot — controle financeiro pessoal, grátis">
+    <meta property="og:description" content="Saiba como o mês termina antes de ele acabar: contas, orçamento, contas a pagar e a receber e previsão de caixa em um só lugar.">
+    <meta property="og:image" content="/image/money-pilot-logo.png">
+    <meta name="twitter:card" content="summary">
     <meta name="theme-color" content="#13294b">
+    <link rel="icon" href="/image/money-pilot-logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
-    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/site.css">
 </head>
-<body>
-<div id="app" class="app-loading">Carregando&hellip;</div>
-<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
-<script type="module" src="js/app.js"></script>
+<body data-page="site">
+<a class="site-skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header">
+    <a class="site-brand" href="/" aria-label="moneyPilot, início">
+        <img src="/image/money-pilot-logo.png" alt="" width="32" height="32">
+        <span translate="no">moneyPilot</span>
+    </a>
+    <nav class="site-session" id="site-session" aria-label="Acesso">
+        <a class="btn" href="/app/">Entrar</a>
+        <a class="btn btn-primary" href="/app/">Criar conta</a>
+    </nav>
+</header>
+
+<main id="conteudo">
+    <section class="site-hero" aria-labelledby="site-what">
+        <div class="site-hero-text">
+            <h1 id="site-what">Saiba como o mês termina antes de ele acabar.</h1>
+            <p>O moneyPilot junta suas contas, o que você vai pagar e o que vai receber, e mostra o saldo dos próximos dias e meses. Grátis, no navegador do computador e do celular.</p>
+            <div class="site-hero-actions">
+                <a class="btn btn-primary site-cta" href="/app/">Criar conta grátis</a>
+                <a class="site-link-light" href="/app/">Já tenho conta</a>
+            </div>
+        </div>
+        <svg class="site-horizon" viewBox="0 0 560 220" aria-hidden="true" focusable="false">
+            <path class="site-horizon-line" d="M6 196 C 90 190, 130 150, 200 154 S 320 118, 372 96 S 470 52, 548 30" pathLength="1"/>
+            <circle class="site-horizon-dot" cx="548" cy="30" r="7"/>
+        </svg>
+        <div class="site-hero-shot">
+            <img class="site-frame" src="/image/site/visao-geral.webp" width="2160" height="1350" fetchpriority="high"
+                 alt="Tela Visão geral do moneyPilot com o saldo em contas, as receitas e despesas do mês e o gráfico do fluxo de caixa projetado.">
+            <div class="site-phone">
+                <img src="/image/site/celular.webp" width="780" height="1688" fetchpriority="high"
+                     alt="A mesma tela Visão geral no celular, com o saldo em contas em destaque.">
+            </div>
+        </div>
+    </section>
+
+    <section class="site-section" aria-labelledby="site-features">
+        <h2 class="site-section-title" id="site-features">O que você consegue fazer</h2>
+
+        <article class="site-row">
+            <div class="site-row-text">
+                <h3>O saldo de daqui a 30, 60 ou 90 dias</h3>
+                <p>O moneyPilot soma o saldo de hoje às contas a pagar e a receber em aberto e desenha a curva do seu caixa. A previsão mensal vai até 12 meses e já inclui as recorrências que você ainda não lançou.</p>
+            </div>
+            <img class="site-shot" src="/image/site/previsao.webp" width="2160" height="1350" loading="lazy"
+                 alt="Tela Previsão mensal, com barras de contas a receber e a pagar por mês e a linha do saldo projetado.">
+        </article>
+
+        <article class="site-row site-row-flip">
+            <div class="site-row-text">
+                <h3>Pague, receba e o lançamento entra no extrato</h3>
+                <p>Cadastre o vencimento, parcele ou repita todo mês. Ao dar baixa, o lançamento entra no extrato no dia em que o dinheiro saiu ou entrou. Pagou com juros? Baixe pelo valor que você pagou de verdade.</p>
+            </div>
+            <img class="site-shot" src="/image/site/contas-a-pagar.webp" width="2160" height="1350" loading="lazy"
+                 alt="Tela A pagar e receber, com a lista de contas em aberto, seus vencimentos e os botões Pagar e Receber.">
+        </article>
+
+        <article class="site-row">
+            <div class="site-row-text">
+                <h3>Um teto de gasto por categoria, mês a mês</h3>
+                <p>Defina quanto pode gastar com Alimentação, Moradia ou Lazer e acompanhe o que já foi usado e o que sobra. O moneyPilot avisa quando o limite está chegando.</p>
+            </div>
+            <img class="site-shot" src="/image/site/orcamentos.webp" width="2160" height="1350" loading="lazy"
+                 alt="Tela Orçamentos, com o limite, o gasto e o saldo de cada categoria no mês.">
+        </article>
+
+        <article class="site-row site-row-flip">
+            <div class="site-row-text">
+                <h3>Cada conta com o saldo certo</h3>
+                <p>Registre receitas, despesas e transferências entre carteira, banco, poupança e cartão. O saldo é calculado a partir dos lançamentos, nunca digitado à mão, então bate com o seu extrato.</p>
+            </div>
+            <img class="site-shot" src="/image/site/lancamentos.webp" width="2160" height="1350" loading="lazy"
+                 alt="Tela Lançamentos, com o extrato de receitas e despesas por conta e categoria.">
+        </article>
+    </section>
+
+    <section class="site-pillars" aria-label="Princípios do projeto">
+        <div>
+            <h2>Grátis</h2>
+            <p>É um projeto pessoal e vai continuar sendo. Quem quiser pode apoiar com um cafezinho, mas é opcional e nada muda para quem apoia.</p>
+        </div>
+        <div>
+            <h2>Só seu</h2>
+            <p>Cada pessoa enxerga apenas os próprios dados. O moneyPilot nunca pede senha nem acesso ao seu banco: você lança, ele calcula.</p>
+        </div>
+        <div>
+            <h2>Código aberto</h2>
+            <p>O código está no GitHub, para quem quiser conferir como tudo funciona por dentro.</p>
+        </div>
+    </section>
+
+    <section class="site-section" aria-labelledby="site-start">
+        <h2 class="site-section-title" id="site-start">Como começar</h2>
+        <ol class="site-steps">
+            <li><strong>Crie sua conta e confirme o e-mail.</strong> Dá para entrar também com o Google.</li>
+            <li><strong>Cadastre suas contas</strong> (carteira, banco, poupança) com o saldo de hoje.</li>
+            <li><strong>Lance o dia a dia e o que vence.</strong> O resto o moneyPilot calcula.</li>
+        </ol>
+    </section>
+
+    <section class="site-section" aria-labelledby="site-faq">
+        <h2 class="site-section-title" id="site-faq">Perguntas frequentes</h2>
+        <div class="site-faq">
+            <details>
+                <summary>O moneyPilot é gratuito?</summary>
+                <p>Sim. É um projeto gratuito e vai continuar sendo. Quem quiser pode apoiar com um cafezinho, mas é totalmente opcional e nada muda para quem apoia.</p>
+            </details>
+            <details>
+                <summary>Ele acessa minha conta no banco?</summary>
+                <p>Não. Você registra os lançamentos por conta própria, e o moneyPilot nunca pede senha ou acesso ao seu banco.</p>
+            </details>
+            <details>
+                <summary>Posso usar no celular?</summary>
+                <p>Sim. O moneyPilot funciona no navegador do celular e do computador, sem instalar nada.</p>
+            </details>
+            <details>
+                <summary>Meus dados ficam protegidos?</summary>
+                <p>Cada pessoa só enxerga os próprios dados, e a senha é guardada de forma protegida.</p>
+            </details>
+            <details>
+                <summary>Preciso de ajuda. Com quem falo?</summary>
+                <p>Dentro do app, use "Falar com o suporte". O chamado chega direto ao responsável pelo projeto.</p>
+            </details>
+        </div>
+    </section>
+
+    <section class="site-final" aria-labelledby="site-final-title">
+        <h2 id="site-final-title">Comece pelo saldo de hoje.</h2>
+        <a class="btn btn-primary site-cta" href="/app/">Criar conta grátis</a>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <nav aria-label="Links do rodapé">
+        <a href="/ajuda/"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.7 2.3-2.7 4"/><path d="M12 17.3h.01"/></svg><span>Ajuda</span></a>
+        <a href="/app/#/suporte"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 20.5l1.7-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg><span>Suporte</span></a>
+        <a href="/app/#/apoie"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 2v2M10 2v2M14 2v2"/><path d="M16 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h13v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/></svg><span>Apoie o projeto</span></a>
+        <a href="https://github.com/guh99998/moneyPilot" rel="noopener"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg><span>GitHub</span></a>
+    </nav>
+    <p>&copy; moneyPilot. Projeto gratuito e de código aberto.</p>
+</footer>
+
+<script type="module" src="/js/site.js"></script>
 </body>
 </html>

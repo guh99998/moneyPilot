@@ -224,7 +224,8 @@ export const api = {
     },
 
     contribution: {
-        pix: () => request('/contribution/pix')
+        // Pública: a chave existe para ser mostrada a quem chega pelo site, e um token vencido não pode derrubar a tela.
+        pix: () => request('/contribution/pix', { anonymous: true })
     },
 
     admin: {

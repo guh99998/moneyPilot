@@ -17,7 +17,11 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende.
 - [x] **T11** — Conferir que nenhuma chave Pix nem imagem de QR code entrou no repositório (CA6)
 - [ ] **T12** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`, e a checagem manual do plano (CA1–CA5) (suítes rodadas; falta a checagem manual no navegador)
 - [x] **T13** — Validação com as skills do projeto (`api-design-principles`, `web-design-guidelines`, `accessibility-compliance`, `responsive-design`) e anotar a revisão aqui
-- [ ] **T14** — Deixar para o Gustavo o passo a passo do deploy: colocar a imagem no servidor, montar o volume e definir `PIX_KEY` e `PIX_QR_FILE`
+- [x] **T14** — `PIX_KEY` e `PIX_QR_FILE` já definidas no servidor — Gustavo
+- [ ] **T15** — Refazer a imagem do QR code: a atual veio com recorte ruim e quebrou o layout do cartão. Gerar de novo no app do banco, só o QR (sem a tela em volta), e conferir que a leitura pelo celular funciona. Enquanto isso, `PIX_QR_FILE` pode ficar vazio e a tela mostra só a chave
+- [x] **T16** — Melhorar a tela `#/apoie` no desktop e no celular: logo menor, ícone em destaque, chave em fonte monoespaçada, botão em linha inteira no celular, link de volta legível e cartão limitado a 40rem dentro do app (conferido a 1280 e 500px). **Pendente (Gustavo):** conferir qual chave está no servidor — hoje é o Pix "copia e cola" (BR Code), e a spec pede a chave aleatória
+
+- [x] **T17** — Apoio aberto (aditivo, CA7): `GET /contribution/pix` público (`SecurityConfig`, `@SecurityRequirements`, `PUBLIC_OPERATIONS` do contrato), tela `#/apoie` sem login com link para o site, README e testes
 
 ## Verificação
 
@@ -41,7 +45,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende.
 ## Passo a passo do deploy (para o Gustavo executar)
 
 1. No app do banco, gere uma **chave Pix aleatória** e baixe a imagem do QR code dela (png ou jpg, até 512 KB).
-2. Copie a imagem para o servidor, fora do repositório (por exemplo `/opt/moneypilot/pix-qr.png`).
-3. Em `docker-compose.prod.yml`, monte o arquivo no serviço do app, por exemplo `volumes: - /opt/moneypilot/pix-qr.png:/run/pix-qr.png:ro`. As variáveis `PIX_KEY` e `PIX_QR_FILE` já estão repassadas ao container.
-4. No `.env` do servidor: `PIX_KEY=<a chave aleatória>` e `PIX_QR_FILE=/run/pix-qr.png`.
+2. Copie a imagem para uma pasta do servidor, fora do repositório (por padrão `/opt/moneypilot-pix`, com permissão de leitura para todos).
+3. O `docker-compose.prod.yml` já monta essa pasta como `/pix` (somente leitura); para outra pasta, defina `PIX_QR_DIR` no `.env`.
+4. No `.env` do servidor: `PIX_KEY=<a chave aleatória>` e `PIX_QR_FILE=/pix/<nome do arquivo>` (o caminho é o de dentro do container). Mudou o `.env` ou o compose: `up -d app` recria o container, e `restart` não relê as variáveis.
 5. Faça o `pg_dump` de sempre, suba a versão e reinicie. Para trocar a chave depois, basta mudar o `.env` e reiniciar o app.

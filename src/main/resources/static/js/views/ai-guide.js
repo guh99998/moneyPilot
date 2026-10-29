@@ -28,14 +28,9 @@ export function assistantPrompt(origin) {
     ].join('\n');
 }
 
-function code(text) {
-    // tabindex: o bloco rola na horizontal e precisa ser alcançável pelo teclado.
-    return el('pre', { class: 'code-block', tabindex: '0', role: 'region', 'aria-label': 'Exemplo de chamada', translate: 'no' }, [el('code', { text })]);
-}
-
 /**
- * "Usando com IA": página pública com o passo a passo para operar a API fora do navegador e o texto pronto
- * para o assistente. Sem sessão ela é uma tela solta; com sessão fica dentro do layout do app.
+ * "Usando com IA": o texto pronto para o assistente e o link para o guia completo da central de ajuda (spec 021),
+ * onde ficam os passos técnicos. Sem sessão ela é uma tela solta; com sessão fica dentro do layout do app.
  */
 export function renderAiGuide() {
     const origin = window.location.origin;
@@ -72,53 +67,13 @@ export function renderAiGuide() {
 
     const body = el('div', { class: 'ai-guide' }, [
         el('section', {}, [
-            el('h3', { text: '1. Entrar' }),
-            el('p', { text: 'Peça o refresh token no corpo com refreshTokenInBody. No navegador isso não é necessário: lá o token fica num cookie protegido.' }),
-            code(`POST ${origin}/api/v1/auth/login\n{ "email": "voce@exemplo.com", "password": "sua senha", "refreshTokenInBody": true }\n\n→ { "token": "...", "refreshToken": "...", "expiresIn": 900 }`),
-            el('p', { text: 'Mande o token em cada chamada: Authorization: Bearer <token>.' })
-        ]),
-        el('section', {}, [
-            el('h3', { text: '2. Renovar' }),
-            el('p', { text: 'O access token dura poucos minutos (expiresIn, em segundos). Ao receber 401, ou perto do fim, troque o refresh token por um novo par. O antigo deixa de valer, então guarde sempre o último.' }),
-            code(`POST ${origin}/api/v1/auth/refresh\n{ "refreshToken": "..." }\n\n→ { "token": "...", "refreshToken": "...", "expiresIn": 900 }`),
-            el('p', { class: 'ai-warning', text: 'Reusar um refresh token já trocado encerra todas as suas sessões.' })
-        ]),
-        el('section', {}, [
-            el('h3', { text: '3. Listar contas e categorias' }),
-            el('p', { text: 'Pegue os ids para o lançamento.' }),
-            code(`GET ${origin}/api/v1/accounts\nGET ${origin}/api/v1/categories`)
-        ]),
-        el('section', {}, [
-            el('h3', { text: '4. Lançar uma despesa' }),
-            el('p', { text: 'Dinheiro é número com 2 casas e ponto decimal (50.00); com vírgula ou mais de 2 casas a API responde 400 com o campo errado. Datas são aaaa-mm-dd.' }),
-            code(`POST ${origin}/api/v1/transactions\n{ "accountId": 1, "categoryId": 3, "amount": 50.00, "type": "EXPENSE", "description": "Mercado", "date": "2026-10-28" }`)
-        ]),
-        el('section', {}, [
-            el('h3', { text: '5. Sair' }),
-            code(`POST ${origin}/api/v1/auth/logout\n{ "refreshToken": "..." }`)
-        ]),
-        el('section', {}, [
-            el('h3', { text: 'Cuidados' }),
-            el('ul', {}, [
-                el('li', { text: 'Guarde o refresh token como se fosse a sua senha: ele vale 30 dias, até você sair (o logout o revoga).' }),
-                el('li', { text: 'Conta criada só com o Google não tem senha. Para usar a API, crie uma em Perfil → Criar senha.' }),
-                el('li', { text: 'Trocar a senha no app encerra as sessões da API: entre de novo depois.' })
-            ])
-        ]),
-        el('section', {}, [
-            el('h3', { text: 'Contrato completo' }),
-            el('p', {}, [
-                el('a', { href: '/swagger-ui.html', text: 'Swagger (interativo)' }),
-                el('span', { text: ' · ' }),
-                el('a', { href: '/v3/api-docs', text: 'OpenAPI (JSON)' })
-            ])
-        ]),
-        el('section', {}, [
-            el('h3', { text: 'Texto para o seu assistente' }),
-            el('p', { text: 'Cole no assistente de IA. Depois diga o que quer, por exemplo: “lance R$ 50 no mercado hoje”.' }),
+            el('p', { text: 'Um assistente de IA pode lançar e consultar o seu moneyPilot por você. Cole o texto abaixo no assistente e diga o que quer, por exemplo: “lance R$ 50 no mercado hoje”.' }),
             promptBox,
             el('div', { class: 'ai-actions' }, [copyBtn]),
             copyStatus
+        ]),
+        el('section', {}, [
+            el('a', { href: '/ajuda/usando-com-ia.html', text: 'Guia completo na central de ajuda' })
         ])
     ]);
 
@@ -131,7 +86,7 @@ export function renderAiGuide() {
 
     return el('div', { class: 'auth-wrap' }, [
         el('div', { class: 'card auth-card ai-card' }, [
-            el('img', { class: 'auth-logo', src: 'image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
             el('h2', { text: title, style: 'text-align:center; margin:0 0 .5rem;' }),
             el('p', { class: 'auth-tagline', text: subtitle }),
             body,

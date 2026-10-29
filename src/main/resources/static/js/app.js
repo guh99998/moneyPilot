@@ -88,7 +88,7 @@ function buildSidebar(active) {
     const sidebar = el('aside', { class: 'sidebar' }, [
         el('div', { class: 'sidebar-top' }, [
             el('div', { class: 'brand' }, [
-                el('span', { class: 'brand-mark' }, el('img', { src: 'image/money-pilot-logo.png', alt: '' })),
+                el('span', { class: 'brand-mark' }, el('img', { src: '/image/money-pilot-logo.png', alt: '' })),
                 el('span', {}, ['money', el('span', { class: 'pilot', text: 'Pilot' })])
             ]),
             el('div', { class: 'sidebar-actions' }, [renderBell(), menuToggle])
@@ -206,6 +206,12 @@ async function render() {
     // Rota pública: a documentação da API para IA vale com ou sem sessão (com sessão fica no layout do app).
     if (!session.active && window.location.hash.startsWith('#/usando-com-ia')) {
         root.append(renderAiGuide());
+        return;
+    }
+
+    // Rota pública: o apoio ao projeto abre pelo site, sem login (spec 019).
+    if (!session.active && window.location.hash.startsWith('#/apoie')) {
+        root.append(await renderContribution());
         return;
     }
 
