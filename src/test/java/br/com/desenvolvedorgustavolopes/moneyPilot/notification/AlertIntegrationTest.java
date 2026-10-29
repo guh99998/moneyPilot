@@ -66,7 +66,8 @@ class AlertIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void startClock() {
-        now = Instant.parse("2026-10-28T15:00:00Z"); // 12:00 em São Paulo
+        jdbcTemplate.update("DELETE FROM support_tickets"); // referências fixas (AAAAAA...) também usadas por outros testes
+        now =Instant.parse("2026-10-28T15:00:00Z"); // 12:00 em São Paulo
         when(clock.getZone()).thenReturn(SAO_PAULO);
         when(clock.instant()).thenAnswer(invocation -> now);
     }
