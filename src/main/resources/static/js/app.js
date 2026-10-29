@@ -14,6 +14,7 @@ import { renderVerifyEmail } from './views/verify-email.js';
 import { renderResetPassword } from './views/reset-password.js';
 import { renderSupport } from './views/support.js';
 import { renderAdminTickets } from './views/admin-tickets.js';
+import { renderContribution } from './views/contribution.js';
 import { renderAiGuide } from './views/ai-guide.js';
 import { renderBell, refreshAlerts, resetAlerts } from './alerts.js';
 
@@ -46,6 +47,8 @@ const PROFILE_ROUTE = { path: 'profile', label: 'Perfil', render: renderProfile 
 const SUPPORT_ROUTE = { path: 'suporte', label: 'Falar com o suporte', render: renderSupport };
 // Só para administrador: sem o papel, a rota cai na Visão geral e o servidor responde 404 de qualquer jeito.
 const ADMIN_TICKETS_ROUTE = { path: 'admin/chamados', label: 'Chamados', render: renderAdminTickets };
+// Só com a chave Pix configurada no servidor: sem ela, a rota cai na Visão geral e o servidor responde 404.
+const CONTRIBUTION_ROUTE = { path: 'apoie', label: 'Apoie o projeto', render: renderContribution };
 const AI_ROUTE = { path: 'usando-com-ia', label: 'Usando com IA', render: renderAiGuide };
 
 // O app tem só o tema claro; limpa a preferência que versões antigas gravavam.
@@ -57,6 +60,7 @@ function currentRoute() {
     if (path === SUPPORT_ROUTE.path) return SUPPORT_ROUTE;
     if (path === AI_ROUTE.path) return AI_ROUTE;
     if (path === ADMIN_TICKETS_ROUTE.path && session.admin) return ADMIN_TICKETS_ROUTE;
+    if (path === CONTRIBUTION_ROUTE.path && session.contribution) return CONTRIBUTION_ROUTE;
     return ROUTES.find((route) => route.path === path) || ROUTES[0];
 }
 
@@ -149,7 +153,16 @@ function buildSidebar(active) {
                         window.location.hash = '';
                         render();
                     }
-                })
+                }),
+                // Link de texto, sem ícone: o apoio é um convite discreto, não um item de navegação.
+                session.contribution ? el('a', {
+                    class: 'foot-link',
+                    href: '#/' + CONTRIBUTION_ROUTE.path,
+                    'aria-current': active.path === CONTRIBUTION_ROUTE.path ? 'page' : null,
+                    // Tocar na página atual não dispara hashchange, então fecha à mão.
+                    onClick: () => sidebar.classList.remove('open'),
+                    text: 'Pagar um cafezinho?'
+                }) : null
             ])
         ])
     ]);
@@ -161,7 +174,7 @@ async function render() {
     // Sessões abertas antes do perfil existir (ou do login com Google) não têm o nome e a foto guardados:
     // busca uma vez. A espera vem antes de limpar a tela: duas renderizações concorrentes (login + hashchange)
     // montariam o menu duas vezes.
-    if (session.active && (!session.name || session.avatar === null || session.admin === null)) {
+    if (session.active && (!session.name || session.avatar === null || session.admin === null || session.contribution === null)) {
         await api.profile.get().then((profile) => {
             session.setName(profile.name);
             session.setAvatar(profile.avatarUrl);

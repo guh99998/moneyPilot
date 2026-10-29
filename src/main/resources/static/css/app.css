@@ -213,6 +213,13 @@ h3 { font-size: .92rem; }
 .support-card textarea { resize: vertical; min-height: 8rem; }
 .support-count { align-self: flex-end; }
 
+/* apoie o projeto */
+.contribution-card { width: min(560px, 100%); }
+.contribution-card h2 { margin-top: 0; }
+.contribution-key { display: flex; flex-wrap: wrap; gap: .5rem; }
+.contribution-key input { flex: 1 1 14rem; min-width: 0; }
+.contribution-qr { display: block; width: min(220px, 100%); height: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 9px; background: #fff; }
+
 /* painel de chamados (admin) */
 .ticket-filter { max-width: 14rem; }
 .ticket-badges { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: flex-end; }
@@ -238,6 +245,8 @@ h3 { font-size: .92rem; }
 .ai-guide a { display: inline-block; padding: .65rem .25rem; }
 .sidebar-foot button { color: #dbe4f0; border-color: var(--navy-3); background: transparent; }
 .sidebar-foot button:hover:not(:disabled) { background: var(--navy-2); color: #fff; }
+.foot-link { flex-basis: 100%; padding: .55rem .25rem; color: #9fb0c6; font-size: .78rem; text-decoration: none; }
+.foot-link:hover, .foot-link[aria-current="page"] { color: #fff; text-decoration: underline; }
 
 .main { padding: 1.1rem var(--gutter) 3rem; width: 100%; max-width: 1680px; margin: 0 auto; min-width: 0; }
 
