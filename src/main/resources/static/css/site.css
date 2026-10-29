@@ -5,6 +5,14 @@
     --site-width: 1100px;
 }
 
+/* O topo é fixo: ao focar ou saltar para uma âncora, o destino não pode ficar atrás dele. */
+html { scroll-padding-top: 4.5rem; }
+
+.site-skip { position: absolute; left: var(--gutter); top: -4rem; z-index: 30; padding: .6rem 1rem; border-radius: 8px; background: #fff; color: var(--navy); font-weight: 700; }
+.site-skip:focus { top: .5rem; }
+
+h1, h2, h3 { text-wrap: balance; }
+
 .site-header {
     position: sticky;
     top: 0;
@@ -19,7 +27,7 @@
 }
 .site-brand { display: inline-flex; align-items: center; gap: .55rem; color: #fff; font-family: var(--site-display); font-size: 1.1rem; font-weight: 700; text-decoration: none; }
 .site-session { display: flex; gap: .5rem; }
-.site-session .btn { font-size: .85rem; text-decoration: none; }
+.site-session .btn { min-height: 44px; font-size: .85rem; text-decoration: none; }
 /* O botão principal do app é azul-marinho, o mesmo fundo do topo: aqui ele vira verde para aparecer. */
 .site-session .btn-primary, .site-cta { background: var(--green); border-color: var(--green); color: #0e2a1b; }
 .site-session .btn-primary:hover:not(:disabled), .site-cta:hover:not(:disabled) { background: #52b983; }
@@ -45,7 +53,8 @@ main { overflow-x: clip; }
 .site-hero p { max-width: 44ch; margin: 1.25rem 0 0; color: #c9d5e5; font-size: 1.05rem; line-height: 1.6; }
 .site-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.5rem; margin-top: 1.75rem; }
 .site-cta { display: inline-flex; padding: .75rem 1.5rem; font-size: 1rem; font-weight: 700; text-decoration: none; }
-.site-link-light { padding: .6rem 0; color: #fff; font-weight: 600; text-underline-offset: .25em; }
+.site-link-light { display: inline-flex; align-items: center; min-height: 44px; padding: .6rem 0; color: #fff; font-weight: 600; text-decoration: none; }
+.site-link-light:hover { color: var(--green); }
 
 /* A linha de projeção: o saldo "de hoje" subindo até o fim do mês. Desenha uma vez e fica. */
 .site-horizon { display: none; }
@@ -70,7 +79,7 @@ main { overflow-x: clip; }
 .site-phone img { display: block; width: 100%; height: auto; border-radius: 24px; }
 
 /* ---------- recursos ---------- */
-.site-section, .site-pillars, .site-final { width: min(var(--site-width), 100%); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); }
+.site-section, .site-pillars, .site-final { width: min(var(--site-width), calc(100% - 2 * var(--gutter))); margin-left: auto; margin-right: auto; }
 .site-section { padding-top: 3.5rem; }
 .site-section-title { margin-bottom: 2rem; font-family: var(--site-display); font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 700; letter-spacing: -.025em; }
 
@@ -86,7 +95,7 @@ main { overflow-x: clip; }
 /* ---------- como começar: aqui sim é uma sequência ---------- */
 .site-steps { display: grid; gap: 1.1rem; margin: 0; padding: 0; list-style: none; counter-reset: passo; }
 .site-steps li { position: relative; padding-left: 3.4rem; counter-increment: passo; max-width: 60ch; font-size: 1.05rem; line-height: 1.55; }
-.site-steps li::before { content: counter(passo); position: absolute; left: 0; top: -.25rem; font-family: var(--site-display); font-size: 2.1rem; font-weight: 800; line-height: 1; color: var(--green); }
+.site-steps li::before { content: counter(passo); position: absolute; left: 0; top: -.25rem; font-family: var(--site-display); font-size: 2.1rem; font-weight: 800; line-height: 1; color: var(--income); }
 
 .site-faq { display: grid; gap: .5rem; max-width: 760px; }
 .site-faq details { padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
@@ -98,10 +107,13 @@ main { overflow-x: clip; }
 .site-final .site-cta { background: var(--navy); border-color: var(--navy); color: #fff; }
 .site-final .site-cta:hover:not(:disabled) { background: var(--navy-2); }
 
-.site-footer { padding: 1.75rem var(--gutter); background: var(--navy); color: #c3cfdf; text-align: center; }
-.site-footer nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.25rem; }
-.site-footer a { padding: .4rem 0; color: #fff; }
-.site-footer p { margin: 1rem 0 0; font-size: .8rem; }
+.site-footer { padding: 2rem var(--gutter); background: var(--navy); color: #c3cfdf; }
+.site-footer > * { width: min(var(--site-width), 100%); margin-left: auto; margin-right: auto; }
+.site-footer nav { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; }
+.site-footer a { display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; padding: .4rem .25rem; color: #fff; text-decoration: none; }
+.site-footer a:hover { text-decoration: none; color: var(--green); }
+.site-footer a svg { flex: none; color: var(--green); }
+.site-footer p { margin-top: 1.25rem; margin-bottom: 0; font-size: .8rem; }
 
 /* ---------- telas maiores ---------- */
 @media (min-width: 700px) {
