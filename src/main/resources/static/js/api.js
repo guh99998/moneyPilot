@@ -208,6 +208,11 @@ export const api = {
     sendSupportTicket: (body) =>
         request('/support/tickets', { method: 'POST', body, anonymous: !session.active }),
 
+    support: {
+        mine: (page = 0) => request('/support/tickets', { query: { page } }),
+        get: (reference) => request(`/support/tickets/${encodeURIComponent(reference)}`)
+    },
+
     admin: {
         tickets: {
             list: (status, page = 0) => request('/admin/support/tickets', { query: { status, page, size: 20 } }),

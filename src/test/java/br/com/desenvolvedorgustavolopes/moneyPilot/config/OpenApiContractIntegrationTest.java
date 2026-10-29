@@ -32,7 +32,10 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
             "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout",
             "/api/v1/auth/google", "/api/v1/auth/google/config", "/api/v1/auth/email/confirm",
             "/api/v1/auth/verification/confirm", "/api/v1/auth/verification/resend",
-            "/api/v1/auth/password/forgot", "/api/v1/auth/password/reset", "/api/v1/support/tickets");
+            "/api/v1/auth/password/forgot", "/api/v1/auth/password/reset");
+
+    // Rotas públicas só em um método: o mesmo caminho tem GET protegido (018).
+    private static final Set<String> PUBLIC_OPERATIONS = Set.of("POST /api/v1/support/tickets");
 
     @Autowired
     private MockMvc mockMvc;
@@ -145,7 +148,7 @@ class OpenApiContractIntegrationTest extends AbstractIntegrationTest {
         List<String> problems = new ArrayList<>();
         forEachOperation((path, method, operation) -> {
             boolean optedOut = operation.has("security") && operation.get("security").isEmpty();
-            boolean shouldBePublic = PUBLIC_PATHS.contains(path);
+            boolean shouldBePublic = PUBLIC_PATHS.contains(path) || PUBLIC_OPERATIONS.contains(method.toUpperCase() + " " + path);
             if (optedOut != shouldBePublic) {
                 problems.add(method.toUpperCase() + " " + path + (shouldBePublic ? ": deveria ser pública" : ": não deveria ser pública"));
             }

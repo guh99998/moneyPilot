@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { billFiltersFor, destinationFor, isBudgetAlert } from '../../main/resources/static/js/alert-targets.js';
+import { billFiltersFor, destinationFor, isBudgetAlert, isTicketAlert } from '../../main/resources/static/js/alert-targets.js';
 
 test('overdue bills alert opens A pagar e receber filtered by overdue and by its type', () => {
     const alert = { kind: 'BILLS_OVERDUE', billType: 'PAYABLE', count: 2, total: '150.00' };
@@ -26,4 +26,13 @@ test('budget alerts go to Orçamentos', () => {
         assert.equal(destinationFor(alert), '#/budgets');
     }
     assert.equal(isBudgetAlert({ kind: 'BILLS_DUE_SOON' }), false);
+});
+
+test('ticket alerts go to Suporte', () => {
+    const alert = { kind: 'SUPPORT_TICKET_UPDATED', ticketReference: 'K7P3XN', ticketStatus: 'RESOLVED' };
+
+    assert.equal(isTicketAlert(alert), true);
+    assert.equal(isBudgetAlert(alert), false);
+    assert.equal(destinationFor(alert), '#/suporte');
+    assert.equal(isTicketAlert({ kind: 'BILLS_OVERDUE' }), false);
 });

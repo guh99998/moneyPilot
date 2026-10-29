@@ -19,16 +19,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -51,6 +54,9 @@ class AlertIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @MockitoBean
     private Clock clock;
@@ -427,6 +433,66 @@ class AlertIntegrationTest extends AbstractIntegrationTest {
         listAlerts(tokenA).andExpect(jsonPath("$.count").value(2));
     }
 
+    // 018: alertas de chamado
+
+    @Test
+    void ticketStatusChange_createsAnAlertWithTheNewStatus_andNeverChangedTicketsDoNot() throws Exception {
+        String email = newEmail();
+        String token = registerAndLogin(email);
+        insertTicket("AAAAAA", userId(email), "OPEN", null);
+        listAlerts(token).andExpect(jsonPath("$.count").value(0));
+
+        insertTicket("BBBBBB", userId(email), "IN_PROGRESS", now);
+
+        listAlerts(token)
+                .andExpect(jsonPath("$.count").value(1))
+                .andExpect(jsonPath("$.alerts[0].key").value("SUPPORT_TICKET:BBBBBB"))
+                .andExpect(jsonPath("$.alerts[0].kind").value("SUPPORT_TICKET_UPDATED"))
+                .andExpect(jsonPath("$.alerts[0].ticketReference").value("BBBBBB"))
+                .andExpect(jsonPath("$.alerts[0].ticketStatus").value("IN_PROGRESS"));
+    }
+
+    @Test
+    void ticketAlert_dismissedStaysHidden_andComesBackWhenTheStatusChangesAgain() throws Exception {
+        String email = newEmail();
+        String token = registerAndLogin(email);
+        insertTicket("CCCCCC", userId(email), "IN_PROGRESS", now);
+
+        dismiss(token, "SUPPORT_TICKET:CCCCCC").andExpect(status().isNoContent());
+        listAlerts(token).andExpect(jsonPath("$.count").value(0));
+
+        jdbcTemplate.update("UPDATE support_tickets SET status = 'RESOLVED', status_changed_at = ? WHERE reference = 'CCCCCC'",
+                Timestamp.from(now));
+
+        listAlerts(token)
+                .andExpect(jsonPath("$.count").value(1))
+                .andExpect(jsonPath("$.alerts[0].ticketStatus").value("RESOLVED"));
+    }
+
+    @Test
+    void ticketAlert_disappearsAfterThirtyDays() throws Exception {
+        String email = newEmail();
+        String token = registerAndLogin(email);
+        Instant limit = now.minus(30, ChronoUnit.DAYS);
+        insertTicket("DDDDDD", userId(email), "RESOLVED", limit);
+        listAlerts(token).andExpect(jsonPath("$.count").value(1)); // exatamente 30 dias ainda vale
+
+        jdbcTemplate.update("UPDATE support_tickets SET status_changed_at = ? WHERE reference = 'DDDDDD'",
+                Timestamp.from(limit.minusSeconds(1)));
+        listAlerts(token).andExpect(jsonPath("$.count").value(0));
+    }
+
+    @Test
+    void ticketAlert_isOnlyForTheOwnerOfTheTicket() throws Exception {
+        String owner = newEmail();
+        registerAndLogin(owner);
+        String other = registerAndLogin(newEmail());
+        insertTicket("EEEEEE", userId(owner), "RESOLVED", now);
+
+        listAlerts(other).andExpect(jsonPath("$.count").value(0));
+        dismiss(other, "SUPPORT_TICKET:EEEEEE").andExpect(status().isNotFound());
+    }
+
     @Test
     void alerts_requireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/alerts")).andExpect(status().isUnauthorized());
@@ -503,8 +569,28 @@ class AlertIntegrationTest extends AbstractIntegrationTest {
         return ((Number) JsonPath.read(result.getResponse().getContentAsString(), "$.id")).longValue();
     }
 
+    private String newEmail() {
+        return "alert-" + UUID.randomUUID() + "@example.com";
+    }
+
+    private long userId(String email) {
+        return jdbcTemplate.queryForObject("SELECT id FROM users WHERE email = ?", Long.class, email);
+    }
+
+    private void insertTicket(String reference, long userId, String status, Instant statusChangedAt) {
+        jdbcTemplate.update("""
+                        INSERT INTO support_tickets (reference, category, message, reply_to, user_id, status, email_sent, created_at, status_changed_at)
+                        VALUES (?, 'PROBLEMA', 'Mensagem', 'pessoa@example.com', ?, ?, TRUE, ?, ?)
+                        """,
+                reference, userId, status, Timestamp.from(now),
+                statusChangedAt == null ? null : Timestamp.from(statusChangedAt));
+    }
+
     private String registerAndLogin() throws Exception {
-        String email = "alert-" + UUID.randomUUID() + "@example.com";
+        return registerAndLogin(newEmail());
+    }
+
+    private String registerAndLogin(String email) throws Exception {
         String password = "minha frase secreta";
 
         mockMvc.perform(post("/api/v1/auth/register")

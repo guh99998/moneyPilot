@@ -9,6 +9,8 @@ const { renderSupport } = await import('../../main/resources/static/js/views/sup
 const { session } = await import('../../main/resources/static/js/api.js');
 
 let calls;
+const EMPTY_LIST = { status: 200, body: { content: [], number: 0, totalPages: 0, totalElements: 0 } };
+const tick = () => new Promise((resolve) => setImmediate(resolve));
 
 /** Fake backend: every call answers with the next response of `queue` and is recorded in `calls`. */
 function startServer(queue) {
@@ -60,6 +62,7 @@ test('without a session the form asks for the e-mail and offers the way back to 
 
 test('with a session the form has no e-mail field', () => {
     session.start('token-123', 'ana@example.com');
+    startServer([EMPTY_LIST]);
     const view = open();
 
     assert.equal(emailInput(view), undefined);
@@ -87,17 +90,19 @@ test('the message limits the length and shows a live counter', async () => {
 
 test('a logged-in ticket goes with the session token and without e-mail, and the number is shown', async () => {
     session.start('token-123', 'ana@example.com');
-    startServer([{ status: 200, body: { reference: 'K7Q2M9', replyTo: 'ana@example.com' } }]);
+    startServer([EMPTY_LIST, { status: 200, body: { reference: 'K7Q2M9', replyTo: 'ana@example.com' } }, EMPTY_LIST]);
     const view = open();
+    await tick();
     select(view).value = 'PROBLEMA';
     textarea(view).value = MESSAGE;
 
     await submit(view);
 
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0].path, '/api/v1/support/tickets');
-    assert.equal(calls[0].options.headers.Authorization, 'Bearer token-123');
-    assert.deepEqual(sentBody(), { category: 'PROBLEMA', message: MESSAGE });
+    const send = calls[1]; // a primeira chamada é a lista "Meus chamados"; depois do envio ela recarrega
+    assert.equal(send.options.method, 'POST');
+    assert.equal(send.path, '/api/v1/support/tickets');
+    assert.equal(send.options.headers.Authorization, 'Bearer token-123');
+    assert.deepEqual(sentBody(send), { category: 'PROBLEMA', message: MESSAGE });
     const status = statusOf(view);
     assert.match(status.textContent, /chamado K7Q2M9/);
     assert.match(status.textContent, /ana@example\.com/);
@@ -215,4 +220,98 @@ test('the way back to the login clears the hash', async () => {
     await findByText(view, 'button', 'Voltar para o login').dispatch('click');
 
     assert.equal(window.location.hash, '');
+});
+
+// 018: Meus chamados
+
+const TICKET = {
+    reference: 'K7P3XN', category: 'PROBLEMA', status: 'IN_PROGRESS',
+    createdAt: '2026-10-28T12:00:00Z', statusChangedAt: '2026-10-28T13:00:00Z'
+};
+const page = (content) => ({ status: 200, body: { content, number: 0, totalPages: 1, totalElements: content.length } });
+const textOf = (view) => findAll(view, () => true).map((node) => node.textContent).join(' ');
+
+test('anonymous visitors do not see the list nor call the tickets route', async () => {
+    startServer([]);
+    const view = open();
+    await tick();
+
+    assert.equal(calls.length, 0);
+    assert.doesNotMatch(textOf(view), /Meus chamados/);
+});
+
+test('logged in, the list shows the tickets with reference, status and the way to open each one', async () => {
+    session.start('token-123', 'ana@example.com');
+    startServer([page([TICKET])]);
+    const view = open();
+    await tick();
+
+    assert.equal(calls[0].path, '/api/v1/support/tickets');
+    assert.match(textOf(view), /Meus chamados/);
+    assert.match(textOf(view), /K7P3XN/);
+    assert.match(textOf(view), /Em andamento/);
+    assert.ok(findByTag(view, 'button').find((button) => button.getAttribute('aria-label') === 'Abrir o chamado K7P3XN'));
+});
+
+test('with no tickets the empty state says that tickets sent without login are not listed', async () => {
+    session.start('token-123', 'ana@example.com');
+    startServer([EMPTY_LIST]);
+    const view = open();
+    await tick();
+
+    assert.match(textOf(view), /Você ainda não abriu chamados por aqui/);
+    assert.match(textOf(view), /sem entrar na conta não aparecem nesta lista/);
+});
+
+test('the detail shows the message as text, the reply e-mail and asks the event that dismisses the alert', async () => {
+    session.start('token-123', 'ana@example.com');
+    const message = '<script>alert(1)</script> não consigo exportar';
+    startServer([
+        page([TICKET]),
+        { status: 200, body: { ...TICKET, message, replyTo: 'ana@example.com' } }
+    ]);
+    const view = open();
+    await tick();
+
+    await findByTag(view, 'button').find((button) => button.getAttribute('aria-label') === 'Abrir o chamado K7P3XN').dispatch('click');
+
+    assert.equal(calls[1].path, '/api/v1/support/tickets/K7P3XN');
+    const messageNode = findAll(view, (node) => node.className === 'ticket-message')[0];
+    assert.equal(messageNode.textContent, message);
+    assert.equal(messageNode.children.length, 1); // um único nó de texto, nunca HTML interpretado
+    assert.match(textOf(view), /Respondemos no e-mail ana@example\.com/);
+    assert.doesNotMatch(textOf(view), /foi resolvido/);
+});
+
+test('a resolved ticket suggests opening a new one citing the reference', async () => {
+    session.start('token-123', 'ana@example.com');
+    startServer([
+        page([{ ...TICKET, status: 'RESOLVED' }]),
+        { status: 200, body: { ...TICKET, status: 'RESOLVED', message: 'Ajuda', replyTo: 'ana@example.com' } }
+    ]);
+    const view = open();
+    await tick();
+
+    await findByTag(view, 'button').find((button) => button.getAttribute('aria-label') === 'Abrir o chamado K7P3XN').dispatch('click');
+
+    assert.match(textOf(view), /abra um chamado novo citando a referência K7P3XN/);
+});
+
+test('presetOpenTicket opens the detail straight away, once', async () => {
+    const { presetOpenTicket } = await import('../../main/resources/static/js/views/support.js');
+    session.start('token-123', 'ana@example.com');
+    startServer([
+        { status: 200, body: { ...TICKET, message: 'Mensagem', replyTo: 'ana@example.com' } },
+        EMPTY_LIST
+    ]);
+    presetOpenTicket('K7P3XN');
+    const view = open();
+    await tick();
+
+    assert.equal(calls[0].path, '/api/v1/support/tickets/K7P3XN');
+    assert.match(textOf(view), /Chamado K7P3XN/);
+
+    open(); // segunda montagem: volta para a lista
+    await tick();
+    assert.equal(calls[1].path, '/api/v1/support/tickets');
 });
