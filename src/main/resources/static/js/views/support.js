@@ -64,17 +64,19 @@ function myTickets() {
         ]));
     }
 
-    async function loadList() {
-        card.replaceChildren(title(), el('div', { class: 'empty', text: 'Carregando…' }));
+    async function loadList(focusTitle = false) {
+        const heading = title();
+        card.replaceChildren(heading, el('div', { class: 'empty', text: 'Carregando…' }));
+        if (focusTitle) heading.focus(); // voltando do detalhe: o botão "Voltar" sumiu e o foco com ele
         try {
             const result = normalizePage(await api.support.mine(page));
             if (!result.content.length) {
-                card.replaceChildren(title(), emptyState(
+                card.replaceChildren(heading, emptyState(
                     'Você ainda não abriu chamados por aqui. Chamados enviados sem entrar na conta não aparecem nesta lista.'));
                 return;
             }
             card.replaceChildren(...[
-                title(),
+                heading,
                 table(result.content),
                 pager({
                     page: result.number,
@@ -86,12 +88,12 @@ function myTickets() {
             ].filter(Boolean));
         } catch (error) {
             reportError(error);
-            card.replaceChildren(title(), emptyState(error?.message || 'Não foi possível carregar os chamados.'));
+            card.replaceChildren(heading, emptyState(error?.message || 'Não foi possível carregar os chamados.'));
         }
     }
 
     function backButton() {
-        return el('p', {}, el('button', { class: 'btn-ghost btn-sm', type: 'button', text: 'Voltar à lista', onClick: loadList }));
+        return el('p', {}, el('button', { class: 'btn-ghost btn-sm', type: 'button', text: 'Voltar à lista', onClick: () => loadList(true) }));
     }
 
     async function openTicket(reference) {
