@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/password/forgot").permitAll()
                         .requestMatchers("/api/v1/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/support/tickets").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/contribution/pix").permitAll()
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/index.html").permitAll()
                         .requestMatchers("/css/**").permitAll()
