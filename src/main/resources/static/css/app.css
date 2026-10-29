@@ -209,7 +209,8 @@ h3 { font-size: .92rem; }
 .user-chip-avatar { display: inline-flex; flex: none; }
 .user-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-chip:hover, .user-chip.active { background: var(--navy-2); color: #fff; }
-.support-card { width: min(560px, 100%); }
+/* Dentro do app (com menu) a tela ocupa toda a área de conteúdo; sem sessão, o cartão centralizado do login. */
+.support-card { width: 100%; }
 .support-card textarea { resize: vertical; min-height: 8rem; }
 .support-count { align-self: flex-end; }
 
@@ -232,8 +233,8 @@ h3 { font-size: .92rem; }
 .ticket-message { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 1.1rem; padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); }
 .ticket-status-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem; }
 .ticket-status-form .field { margin-bottom: 0; min-width: 12rem; }
-.ai-card { width: min(720px, 100%); }
-.auth-card.ai-card { padding: 1.5rem 1.25rem; }
+.ai-card { width: 100%; }
+.auth-card.ai-card { width: min(720px, 100%); padding: 1.5rem 1.25rem; }
 .ai-guide section { margin-top: 1.25rem; }
 .ai-guide h3 { margin: 0 0 .35rem; font-size: 1rem; color: var(--navy); }
 .ai-guide p, .ai-guide li { line-height: 1.5; }
