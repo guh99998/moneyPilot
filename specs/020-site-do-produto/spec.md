@@ -1,6 +1,6 @@
 # 020 — Site do produto
 
-**Status:** aprovada
+**Status:** em implementação
 **Branch:** feature/020-site-do-produto
 **Depende de:** nenhuma (combina com a 019, a 021 e a 024)
 

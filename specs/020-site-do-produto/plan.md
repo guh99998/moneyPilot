@@ -1,7 +1,7 @@
 # 020 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** proposto
+**Status:** aprovado
 
 ## Abordagem
 
