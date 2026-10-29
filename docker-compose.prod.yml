@@ -39,6 +39,8 @@ services:
       PIX_QR_FILE: ${PIX_QR_FILE:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       COOKIE_SECURE: "true"
+    volumes:
+      - ${PIX_QR_DIR:-/opt/moneypilot-pix}:/pix:ro  # imagem do QR code do apoio (PIX_QR_FILE=/pix/<arquivo>); pasta vazia ou ausente = sem QR
     depends_on:
       db:
         condition: service_healthy
