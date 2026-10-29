@@ -209,6 +209,12 @@ async function render() {
         return;
     }
 
+    // Rota pública: o apoio ao projeto abre pelo site, sem login (spec 019).
+    if (!session.active && window.location.hash.startsWith('#/apoie')) {
+        root.append(await renderContribution());
+        return;
+    }
+
     // Rota pública: quem não consegue entrar também precisa falar com o suporte.
     if (!session.active && window.location.hash.startsWith('#/suporte')) {
         root.append(renderSupport());
