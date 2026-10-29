@@ -57,4 +57,11 @@ class SitePagesIntegrationTest extends AbstractIntegrationTest {
         int status = mockMvc.perform(get("/privacidade/")).andReturn().getResponse().getStatus();
         assertNotEquals(401, status);
     }
+
+    // Um recurso público que não existe é 404, não 500.
+    @Test
+    void missingPublicResource_isNotFound() throws Exception {
+        mockMvc.perform(get("/css/nao-existe.css"))
+                .andExpect(status().isNotFound());
+    }
 }
