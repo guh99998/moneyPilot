@@ -1,7 +1,8 @@
 import { api, session } from './api.js';
 import { el, fmtMoney, fmtDate, todayIso, svgIcon, reportError } from './ui.js';
-import { billFiltersFor, destinationFor, isBudgetAlert } from './alert-targets.js';
+import { billFiltersFor, destinationFor, isBudgetAlert, isTicketAlert } from './alert-targets.js';
 import { presetBillFilters } from './views/bills.js';
+import { presetOpenTicket } from './views/support.js';
 import { presetBudgetPeriod } from './views/budgets.js';
 
 const BELL_ICON = svgIcon('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', 20);
@@ -25,7 +26,18 @@ const PHRASES = {
     }
 };
 
+const TICKET_TITLES = {
+    OPEN: (reference) => `Seu chamado ${reference} foi reaberto`,
+    IN_PROGRESS: (reference) => `Seu chamado ${reference} está em andamento`,
+    RESOLVED: (reference) => `Seu chamado ${reference} foi resolvido`
+};
+
 function describe(alert) {
+    if (isTicketAlert(alert)) {
+        const title = (TICKET_TITLES[alert.ticketStatus] || ((reference) => `Seu chamado ${reference} mudou de status`))(alert.ticketReference);
+        return { tone: 'warning', title, detail: 'Ver o chamado' };
+    }
+
     if (isBudgetAlert(alert)) {
         const amounts = `${fmtMoney(alert.spent)} de ${fmtMoney(alert.budgeted)}`;
         return alert.kind === 'BUDGET_EXCEEDED'
@@ -154,8 +166,19 @@ async function dismiss(alert) {
     }
 }
 
+/** Dispensa o alerta só se ele estiver na lista já carregada, para não gerar 404 de um alerta que já sumiu. */
+export async function dismissIfActive(key) {
+    if (!alerts.some((alert) => alert.key === key)) return;
+    try {
+        await api.alerts.dismiss(key);
+    } catch {
+        refreshAlerts(); // o alerta pode ter acabado de sumir
+    }
+}
+
 function openAlert(alert) {
-    if (isBudgetAlert(alert)) presetBudgetPeriod(alert.month, alert.year);
+    if (isTicketAlert(alert)) presetOpenTicket(alert.ticketReference);
+    else if (isBudgetAlert(alert)) presetBudgetPeriod(alert.month, alert.year);
     else presetBillFilters(billFiltersFor(alert, todayIso()));
 
     closePanel();
@@ -166,6 +189,7 @@ function openAlert(alert) {
 }
 
 window.addEventListener('api:changed', refreshAlerts);
+window.addEventListener('support:ticket-opened', (event) => dismissIfActive(`SUPPORT_TICKET:${event.detail.reference}`));
 window.addEventListener('resize', positionPanel);
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') refreshAlerts();

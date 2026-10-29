@@ -13,6 +13,11 @@ export function isBudgetAlert(alert) {
     return alert.kind === 'BUDGET_WARNING' || alert.kind === 'BUDGET_EXCEEDED';
 }
 
+export function isTicketAlert(alert) {
+    return alert.kind === 'SUPPORT_TICKET_UPDATED';
+}
+
 export function destinationFor(alert) {
+    if (isTicketAlert(alert)) return '#/suporte';
     return isBudgetAlert(alert) ? '#/budgets' : '#/bills';
 }
