@@ -7,6 +7,8 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillType;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.AlertNotFoundException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.report.BudgetVsActual;
 import br.com.desenvolvedorgustavolopes.moneyPilot.report.ReportRepository;
+import br.com.desenvolvedorgustavolopes.moneyPilot.support.SupportTicket;
+import br.com.desenvolvedorgustavolopes.moneyPilot.support.SupportTicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,8 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,12 +36,14 @@ import java.util.stream.Collectors;
 public class AlertService {
 
     static final int DUE_SOON_DAYS = 7;
+    static final int TICKET_ALERT_DAYS = 30;
     private static final BigDecimal WARNING_RATIO = new BigDecimal("0.8");
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
     private final AuthenticatedUserProvider userProvider;
     private final BillRepository billRepository;
     private final ReportRepository reportRepository;
+    private final SupportTicketRepository ticketRepository;
     private final DismissedAlertRepository dismissedRepository;
     private final Clock clock;
 
@@ -114,6 +121,7 @@ public class AlertService {
         }
 
         result.addAll(budgetAlerts(userId, today));
+        result.addAll(ticketAlerts(userId));
         return result;
     }
 
@@ -122,7 +130,7 @@ public class AlertService {
         AlertResponse alert = new AlertResponse(
                 key, kind, type, totals.getBillCount(), total,
                 withLimitDate ? totals.getLastDueDate() : null,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null);
         return new Computed(alert, totals.getBillCount() + "|" + total.toPlainString());
     }
 
@@ -168,8 +176,24 @@ public class AlertService {
         AlertResponse alert = new AlertResponse(
                 key, kind, null, null, null, null,
                 budget.getCategoryId(), budget.getCategoryName(), spent, limit, percentUsed,
-                today.getMonthValue(), today.getYear());
+                today.getMonthValue(), today.getYear(), null, null);
         return new Computed(alert, "");
+    }
+
+    /**
+     * Um alerta por chamado cujo status mudou nos últimos 30 dias. Chamado que nunca mudou tem
+     * statusChangedAt nulo e fica de fora. A impressão digital é o status: mudou de novo, o alerta volta.
+     */
+    private List<Computed> ticketAlerts(Long userId) {
+        Instant since = clock.instant().minus(TICKET_ALERT_DAYS, ChronoUnit.DAYS);
+        return ticketRepository.findAllByUserIdAndStatusChangedAtGreaterThanEqual(userId, since).stream()
+                .sorted(Comparator.comparing(SupportTicket::getStatusChangedAt).reversed())
+                .map(ticket -> new Computed(
+                        new AlertResponse("SUPPORT_TICKET:" + ticket.getReference(), AlertKind.SUPPORT_TICKET_UPDATED,
+                                null, null, null, null, null, null, null, null, null, null, null,
+                                ticket.getReference(), ticket.getStatus()),
+                        ticket.getStatus().name()))
+                .toList();
     }
 
     private Map<BillType, BillAlertTotals> byType(List<BillAlertTotals> totals) {
