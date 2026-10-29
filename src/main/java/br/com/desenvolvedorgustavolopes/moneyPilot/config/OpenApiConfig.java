@@ -31,7 +31,7 @@ public class OpenApiConfig {
                                 Autenticação: entre em /api/v1/auth/login e mande o access token em \
                                 Authorization: Bearer. Fora do navegador, peça o refresh token no corpo com \
                                 refreshTokenInBody=true e renove em /api/v1/auth/refresh. Passo a passo e texto \
-                                pronto para assistentes de IA: página /app/#/usando-com-ia."""))
+                                pronto para assistentes de IA: guia em /ajuda/usando-com-ia.html."""))
                 .components(new Components().addSecuritySchemes(BEARER, new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")

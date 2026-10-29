@@ -1,4 +1,5 @@
 import { ApiError } from './api.js';
+import { helpLink, routeOf } from './help.js';
 
 /** Cria um elemento. props aceita atributos, `class`, `text`, `html` e on<Event>. */
 export function el(tag, props = {}, children = []) {
@@ -248,7 +249,10 @@ export function pager({ page, totalPages, totalElements, onChange }) {
 export function pageHead(title, subtitle, actions = []) {
     return el('div', { class: 'page-head' }, [
         el('div', {}, [
-            el('h1', { text: title }),
+            el('div', { class: 'page-title' }, [
+                el('h1', { text: title }),
+                helpLink(routeOf(window.location.hash), el)
+            ]),
             subtitle ? el('p', { text: subtitle }) : null
         ]),
         el('div', { class: 'page-actions' }, actions)

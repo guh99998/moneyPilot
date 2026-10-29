@@ -893,3 +893,13 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .alert-main strong { font-size: .88rem; }
 .alert-main span { font-size: .8rem; color: var(--text-secondary); }
 .alert-dismiss { flex: none; }
+
+/* Botão "?" ao lado do título (spec 021): círculo de 44px no celular; o alvo de toque se mantém no desktop. */
+.page-title { display: flex; align-items: center; gap: .6rem; }
+.help-button { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 2px solid var(--border-strong); border-radius: 50%; color: var(--navy); font-weight: 800; font-size: 1.05rem; text-decoration: none; background: var(--surface); }
+.help-button:hover { text-decoration: none; border-color: var(--navy); background: var(--surface-2); }
+.help-button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+@media (min-width: 900px) {
+    .help-button { width: 28px; height: 28px; font-size: .85rem; }
+    .help-button::after { content: ''; position: absolute; inset: -8px; }
+}

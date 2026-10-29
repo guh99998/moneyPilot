@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>A pagar e receber — Ajuda do moneyPilot</title>
+    <meta name="description" content="Como cadastrar contas a pagar e a receber no moneyPilot, parcelar, dar baixa e criar recorrências.">
+    <meta name="theme-color" content="#13294b">
+    <link rel="icon" href="/image/money-pilot-logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/site.css">
+</head>
+<body data-page="help">
+<a class="site-skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header">
+    <a class="site-brand" href="/" aria-label="moneyPilot, início">
+        <img src="/image/money-pilot-logo.png" alt="" width="32" height="32">
+        <span translate="no">moneyPilot</span>
+    </a>
+    <nav class="site-session" id="site-session" aria-label="Acesso">
+        <a class="btn" href="/app/">Entrar</a>
+        <a class="btn btn-primary" href="/app/">Criar conta</a>
+    </nav>
+</header>
+
+<main id="conteudo" class="help-main">
+    <nav aria-label="Você está em">
+        <ol class="help-crumbs">
+            <li><a href="/ajuda/">Ajuda</a></li>
+            <li aria-current="page">A pagar e receber</li>
+        </ol>
+    </nav>
+    <h1>A pagar e receber</h1>
+
+    <h2>Para que serve</h2>
+    <p>Um título é um compromisso com data: uma conta a pagar ou um valor a receber. Ele ainda não mexe no seu saldo. Só quando você dá <strong>baixa</strong> (marca como pago ou recebido) é que o lançamento entra no extrato.</p>
+
+    <h2>Passo a passo</h2>
+    <ol>
+        <li>Abra <strong>A pagar e receber</strong> e toque em <strong>Novo título</strong>.</li>
+        <li>Informe se é a pagar ou a receber, a descrição, o valor, o vencimento e a categoria.</li>
+        <li>Para dividir em parcelas, use <strong>Parcelar</strong>: informe o valor total, o número de parcelas e o primeiro vencimento. A tela mostra a divisão antes de salvar.</li>
+        <li>Quando pagar ou receber, toque em <strong>Pagar</strong> ou <strong>Receber</strong>, confirme a conta e a data em que o dinheiro saiu ou entrou. O lançamento entra no extrato nessa data.</li>
+        <li>Para dar baixa em vários de uma vez, marque os títulos e toque em <strong>Baixar selecionados</strong>.</li>
+        <li>Para contas que se repetem todo mês no mesmo dia, crie uma <strong>Nova recorrência</strong> em <strong>Recorrências</strong>. O moneyPilot gera os títulos do mês atual e do próximo sozinho.</li>
+    </ol>
+
+    <h2>Dúvidas comuns</h2>
+    <details>
+        <summary>Paguei com juros. Como registro?</summary>
+        <p>Na baixa, informe o valor que você realmente pagou. O lançamento registra esse valor.</p>
+    </details>
+    <details>
+        <summary>Paguei menos do que o título. O que acontece?</summary>
+        <p>O título é quitado por inteiro com o valor informado e não sobra resíduo. A tela avisa antes de confirmar.</p>
+    </details>
+    <details>
+        <summary>Dei baixa por engano.</summary>
+        <p>Use <strong>Desfazer baixa</strong>: o lançamento é apagado e o título volta a ficar em aberto.</p>
+    </details>
+    <details>
+        <summary>Como as parcelas são divididas?</summary>
+        <p>O valor é dividido em centavos e a sobra fica na primeira parcela: R$ 100,00 em 3 vira 33,34 + 33,33 + 33,33. Os vencimentos são mensais; se o dia não existir no mês (como o 31), vence no último dia dele.</p>
+    </details>
+    <details>
+        <summary>Posso excluir um parcelamento?</summary>
+        <p>Sim, enquanto nenhuma parcela tiver sido baixada. Você escolhe entre excluir só uma parcela ou o parcelamento inteiro.</p>
+    </details>
+    <details>
+        <summary>A baixa em lote falhou em um título.</summary>
+        <p>A baixa em lote é tudo ou nada: se um título falha, nenhum é baixado e o erro diz qual foi.</p>
+    </details>
+    <details>
+        <summary>O que é um título vencido?</summary>
+        <p>É um título em aberto com vencimento antes de hoje.</p>
+    </details>
+</main>
+
+<footer class="site-footer">
+    <nav aria-label="Links do rodapé">
+        <a href="/ajuda/"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.7 2.3-2.7 4"/><path d="M12 17.3h.01"/></svg><span>Ajuda</span></a>
+        <a href="/app/#/suporte"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 20.5l1.7-5.2A8.4 8.4 0 1 1 21 11.5z"/></svg><span>Suporte</span></a>
+        <a href="/app/#/apoie"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 2v2M10 2v2M14 2v2"/><path d="M16 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h13v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/></svg><span>Apoie o projeto</span></a>
+        <a href="https://github.com/guh99998/moneyPilot" rel="noopener"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg><span>GitHub</span></a>
+    </nav>
+    <p>&copy; moneyPilot. Projeto gratuito e de código aberto.</p>
+</footer>
+
+<script type="module" src="/js/site.js"></script>
+</body>
+</html>

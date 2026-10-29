@@ -1,4 +1,5 @@
 import { session } from './api.js';
+import { assistantPrompt } from './views/ai-guide.js';
 
 /**
  * Links antigos (favoritos, e-mails já enviados) apontavam para `/#/rota`. O app agora vive em `/app/`,
@@ -25,16 +26,46 @@ function renderSession(nav, hasSession) {
     }));
 }
 
+/** Na ajuda "Usando com IA": troca o endereço de exemplo pelo do site e liga o "Copiar texto". */
+function setupAssistantPrompt() {
+    const box = document.getElementById('assistant-prompt');
+    if (!box) return;
+    const prompt = assistantPrompt(window.location.origin);
+    box.value = prompt;
+    document.querySelectorAll('[data-origin]').forEach((node) => { node.textContent = window.location.origin; });
+
+    const status = document.getElementById('copy-status');
+    const button = document.getElementById('copy-prompt');
+    if (!button) return;
+    button.hidden = false;
+    button.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(prompt);
+            if (status) status.textContent = 'Texto copiado.';
+        } catch {
+            // Sem permissão para a área de transferência: deixa o texto selecionado para o Ctrl+C.
+            box.focus();
+            box.select();
+            if (status) status.textContent = 'Não consegui copiar sozinho. O texto está selecionado: use Ctrl+C.';
+        }
+    });
+}
+
 function start() {
-    const target = legacyAppUrl(window.location.hash);
-    if (target) {
-        window.location.replace(target);
-        return;
+    const page = document.body.dataset.page;
+    if (page === 'site') {
+        const target = legacyAppUrl(window.location.hash);
+        if (target) {
+            window.location.replace(target);
+            return;
+        }
     }
     const nav = document.getElementById('site-session');
     if (nav) renderSession(nav, session.active);
+    if (page === 'help') setupAssistantPrompt();
 }
 
-if (typeof document !== 'undefined' && document.body?.dataset?.page === 'site') {
+const page = typeof document !== 'undefined' ? document.body?.dataset?.page : null;
+if (page === 'site' || page === 'help') {
     start();
 }

@@ -156,3 +156,31 @@ main { overflow-x: clip; }
 }
 @keyframes site-draw { to { stroke-dashoffset: 0; } }
 @keyframes site-appear { to { opacity: 1; } }
+
+/* ---------- central de ajuda (spec 021) ---------- */
+.help-main { width: min(46rem, calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: 1.5rem 0 4rem; }
+.help-main .help-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; margin: 0 0 1rem; padding: 0; list-style: none; font-size: .9rem; color: var(--text-secondary); }
+.help-crumbs li + li::before { content: '›'; margin-right: .25rem; }
+.help-crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
+.help-main h1 { font-family: var(--site-display); font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; margin: 0 0 1rem; }
+.help-main h2 { margin: 2.25rem 0 .75rem; font-family: var(--site-display); font-size: 1.3rem; font-weight: 700; color: var(--navy); }
+.help-main p, .help-main li { max-width: 70ch; line-height: 1.65; overflow-wrap: anywhere; }
+.help-lead { font-size: 1.1rem; color: var(--text-secondary); }
+.help-main ol, .help-main ul { padding-left: 1.4rem; }
+.help-main li + li { margin-top: .5rem; }
+.help-main .help-list { display: grid; gap: .75rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
+.help-list a { display: block; min-height: 44px; padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; text-decoration: none; }
+.help-list a:hover { border-color: var(--navy); }
+.help-list strong { display: block; color: var(--navy); }
+.help-list span { color: var(--text-secondary); font-size: .95rem; }
+.help-main details { padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.help-main details + details { margin-top: .5rem; }
+.help-main summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+.help-main details p { margin: .6rem 0 0; color: var(--text-secondary); }
+.help-code { margin: .75rem 0; padding: .75rem; overflow-x: auto; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 9px; font-size: .82rem; }
+.help-code code { white-space: pre; }
+.help-code:focus-visible, .help-prompt:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.help-prompt { width: 100%; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
+.help-actions { margin-top: .5rem; }
+.help-actions button { min-height: 44px; padding-inline: 1.1rem; }
+.help-warning { font-weight: 700; color: var(--critical); }
