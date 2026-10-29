@@ -782,8 +782,9 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
         gap: 1.5rem;
     }
     .nav a { padding: .55rem .7rem; font-size: .92rem; }
-    .sidebar-foot { margin-top: auto; flex-direction: column; align-items: stretch; }
+    .sidebar-foot { margin-top: auto; flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
     .user-chip { flex: none; }
+    .foot-link { flex-basis: auto; }
     .sidebar-foot button { justify-content: flex-start; }
 
     input, select, textarea { font-size: .9rem; padding: .48rem .62rem; }
