@@ -214,7 +214,8 @@ h3 { font-size: .92rem; }
 .support-count { align-self: flex-end; }
 
 /* apoie o projeto */
-.contribution-card { width: min(560px, 100%); }
+/* Dentro do app o cartão ocupa toda a área de conteúdo, como o de suporte. */
+.contribution-card { width: 100%; }
 .contribution-card h2 { margin-top: 0; }
 .contribution-key { display: flex; flex-wrap: wrap; gap: .5rem; }
 .contribution-key input { flex: 1 1 14rem; min-width: 0; }
