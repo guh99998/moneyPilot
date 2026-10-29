@@ -32,7 +32,8 @@ export function presetOpenTicket(reference) {
  * da pessoa: sempre entra por `text`, nunca por `html`.
  */
 function myTickets() {
-    const card = el('div', { class: 'card support-card' });
+    // Sem `support-card`: aquele limite de 560px é do formulário; a lista usa a largura toda da tela.
+    const card = el('div', { class: 'card' });
     let page = 0;
 
     const statusBadge = (ticket) => badge(STATUS_BADGE[ticket.status] || 'open', STATUS_LABEL[ticket.status] || ticket.status);
