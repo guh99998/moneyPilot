@@ -232,6 +232,7 @@ O segredo JWT do profile `local` é um placeholder de desenvolvimento — ele n�
 | `SUPPORT_EMAIL` | Obrigatória. Endereço que recebe os chamados de "Falar com o suporte"; sem ela o app não sobe |
 | `PIX_KEY` | Opcional. Chave Pix **aleatória** do apoio ao projeto; vazia, o apoio não aparece |
 | `PIX_QR_FILE` | Opcional. Caminho, dentro do container, da imagem (png ou jpg, até 512 KB) do QR code da chave |
+| `PIX_QR_DIR` | Opcional. Pasta da VPS com a imagem do QR code, montada como `/pix` (somente leitura); default `/opt/moneypilot-pix`. Ex.: `PIX_QR_FILE=/pix/qr.png` |
 | `ADMIN_EMAILS` | Opcional. E-mails das contas administradoras do painel de chamados, separados por vírgula; vazia, ninguém é administrador |
 | `GOOGLE_CLIENT_ID` | Opcional. Client ID OAuth (Web) do Google, que não é segredo; vazio desliga o login com Google. A origem pública do app precisa estar autorizada no Google Cloud |
 | `PORT` | Opcional, default 8080 |
