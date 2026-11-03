@@ -741,6 +741,9 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .delete-list .delete-strong { color: var(--critical); font-weight: 700; }
 .btn-delete { border: 1px solid var(--critical); min-height: 44px; font-weight: 700; width: 100%; justify-content: center; }
 .btn-delete:hover:not(:disabled) { background: var(--critical); color: #fff; }
+/* O cinza discreto do tema (--text-muted) fica abaixo de 4,5:1 sobre branco; neste cartão o texto de apoio sobe de contraste. */
+.danger-card .meter-foot { color: var(--text-secondary); }
+.danger-card .card-head .sub { color: var(--critical); font-weight: 700; }
 .google-block.is-locked { opacity: .45; pointer-events: none; }
 .auth-notice { background: var(--accent-soft); color: var(--navy); border-radius: 10px; padding: .7rem .9rem; margin: 0 0 1rem; font-size: .88rem; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
 .auth-notice:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
