@@ -725,6 +725,8 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .google-slot { display: flex; justify-content: center; min-height: 44px; max-width: 100%; overflow: hidden; }
 .auth-note { text-align: center; font-size: .8rem; color: var(--text-secondary); margin: .75rem 0 0; }
+.auth-terms { text-align: center; font-size: .8rem; color: var(--text-secondary); margin: .75rem 0 0; overflow-wrap: anywhere; }
+.auth-terms a { display: inline-block; padding: .65rem .15rem; margin: -.65rem 0; color: var(--navy); font-weight: 600; }
 
 /* Avatar: foto do Google ou iniciais */
 .avatar {

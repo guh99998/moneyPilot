@@ -49,6 +49,8 @@ class SeoIntegrationTest extends AbstractIntegrationTest {
         String base = appProperties.publicUrl();
         assertTrue(body.contains("<loc>" + base + "/</loc>"));
         assertTrue(body.contains("<loc>" + base + "/ajuda/</loc>"));
+        assertTrue(body.contains("<loc>" + base + "/privacidade/</loc>"));
+        assertTrue(body.contains("<loc>" + base + "/termos/</loc>"));
         assertTrue(body.contains("<loc>" + base + "/ajuda/perfil-e-seguranca.html</loc>"));
         assertFalse(body.contains("/ajuda/index.html"));
         assertFalse(body.contains("/app/"));

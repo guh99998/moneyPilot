@@ -159,6 +159,7 @@ main { overflow-x: clip; }
 
 /* ---------- central de ajuda (spec 021) ---------- */
 .help-main { width: min(46rem, calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: 1.5rem 0 4rem; }
+.legal-main .legal-updated { margin: -.5rem 0 1.5rem; color: var(--text-secondary); font-size: .9rem; }
 .help-main .help-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; margin: 0 0 1rem; padding: 0; list-style: none; font-size: .9rem; color: var(--text-secondary); }
 .help-crumbs li + li::before { content: '›'; margin-right: .25rem; }
 .help-crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
