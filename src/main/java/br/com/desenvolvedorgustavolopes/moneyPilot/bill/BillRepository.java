@@ -91,4 +91,9 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     """)
     List<BillAlertTotals> summarizeOpenDueBefore(@Param("userId") Long userId,
                                                  @Param("before") LocalDate before);
+
+    /** Exclusão de conta (spec 012): apaga em lote, sem carregar entidades. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM Bill b WHERE b.userId = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }

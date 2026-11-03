@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.transaction;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     BigDecimal getAccountBalance(@Param("accountId") Long id);
 
     Long countAllByAccountId(Long accountId);
+
+    /** Exclusão de conta (spec 012): apaga os lançamentos de todas as contas da pessoa. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM Transaction t WHERE t.accountId IN (SELECT a.id FROM Account a WHERE a.userId = :userId)")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }

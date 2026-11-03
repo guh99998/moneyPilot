@@ -731,6 +731,26 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .profile-photo-actions { display: flex; flex-wrap: wrap; gap: .25rem; }
 .profile-photo-actions button, .profile-card .btn-danger { min-height: 44px; }
 
+/* ---------- excluir conta (spec 012) ---------- */
+.danger-card { border-color: color-mix(in srgb, var(--critical) 35%, var(--border)); }
+.farewell { background: var(--accent-soft); border-radius: 10px; padding: .85rem 1rem; margin-bottom: 1rem; color: var(--text-secondary); font-size: .9rem; }
+.farewell p { margin: 0; overflow-wrap: anywhere; }
+.farewell .farewell-title { color: var(--navy); font-weight: 800; font-size: 1.05rem; margin-bottom: .35rem; text-wrap: balance; }
+.delete-list { margin: 0 0 1rem; padding-left: 1.2rem; font-size: .88rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: .3rem; }
+.delete-list li { overflow-wrap: anywhere; }
+.delete-list .delete-strong { color: var(--critical); font-weight: 700; }
+.btn-delete { border: 1px solid var(--critical); min-height: 44px; font-weight: 700; width: 100%; justify-content: center; }
+.btn-delete:hover:not(:disabled) { background: var(--critical); color: #fff; }
+/* O cinza discreto do tema (--text-muted) fica abaixo de 4,5:1 sobre branco; neste cartão o texto de apoio sobe de contraste. */
+.danger-card .meter-foot { color: var(--text-secondary); }
+.danger-card .card-head .sub { color: var(--critical); font-weight: 700; }
+.google-block.is-locked { opacity: .45; pointer-events: none; }
+.auth-notice { background: var(--accent-soft); color: var(--navy); border-radius: 10px; padding: .7rem .9rem; margin: 0 0 1rem; font-size: .88rem; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+.auth-notice:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (min-width: 600px) {
+    .btn-delete { width: auto; }
+}
+
 /* ---------- misc ---------- */
 .empty { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: .9rem; }
 .pager { display: flex; align-items: center; justify-content: flex-end; gap: .6rem; margin-top: .9rem; font-size: .85rem; color: var(--text-secondary); }

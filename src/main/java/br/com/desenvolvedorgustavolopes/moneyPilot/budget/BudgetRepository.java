@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.budget;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,4 +25,9 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
                                  @Param("year") Integer year,
                                  Pageable pageable
     );
+
+    /** Exclusão de conta (spec 012): apaga em lote, sem carregar entidades. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM Budget b WHERE b.userId = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }
