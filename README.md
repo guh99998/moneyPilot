@@ -288,6 +288,7 @@ O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e
 
 ## Próximos passos
 
-- Exclusão de conta (spec própria): quem só tem Google confirma entrando de novo com o Google.
+- Exclusão de conta (spec 012, rascunho): quem só tem Google confirma entrando de novo com o Google.
+- Rascunhos de spec ainda sem regras definidas: boas-vindas (013), autenticação em dois fatores (014), investimentos (015), fatura do cartão de crédito (016), marcos de uso (022), histórico de notificações (023) e política de privacidade (024).
 - Ordenar títulos e lançamentos pelo nome da categoria e da conta (hoje a ordenação cobre data, descrição, valor e tipo).
-- Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), fatura de cartão de crédito, importação de extrato CSV, Redis e RabbitMQ.
+- Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), importação de extrato CSV, Redis e RabbitMQ.

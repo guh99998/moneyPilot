@@ -1,6 +1,6 @@
 # 004 — Login com Google, vínculo no perfil e foto
 
-**Status:** em implementação
+**Status:** entregue
 **Branch:** feature/004-login-com-google
 **Roteiro:** D5 · **Depende de:** 002, 003
 

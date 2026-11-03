@@ -1,6 +1,6 @@
 # 011 — API fácil para automação com IA
 
-**Status:** aprovado
+**Status:** entregue
 **Branch:** feature/011-api-para-automacao
 
 ## Problema
