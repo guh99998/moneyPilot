@@ -1,6 +1,6 @@
 # 024 — Plano: política de privacidade e termos de uso
 
-**Status:** rascunho (aguardando a retenção no destino dos backups e nos logs sem limite)
+**Status:** rascunho (retenção levantada; aguardando as duas ações do Gustavo na operação e a aprovação do plano)
 
 ## Abordagem
 
@@ -19,12 +19,13 @@ Duas páginas estáticas (`/privacidade/` e `/termos/`) no padrão visual das p�
 | Item | Situação |
 |---|---|
 | Backup local na VPS | últimos 14 dias |
-| Backup externo | enviado por `rclone` para o remoto `r2crypt` (R2, criptografado). **Prazo no destino: a confirmar** |
-| Backup automático do provedor da VPS | existe ao menos um (31/10). **Frequência e prazo: a confirmar no painel** |
-| Logs de containers | 3 containers com limite de 3 × 10 MB; 2 sem limite. **A resolver** |
+| Backup externo | `rclone copy` para o remoto `r2crypt` (R2, criptografado). O script não apaga nada no destino. **Ação do Gustavo:** regra de ciclo de vida de 30 dias no bucket. A política usa "até 30 dias" |
+| Backup automático do provedor | existe (31/10). Frequência e prazo definidos pelo provedor; o texto é genérico, sem número |
+| Logs dos containers do moneyPilot | `app` e `db`: 3 × 10 MB |
+| Log do proxy (Caddy) | sem log de acesso (não há diretiva `log`). **Ação do Gustavo:** limitar o log do container a 3 × 10 MB no compose do proxy |
 | Logs do sistema (journal) | 13,7 MB; sem preocupação |
 
-A política só é aprovada com todas as linhas respondidas. Linha "sem limite" vira ajuste de operação antes de publicar.
+A política só vai para a `main` depois que as duas ações de operação estiverem feitas, para o texto ser verdadeiro.
 
 ## Estrutura da política de privacidade
 
