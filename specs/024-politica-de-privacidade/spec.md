@@ -1,8 +1,8 @@
 # 024 — Política de privacidade e termos de uso
 
-**Status:** rascunho (criada a partir da 020; aguardando a retenção dos backups)
+**Status:** rascunho (decisões registradas; aguardando a retenção de backups e logs e a aprovação do Gustavo)
 **Branch:** feature/024-politica-de-privacidade
-**Depende de:** 020 (site do produto, onde as páginas vivem)
+**Depende de:** 020 (site do produto, onde as páginas vivem) e 012 (exclusão de conta; a política só promete a exclusão depois que a 012 estiver em produção)
 
 ## Problema
 
@@ -31,11 +31,22 @@ O site tem uma página de **Política de privacidade** e uma de **Termos de uso*
 - [ ] **CA5** — Dadas as duas páginas, então mostram a data da última atualização.
 - [ ] **CA6** — Dadas as páginas em 390px e 1280px, então não há rolagem horizontal.
 
+## Decisões
+
+- **Fontes no próprio site:** Manrope e Bricolage Grotesque (licença OFL, que acompanha os arquivos) passam a ser servidas de `static/fonts/`, e os `<link>` do Google Fonts saem das 15 páginas. Assim o app e o site não enviam o IP de ninguém ao Google só para carregar fonte, e a política pode dizer isso com verdade. São arquivos estáticos, não dependência de build.
+- **Provedores citados pelo nome:** e-mail transacional (Resend), login com Google (quando a pessoa usa), a hospedagem (VPS) e o armazenamento dos backups.
+- **Contato:** só pelo formulário de suporte (010). Nenhum e-mail aparece nas páginas.
+- **Endereço IP:** é usado só nos limites de tentativas, em memória, e não é gravado no banco. Pode aparecer nos logs de acesso da hospedagem; a retenção deles entra na política depois do levantamento.
+- **Cookie:** o app usa um único cookie, o de sessão (`refresh`), necessário para manter a pessoa logada. Não há cookies de rastreamento nem analytics, então não há banner.
+- **Exclusão:** a política descreve a exclusão de conta da 012 (imediata, com os chamados de suporte apagados) e a retenção residual em backups.
+
 ## Casos de borda
 
-- Retenção dos backups desconhecida: a política não pode ser aprovada sem ela (ver perguntas em aberto)
+- Retenção de backups ou de logs desconhecida: a política não é aprovada sem ela (ver perguntas em aberto)
+- Retenção sem limite (backups ou logs guardados para sempre): corrigir a operação (rotação, ciclo de vida do bucket) antes de publicar, para o texto prometer um prazo verdadeiro
 - Usuários que já têm conta: não há reaceite nesta versão; o aviso vale para novos cadastros
 - Mudança futura de provedor ou de dado coletado: exige atualizar a política e a data
+- Fonte que falha ao carregar: o texto continua legível com a fonte de sistema
 
 ## Fora de escopo
 
@@ -46,5 +57,4 @@ O site tem uma página de **Política de privacidade** e uma de **Termos de uso*
 
 ## Perguntas em aberto
 
-- **Retenção dos backups:** o Gustavo vai conferir na VPS (`crontab -l` e `sudo crontab -l`, o script do backup e a regra de ciclo de vida do bucket) por quanto tempo os backups ficam guardados e onde. Sem isso, a política não é aprovada.
-- Qual e-mail de contato do responsável aparece na política (fora do repositório se for pessoal)?
+- **Retenção de backups e logs (Gustavo, na VPS):** agendamento e script do backup, para onde vai e por quanto tempo fica (regra de ciclo de vida do bucket), cópias locais, e rotação dos logs dos containers e do proxy. O produto final é uma frase: "backups por N dias em <provedor/região>; logs por M dias". Sem isso, a política não é aprovada. O `docker-compose.prod.yml` não limita o tamanho dos logs; se a resposta for "sem limite", preparo um ajuste antes.
