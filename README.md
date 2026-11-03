@@ -209,6 +209,8 @@ Servido pela própria aplicação, a partir de `src/main/resources/static`: o **
 
 Novas features seguem Spec-Driven Development: cada uma tem uma pasta em [`specs/`](specs/README.md) com spec, plano técnico e tarefas, aprovados antes do código. As regras de trabalho, branches e commits estão no [`CLAUDE.md`](CLAUDE.md).
 
+**Dependências:** o Dependabot (`.github/dependabot.yml`) abre PRs toda segunda-feira, sempre contra a `develop`: Maven, GitHub Actions e a imagem do Dockerfile, com minor e patch agrupados e major em PRs separados. As atualizações de **segurança** abrem PR contra a branch padrão (`main`) e ignoram esse destino: redirecione-as para a `develop` (ou feche e refaça lá).
+
 ## Rodando localmente
 
 Pré-requisitos: JDK 21 e Docker.
