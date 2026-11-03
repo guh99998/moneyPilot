@@ -1,6 +1,6 @@
 # 012 — Exclusão de conta
 
-**Status:** em implementação
+**Status:** entregue
 **Branch:** feature/012-exclusao-de-conta
 **Depende de:** 004 (login com Google), 006 (perfil)
 
