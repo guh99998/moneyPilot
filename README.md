@@ -1,4 +1,26 @@
-# money-pilot
+# moneyPilot
+
+> Seu dinheiro. Seu rumo. Seu futuro.
+
+**[Abrir o moneyPilot](https://moneypilot.desenvolvedorgustavolopes.com.br/)**
+
+Controle financeiro pessoal, gratuito e de código aberto: contas, lançamentos, orçamento mensal, contas a pagar e a receber e previsão de fluxo de caixa, em uma interface que funciona bem no computador e no celular.
+
+<p align="center">
+  <img src="docs/images/visao-geral.webp" alt="Visão geral do moneyPilot: saldo em contas, receitas e despesas do mês, fluxo de caixa projetado e próximos vencimentos" width="860">
+</p>
+
+<p align="center">
+  <img src="docs/images/a-pagar-e-receber.webp" alt="Tela de contas a pagar e a receber, com filtros, status e ações por título" width="560">
+  &nbsp;
+  <img src="docs/images/visao-geral-celular.webp" alt="Visão geral no celular" width="200">
+</p>
+
+<sub>Imagens geradas com dados fictícios.</sub>
+
+**Stack:** Java 21 · Spring Boot · PostgreSQL · Flyway · JavaScript puro, sem build · Testcontainers · Docker.
+
+Os detalhes de produto, arquitetura, API e deploy estão abaixo. As funcionalidades nascem de [specs públicas](specs/README.md) (Spec-Driven Development).
 
 Aplicação de controle financeiro pessoal: contas, lançamentos, transferências, orçamento mensal, contas a pagar e a receber (com parcelamento, baixa em lote e recorrência), previsão de fluxo de caixa e relatórios. Backend em Spring Boot com API REST, e um cliente web servido pela própria aplicação.
 
@@ -85,6 +107,7 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Conta não verificada que entra pelo Google fica verificada e perde a senha.** Alguém pode ter se cadastrado com o e-mail de outra pessoa; se a senha ficasse, essa pessoa manteria o acesso.
 - **Conta sem senha usa o reset (003) para criar uma.** Login por senha numa conta sem senha é o mesmo `401` de senha errada; trocar senha e e-mail tratam a senha atual como errada. Vincular e desvincular o Google pedem a senha atual, e desvincular só é permitido a quem tem senha. O contador é o mesmo da troca de senha (`password-change:<id>`).
 - **Foto: só a URL do Google**, atualizada a cada entrada com o Google. "Remover" liga `avatar_hidden` (a URL deixa de ser exposta e de ser atualizada) até a pessoa pedir "Usar foto do Google". Desvincular apaga a URL.
+- **Exclusão de conta na hora, confirmada por quem a pessoa é** (spec 012). Conta com senha confirma com a senha (mesmo limite de 5 falhas em 15 minutos da troca de senha, `429` depois); conta só com Google, com uma credencial nova cujo `sub` precisa ser o vinculado. A palavra "EXCLUIR" existe só na tela. Numa transação só e em lote, filho antes de pai (nenhuma FK tem `ON DELETE CASCADE`): títulos, recorrências, lançamentos, orçamentos, alertas dispensados, chamados de suporte, categorias próprias, contas, tokens e usuário; as categorias globais ficam. O aviso por e-mail sai **depois** do commit e, se falhar, só vai para o log. Os access tokens caem sozinhos (o usuário não existe mais, `401`) e as outras sessões, porque os refresh tokens foram apagados. O e-mail fica livre para novo cadastro. Não há migration. Backups antigos ainda guardam os dados até serem substituídos (prazo na política de privacidade, spec 024).
 - **O access token identifica o usuário pelo id, não pelo e-mail** (`sub` = id). Assim a troca de e-mail não deixa tokens órfãos nem os faz apontar para outra conta. Tokens antigos, com e-mail no `sub`, são recusados (`401`) e o cliente renova sozinho.
 - **Troca de e-mail em duas etapas.** O pedido exige a senha atual e manda um link ao e-mail novo; até o clique, o e-mail antigo segue valendo para login e recuperação. O token (256 bits, só o SHA-256 vai ao banco) vale 24 horas, é de uso único e há no máximo um pedido por usuário: pedir de novo invalida o link anterior. O link usa `#` (`/app/#/confirmar-email?token=…`), então o token não chega a log de servidor ou proxy. Confirmar não exige login: grava o e-mail novo (minúsculas, sem espaços), apaga o pedido, encerra as outras sessões como na troca de senha e avisa o e-mail antigo (falha no aviso só vai para o log). Limites: senha errada divide o contador da troca de senha; no máximo 3 pedidos por hora por usuário.
 - **Troca de senha encerra as outras sessões e mantém a atual.** O servidor identifica a sessão atual pelo cookie de refresh e **apaga** (não revoga) os refresh tokens ativos das demais: um token revogado que voltasse a ser usado acionaria a detecção de reuso acima e derrubaria também a sessão que trocou a senha. As outras sessões caem na próxima renovação, quando o access token de 15 minutos expira. A rota fica sob `/auth/` porque o cookie só é enviado a essa árvore.
@@ -127,6 +150,7 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `POST` | `/profile/google/unlink` | Desvincula o Google (`currentPassword`) (`204`; `400` senha errada; `409` conta sem senha ou sem vínculo) |
 | `DELETE` | `/profile/avatar` | Oculta a foto: as iniciais aparecem no lugar (`204`) |
 | `POST` | `/profile/avatar/google` | Volta a usar a foto do Google (`204`; `409` sem vínculo) |
+| `POST` | `/profile/deletion` | Exclui a conta e todos os dados, na hora e sem volta (`currentPassword` em conta com senha; `credential` do Google em conta só com Google) (`204` e limpa o cookie de refresh; `400` confirmação ausente, senha errada ou Google de outra conta; `429` limite de tentativas) |
 | `GET` | `/contribution/pix` | Chave Pix aleatória e QR code (`{key, qrImage}`) do apoio ao projeto (pública, sem login; `404` sem `PIX_KEY` configurada) |
 | `GET` | `/alerts` | Alertas ativos do usuário (`count` e `alerts[]`); os dispensados ficam de fora |
 | `POST` | `/alerts/dismiss` | Dispensa um alerta pela chave (`204`; `404` se não há alerta ativo com ela) |
@@ -186,7 +210,7 @@ Erro sempre no mesmo formato, com `fieldErrors` preenchido quando a falha é de 
 Servido pela própria aplicação, a partir de `src/main/resources/static`: o **site do produto** (spec 020) na raiz `/` e o **app** em `/app/`. Sem framework e sem etapa de build: cada tela é um módulo em `js/views/` que devolve um elemento e se re-renderiza no `load()`.
 
 - **Site na raiz** (`index.html`, `css/site.css`, `js/site.js`): apresentação do produto, sempre a mesma com ou sem sessão; só o topo muda ("Entrar" e "Criar conta", ou "Abrir o app"). Um link antigo `/#/rota` (favoritos, e-mails já enviados) redireciona para `/app/#/rota`, preservando a query.
-- **App em `/app/`** (`app/index.html`): `WebConfig` redireciona `/app` para `/app/` e entrega o `index.html`. Os recursos usam caminho absoluto (`/css`, `/js`, `/image`). A sessão (token no `localStorage`, cookie de refresh em `/api/v1/auth`) não depende do caminho. Rotas públicas, além das da API: `/`, `/app`, `/app/`, `/ajuda/**`, `/privacidade/**` e `/termos/**`.
+- **App em `/app/`** (`app/index.html`): `WebConfig` redireciona `/app` para `/app/` e entrega o `index.html`. Os recursos usam caminho absoluto (`/css`, `/js`, `/image`). A sessão (token no `localStorage`, cookie de refresh em `/api/v1/auth`) não depende do caminho. Rotas públicas, além das da API: `/`, `/app`, `/app/`, `/ajuda/**`, `/privacidade/**` e `/termos/**`, `/robots.txt` e `/sitemap.xml`.
 
 - **Mobile-first**, com breakpoints em 600, 900, 1200 e 1440px. No celular a navegação vira uma barra no topo, tabelas viram cartões compactos e os filtros ficam recolhidos.
 - **Tema claro único** nas cores da marca (azul-marinho e verde da logo).
@@ -198,12 +222,16 @@ Servido pela própria aplicação, a partir de `src/main/resources/static`: o **
 - **Chamados** (`js/views/admin-tickets.js`, rota `#/admin/chamados`): só para administrador (o menu e a rota dependem de `admin` no `/profile`; o servidor é quem protege). Lista com filtro de status (abre em Aberto), marca "e-mail não enviado", abre o chamado com a mensagem como texto puro, link `mailto:` para responder e troca de status.
 - **Falar com o suporte** (`js/views/support.js`, rota `#/suporte`): item no rodapé do menu para quem está logado e link "Não consegue entrar?" no login, que abre a tela sem sessão. Pede o e-mail só sem login, mostra o contador da mensagem, bloqueia o duplo envio, mantém o texto em caso de erro e confirma com o número do chamado.
 - **Usando com IA** (`js/views/ai-guide.js`, rota pública `/app/#/usando-com-ia`): o texto pronto para o assistente, com botão "Copiar texto", e o link para o guia completo na central de ajuda. Item no rodapé do menu e link "Usar com IA" no login.
+- **SEO básico** (`seo/SeoController`): `robots.txt` e `sitemap.xml` são gerados com `PUBLIC_URL` (o sitemap exige URLs absolutas e o repositório não guarda o domínio). O sitemap lista o site, o índice da ajuda e cada página de `static/ajuda/` (página nova entra sozinha); o app (`/app/`, que também leva `noindex`) e a API ficam de fora. As páginas da ajuda têm descrição e Open Graph básico; o host canônico vem do redirecionamento `308` de `CANONICAL_HOST`.
+- **Privacidade e termos** (spec 024, `static/privacidade/` e `static/termos/`, públicas): páginas estáticas com a política de privacidade (dados, finalidade, provedores, retenção, direitos) e os termos de uso, com a data da última atualização, linkadas no rodapé do site e da ajuda e no aviso "Ao criar a conta, você concorda…" da tela de cadastro (sem checkbox nem registro de aceite). A retenção descrita é a real da operação: backups de 14 dias na VPS e de 30 dias no R2; **mudou a operação, atualize o texto e a data**. As fontes (Manrope e Bricolage Grotesque, licença OFL) são servidas de `static/fonts/`, sem Google Fonts.
 - **Central de ajuda** (spec 021, `static/ajuda/`, pública em `/ajuda/`): um índice e 12 tutoriais em texto (para que serve, passo a passo, dúvidas comuns), sem imagens, com o mesmo topo e rodapé do site. `WebConfig` redireciona `/ajuda` para `/ajuda/`. Cada tela logada tem um "?" ao lado do título (`js/help.js`, montado por `pageHead`) que abre o tutorial dela em nova aba; tela sem tutorial cai no índice. O guia "Usando com IA" da ajuda traz o caminho simples primeiro e a seção "Para desenvolvedores" (tokens, renovação, Swagger) por último. Mudou uma tela? Revise o tutorial dela.
 - **Ordenação por coluna** em Lançamentos, A pagar e receber e Contas: clicar no cabeçalho ordena, clicar de novo inverte.
 
 ## Desenvolvimento
 
 Novas features seguem Spec-Driven Development: cada uma tem uma pasta em [`specs/`](specs/README.md) com spec, plano técnico e tarefas, aprovados antes do código. As regras de trabalho, branches e commits estão no [`CLAUDE.md`](CLAUDE.md).
+
+**Dependências:** o Dependabot (`.github/dependabot.yml`) abre PRs toda segunda-feira, sempre contra a `develop`: Maven, GitHub Actions e a imagem do Dockerfile, com minor e patch agrupados e major em PRs separados. As atualizações de **segurança** abrem PR contra a branch padrão (`main`) e ignoram esse destino: redirecione-as para a `develop` (ou feche e refaça lá).
 
 ## Rodando localmente
 
@@ -288,6 +316,6 @@ O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e
 
 ## Próximos passos
 
-- Exclusão de conta (spec própria): quem só tem Google confirma entrando de novo com o Google.
+- Rascunhos de spec ainda sem regras definidas: boas-vindas (013), autenticação em dois fatores (014), investimentos (015), fatura do cartão de crédito (016), marcos de uso (022), histórico de notificações (023) e política de privacidade (024).
 - Ordenar títulos e lançamentos pelo nome da categoria e da conta (hoje a ordenação cobre data, descrição, valor e tipo).
-- Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), fatura de cartão de crédito, importação de extrato CSV, Redis e RabbitMQ.
+- Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), importação de extrato CSV, Redis e RabbitMQ.

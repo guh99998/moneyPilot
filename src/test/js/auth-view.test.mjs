@@ -287,3 +287,21 @@ test('the login links to the "Usando com IA" guide, and the register screen does
     await switchToRegister(register);
     assert.equal(findByText(register, 'button', 'Usar com IA'), undefined);
 });
+
+// Spec 024 CA3
+test('the register screen tells the person they agree with the terms and the privacy policy, in new tabs', async () => {
+    startServer([]);
+    const view = open();
+    assert.equal(findAll(view, (node) => node.className === 'auth-terms').length, 0);
+
+    await switchToRegister(view);
+
+    const notice = findAll(view, (node) => node.className === 'auth-terms')[0];
+    assert.match(notice.textContent, /Ao criar a conta, você concorda com os Termos de uso e a Política de privacidade\./);
+    const links = findByTag(notice, 'a');
+    assert.deepEqual(links.map((a) => a.getAttribute('href')), ['/termos/', '/privacidade/']);
+    for (const link of links) {
+        assert.equal(link.getAttribute('target'), '_blank');
+        assert.equal(link.getAttribute('rel'), 'noopener');
+    }
+});

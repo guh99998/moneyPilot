@@ -60,7 +60,9 @@ export function forgotPasswordForm({ email = '', onSent }) {
     return { form, emailInput };
 }
 
-export function renderAuth(onAuthenticated) {
+/** `notice`: aviso mostrado uma vez acima do login (ex.: "Sua conta foi excluída"). */
+export function renderAuth(onAuthenticated, options = {}) {
+    let notice = options.notice || null;
     let mode = 'login';
     let pendingEmail = '';
     const wrap = el('div', { class: 'auth-wrap' });
@@ -275,11 +277,25 @@ export function renderAuth(onAuthenticated) {
             }
         });
 
+        // O aviso aparece uma vez só; recebe o foco porque um role=status criado já com o texto não é anunciado.
+        const noticeNode = isLogin && notice
+            ? el('p', { class: 'auth-notice', role: 'status', tabindex: '-1', text: notice })
+            : null;
+        if (noticeNode) notice = null;
+
         const card = el('div', { class: 'card auth-card' }, [
             el('img', { class: 'auth-logo', src: '/image/money-pilot-logo.png', alt: 'moneyPilot' }),
+            noticeNode,
             form,
             google,
             isLogin ? el('p', { class: 'auth-note', text: 'Criou a conta com o Google? Use Entrar com Google.' }) : null,
+            isLogin ? null : el('p', { class: 'auth-terms' }, [
+                'Ao criar a conta, você concorda com os ',
+                el('a', { href: '/termos/', target: '_blank', rel: 'noopener', text: 'Termos de uso' }),
+                ' e a ',
+                el('a', { href: '/privacidade/', target: '_blank', rel: 'noopener', text: 'Política de privacidade' }),
+                '.'
+            ]),
             el('p', { class: 'auth-switch' }, [
                 el('span', { text: isLogin ? 'Ainda não tem conta?' : 'Já tem conta?' }),
                 el('button', {
@@ -315,7 +331,8 @@ export function renderAuth(onAuthenticated) {
         ]);
 
         wrap.replaceChildren(card);
-        (isLogin ? emailInput : nameInput).focus();
+        if (noticeNode) noticeNode.focus();
+        else (isLogin ? emailInput : nameInput).focus();
     }
 
     draw();

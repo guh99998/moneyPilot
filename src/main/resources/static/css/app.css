@@ -1,5 +1,23 @@
 /* moneyPilot — tema claro único, cores da marca (azul-marinho + verde da logo).
    Mobile-first: o CSS base é o celular; @media (min-width) acrescenta o resto. */
+@font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 400 800;
+    font-display: swap;
+    src: url(/fonts/manrope-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Bricolage Grotesque';
+    font-style: normal;
+    font-weight: 600 800;
+    font-stretch: 100%;
+    font-display: swap;
+    src: url(/fonts/bricolage-grotesque-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
     color-scheme: light;
 
@@ -18,7 +36,7 @@
     --border-strong:  #c9d3d1;
     --text:           #17212e;
     --text-secondary: #4b5866;
-    --text-muted:     #75828e;
+    --text-muted:     #64707c;
 
     /* interação */
     --accent:         var(--navy);
@@ -379,6 +397,8 @@ button, .btn {
 }
 button:hover:not(:disabled), .btn:hover { background: var(--surface-2); }
 button:disabled { opacity: .5; cursor: not-allowed; }
+/* Sem o atraso do toque duplo (zoom) nos controles, no celular. */
+a, button, input, select, textarea, summary { touch-action: manipulation; }
 .btn-primary { background: var(--navy); border-color: var(--navy); color: #fff; }
 .btn-primary:hover:not(:disabled) { background: var(--navy-2); }
 .btn-ghost { border-color: transparent; background: transparent; padding: .3rem .5rem; color: var(--text-secondary); }
@@ -705,6 +725,8 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .google-slot { display: flex; justify-content: center; min-height: 44px; max-width: 100%; overflow: hidden; }
 .auth-note { text-align: center; font-size: .8rem; color: var(--text-secondary); margin: .75rem 0 0; }
+.auth-terms { text-align: center; font-size: .8rem; color: var(--text-secondary); margin: .75rem 0 0; overflow-wrap: anywhere; }
+.auth-terms a { display: inline-block; padding: .65rem 0; margin: -.65rem 0; color: var(--navy); font-weight: 600; }
 
 /* Avatar: foto do Google ou iniciais */
 .avatar {
@@ -730,6 +752,26 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .profile-photo-body { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; min-width: 0; }
 .profile-photo-actions { display: flex; flex-wrap: wrap; gap: .25rem; }
 .profile-photo-actions button, .profile-card .btn-danger { min-height: 44px; }
+
+/* ---------- excluir conta (spec 012) ---------- */
+.danger-card { border-color: color-mix(in srgb, var(--critical) 35%, var(--border)); }
+.farewell { background: var(--accent-soft); border-radius: 10px; padding: .85rem 1rem; margin-bottom: 1rem; color: var(--text-secondary); font-size: .9rem; }
+.farewell p { margin: 0; overflow-wrap: anywhere; }
+.farewell .farewell-title { color: var(--navy); font-weight: 800; font-size: 1.05rem; margin-bottom: .35rem; text-wrap: balance; }
+.delete-list { margin: 0 0 1rem; padding-left: 1.2rem; font-size: .88rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: .3rem; }
+.delete-list li { overflow-wrap: anywhere; }
+.delete-list .delete-strong { color: var(--critical); font-weight: 700; }
+.btn-delete { border: 1px solid var(--critical); min-height: 44px; font-weight: 700; width: 100%; justify-content: center; }
+.btn-delete:hover:not(:disabled) { background: var(--critical); color: #fff; }
+/* O cinza discreto do tema (--text-muted) fica abaixo de 4,5:1 sobre branco; neste cartão o texto de apoio sobe de contraste. */
+.danger-card .meter-foot { color: var(--text-secondary); }
+.danger-card .card-head .sub { color: var(--critical); font-weight: 700; }
+.google-block.is-locked { opacity: .45; pointer-events: none; }
+.auth-notice { background: var(--accent-soft); color: var(--navy); border-radius: 10px; padding: .7rem .9rem; margin: 0 0 1rem; font-size: .88rem; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+.auth-notice:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (min-width: 600px) {
+    .btn-delete { width: auto; }
+}
 
 /* ---------- misc ---------- */
 .empty { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: .9rem; }

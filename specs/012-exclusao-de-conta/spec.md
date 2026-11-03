@@ -1,6 +1,6 @@
 # 012 — Exclusão de conta
 
-**Status:** rascunho
+**Status:** entregue
 **Branch:** feature/012-exclusao-de-conta
 **Depende de:** 004 (login com Google), 006 (perfil)
 
@@ -16,11 +16,16 @@ A pessoa apaga a própria conta pelo perfil, confirmando que é ela, e todos os 
 
 - **Onde:** um cartão "Excluir conta" no fim do perfil, com o aviso de que a ação não pode ser desfeita.
 - **Confirmação (decidido na 004):**
-  - conta com senha: informa a senha atual;
-  - conta só com Google: confirma entrando de novo com o Google (a conta Google precisa ser a vinculada).
-  - Proposta: além disso, digitar uma palavra de confirmação (ex.: "EXCLUIR").
-- **O que é apagado (proposta):** tudo o que é da conta: contas bancárias, categorias próprias, lançamentos, orçamentos, títulos e recorrências, alertas dispensados, chamados de suporte da conta (`support_tickets`, spec 017), sessões e todos os tokens (verificação, reset, troca de e-mail). Categorias globais ficam.
-- **Quando (proposta):** na hora, sem período de arrependimento.
+  - conta **com senha** (com ou sem Google vinculado): informa a senha atual;
+  - conta **só com Google**: confirma com uma credencial nova do Google, e a conta Google precisa ser a vinculada.
+  - Na tela, além disso, a pessoa digita a palavra **"EXCLUIR"** para habilitar o botão. A palavra é só da tela: a API pede apenas a senha ou o Google.
+- **O que é apagado:** tudo o que é da conta: contas bancárias, categorias próprias, lançamentos, orçamentos, títulos e recorrências, alertas dispensados, chamados de suporte da conta (`support_tickets`, spec 017), sessões e todos os tokens (verificação, reset, troca de e-mail). Categorias globais ficam.
+- **O que a tela diz:** antes de confirmar, o cartão deixa claro que:
+  - a conta e os dados serão excluídos **de imediato** e isso não pode ser desfeito;
+  - os chamados de suporte da conta serão **encerrados** (e apagados junto);
+  - lamentamos a saída ("Sentimos muito por ver você ir 😢") e agradecemos por ter usado a plataforma (tristes, mas felizes por isso), e as **portas continuam abertas** para a pessoa voltar quando quiser, com um novo cadastro.
+- **Quando:** na hora, sem período de arrependimento.
+- **Motivo:** não é perguntado.
 - **Depois:** a sessão atual e as outras são encerradas, a pessoa volta para a tela de login com a mensagem "Sua conta foi excluída". Um e-mail de aviso vai para o endereço da conta.
 - O e-mail fica livre para um novo cadastro.
 - **Limite:** senha atual errada conta no mesmo limite da troca de senha (5 em 15 minutos).
@@ -33,6 +38,7 @@ A pessoa apaga a própria conta pelo perfil, confirmando que é ela, e todos os 
 - [ ] **CA4** — Dada uma conta excluída, quando alguém tenta entrar com o e-mail dela, então recebe o mesmo `401` de credenciais inválidas, e o e-mail pode ser cadastrado de novo.
 - [ ] **CA5** — Dadas sessões abertas em outros aparelhos, quando a conta é excluída, então elas caem na próxima requisição.
 - [ ] **CA6** — Dada a exclusão, quando concluída, então chega um aviso ao e-mail da conta.
+- [ ] **CA7** — Dada a tela de exclusão, quando a pessoa a abre, então vê o aviso de exclusão imediata e irreversível, o encerramento dos chamados, a mensagem de despedida e o convite para voltar, antes de confirmar.
 
 ## Casos de borda
 
@@ -40,7 +46,7 @@ A pessoa apaga a própria conta pelo perfil, confirmando que é ela, e todos os 
 - Conta com muitos dados (milhares de lançamentos): a exclusão termina numa transação só
 - Links de verificação, reset ou troca de e-mail pendentes: deixam de valer
 - Access token ainda válido (até 15 minutos) depois da exclusão: recusado, porque a conta não existe mais
-- Backup diário: os dados ainda aparecem nos backups até eles serem substituídos
+- Backup diário: os dados ainda aparecem nos backups até eles serem substituídos (por quanto tempo é assunto da política de privacidade, spec 024)
 
 ## Fora de escopo
 
@@ -48,9 +54,11 @@ A pessoa apaga a própria conta pelo perfil, confirmando que é ela, e todos os 
 - Desativar a conta temporariamente
 - Exclusão feita pelo suporte
 
-## Perguntas em aberto
+## Decisões
 
-- Exclusão na hora ou com prazo de arrependimento (ex.: 7 dias, com link para cancelar)?
-- Quer a palavra de confirmação ("EXCLUIR") além da senha ou do Google?
-- Quer perguntar o motivo (opcional) antes de excluir? Se sim, para onde vai (e-mail do suporte da 010)?
-- Por quanto tempo os backups guardam dados? Isso precisa aparecer na política de privacidade (C4).
+- Exclusão na hora, sem prazo de arrependimento.
+- A palavra "EXCLUIR" existe só na tela; a API não a exige.
+- Sem pergunta de motivo.
+- A despedida (com emoji) aparece só na tela; o e-mail de aviso não a leva.
+- Chamados de suporte da conta são apagados junto.
+- Retenção dos backups fica fora desta spec e é tratada na 024.

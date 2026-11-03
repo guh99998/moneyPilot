@@ -1,0 +1,44 @@
+# Atualizações de dependências, uma vez por semana, sempre contra a develop (fluxo: feature -> develop -> main).
+# Minor e patch de cada ecossistema vêm num PR só; major abre um PR por dependência, para revisar com calma.
+# Atenção: os "security updates" do Dependabot abrem PR contra a branch padrão (main) e ignoram o target-branch;
+# redirecione esses PRs para a develop (ou feche e refaça lá).
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
+    groups:
+      maven-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
+    groups:
+      docker-minor-patch:
+        update-types: [minor, patch]

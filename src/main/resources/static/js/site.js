@@ -66,6 +66,6 @@ function start() {
 }
 
 const page = typeof document !== 'undefined' ? document.body?.dataset?.page : null;
-if (page === 'site' || page === 'help') {
+if (page === 'site' || page === 'help' || page === 'legal') {
     start();
 }

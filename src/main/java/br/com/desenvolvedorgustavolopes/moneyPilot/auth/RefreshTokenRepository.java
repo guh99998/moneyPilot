@@ -41,4 +41,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     """)
     int deleteAllActiveByUserIdExcept(@Param("userId") Long userId,
                                       @Param("keepId") Long keepId);
+
+    /** Exclusão de conta (spec 012): apaga em lote, sem carregar entidades. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM RefreshToken t WHERE t.userId = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }

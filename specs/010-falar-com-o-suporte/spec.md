@@ -1,6 +1,6 @@
 # 010 — Falar com o suporte
 
-**Status:** aprovada
+**Status:** entregue
 **Branch:** feature/010-falar-com-o-suporte
 **Depende de:** 001 (e-mail), 005 (limite de tentativas)
 

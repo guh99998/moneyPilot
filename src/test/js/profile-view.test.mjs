@@ -28,17 +28,19 @@ const byId = (view, id) => findAll(view, (node) => node.getAttribute('id') === i
 const byClass = (view, name) => findAll(view, (node) => node.className === name);
 const passwordForm = (view) => findByTag(view, 'form')[2];
 
-test('the four password fields of the profile have the eye and their labels point to them', async () => {
+test('the five password fields of the profile have the eye and their labels point to them', async () => {
     startServer();
     const view = await renderProfile();
 
-    assert.equal(byClass(view, 'password-toggle').length, 4);
+    assert.equal(byClass(view, 'password-toggle').length, 5);
 
     const labelled = findByTag(view, 'label')
         .filter((label) => label.getAttribute('for')?.startsWith('profile-'))
         .map((label) => [label.textContent, label.getAttribute('for')]);
     assert.deepEqual(labelled.sort(), [
         ['Nova senha', 'profile-new-password'],
+        ['Para confirmar, digite EXCLUIR', 'profile-delete-word'],
+        ['Senha atual', 'profile-delete-password'],
         ['Senha atual', 'profile-current-password'],
         ['Senha atual', 'profile-email-password'],
         ['Senha atual', 'profile-google-password']

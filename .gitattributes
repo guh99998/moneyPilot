@@ -1,2 +1,5 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+
+# Páginas estáticas são servidas como estão e testadas contra texto com LF: sem CRLF no Windows
+src/main/resources/static/**/*.html text eol=lf

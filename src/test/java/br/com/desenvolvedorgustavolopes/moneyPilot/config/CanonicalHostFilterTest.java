@@ -14,7 +14,7 @@ class CanonicalHostFilterTest {
     @Test
     void redirectsOtherHostKeepingPathAndQuery() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/transactions");
-        request.setServerName("money-pilot-3ff32d929aca.herokuapp.com");
+        request.setServerName("app-antigo.exemplo.com");
         request.setQueryString("page=2");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
