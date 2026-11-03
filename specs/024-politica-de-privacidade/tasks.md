@@ -11,3 +11,11 @@
 - [ ] **T7** — Operação, fora do código (Gustavo): regra de ciclo de vida de 30 dias no bucket R2 e limite de log do container do Caddy
 - [ ] **T8** — Revisão com as skills de UI e largura de 390px e 1280px (CA6), anotada abaixo
 - [ ] **T9** — Merge na `develop`; PR para a `main` só depois da 012 em produção e da T7 feita
+
+## Revisão com as skills (parcial)
+
+- **Estrutura e acessibilidade:** um `h1` por página, `h2` por seção, link "Pular para o conteúdo", `main` e `nav` com rótulo, `time` com `datetime`, `lang="pt-BR"`. Links com texto próprio, sem "clique aqui".
+- **Responsividade:** mesma coluna de 46 rem das páginas de ajuda, com `overflow-wrap: anywhere`; o aviso do cadastro quebra linha sem estourar o cartão.
+- **Fontes:** `font-display: swap`, preload só da Manrope, zero requisições a domínios de fonte (teste).
+- **Promessas:** o texto só afirma o que o app e a operação fazem; por isso "avisamos por e-mail" e não "no app".
+- **Falta (T8):** conferir a 390 px e 1280 px num navegador, o que a Claude não consegue fazer neste ambiente.
