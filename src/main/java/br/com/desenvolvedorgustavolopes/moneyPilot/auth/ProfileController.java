@@ -9,8 +9,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 @Tag(name = "Perfil", description = "Dados e senha da pessoa autenticada.")
 @RestController
@@ -19,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 public class ProfileController {
 
     private final ProfileService service;
+    private final AccountDeletionService deletionService;
+    private final RefreshCookies refreshCookies;
 
     @Operation(summary = "Consulta o perfil", description = "Nome, e-mail, avatar e se a conta tem senha e Google ligados.")
     @ApiResponses({
@@ -39,6 +45,22 @@ public class ProfileController {
     @PutMapping("/profile")
     public ProfileResponse updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return service.updateName(request);
+    }
+
+    // POST com corpo, como o /profile/google/unlink: a confirmação (senha ou Google) vai junto.
+    @Operation(summary = "Exclui a conta", description = "Apaga na hora e sem volta a conta e todos os dados dela (contas, lançamentos, categorias, orçamentos, títulos e chamados) e encerra todas as sessões. Conta com senha confirma com `currentPassword`; conta só com Google confirma com `credential`. Um aviso é enviado ao e-mail da conta.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Conta excluída"),
+            @ApiResponse(responseCode = "400", description = "Confirmação ausente, senha errada ou Google de outra conta", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Sem sessão ou token de acesso inválido ou vencido", content = @Content),
+            @ApiResponse(responseCode = "429", description = "Muitas tentativas; veja o cabeçalho Retry-After", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/profile/deletion")
+    public ResponseEntity<Void> deleteAccount(@Valid @RequestBody DeleteAccountRequest request) {
+        deletionService.delete(request);
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, refreshCookies.build("", Duration.ZERO).toString())
+                .build();
     }
 
     // Fica sob /auth porque o cookie refresh_token só é enviado a essa árvore de rotas.

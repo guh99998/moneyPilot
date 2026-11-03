@@ -537,6 +537,16 @@ public class GlobalExceptionHandler {
         return fieldError("currentPassword", ex.getMessage());
     }
 
+    @ExceptionHandler(GoogleAccountMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleGoogleAccountMismatch(GoogleAccountMismatchException ex) {
+        return fieldError("credential", ex.getMessage());
+    }
+
+    @ExceptionHandler(DeletionConfirmationException.class)
+    public ResponseEntity<ErrorResponse> handleDeletionConfirmation(DeletionConfirmationException ex) {
+        return fieldError(ex.getField(), ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidGoogleCredentialException.class)
     public ResponseEntity<ErrorResponse> handleInvalidGoogleCredential(InvalidGoogleCredentialException ex) {
         return fieldError("credential", ex.getMessage());
