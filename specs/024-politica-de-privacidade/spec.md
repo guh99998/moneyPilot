@@ -1,6 +1,6 @@
 # 024 — Política de privacidade e termos de uso
 
-**Status:** rascunho (decisões registradas; retenção levantada; aguardando as ações de operação e a aprovação do Gustavo)
+**Status:** entregue
 **Branch:** feature/024-politica-de-privacidade
 **Depende de:** 020 (site do produto, onde as páginas vivem) e 012 (exclusão de conta; a política só promete a exclusão depois que a 012 estiver em produção)
 

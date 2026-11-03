@@ -1,6 +1,6 @@
 # 024 — Plano: política de privacidade e termos de uso
 
-**Status:** rascunho (retenção levantada; aguardando as duas ações do Gustavo na operação e a aprovação do plano)
+**Status:** entregue
 
 ## Abordagem
 
