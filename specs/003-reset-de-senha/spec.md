@@ -1,6 +1,6 @@
 # 003 — Reset de senha
 
-**Status:** aprovada
+**Status:** entregue
 **Branch:** feature/003-reset-de-senha
 **Roteiro:** D4 · **Depende de:** 001, 002
 

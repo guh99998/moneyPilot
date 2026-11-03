@@ -1,6 +1,6 @@
 # 005 — Limite de tentativas
 
-**Status:** aprovada
+**Status:** entregue
 **Branch:** feature/005-rate-limiting
 **Roteiro:** D6
 
