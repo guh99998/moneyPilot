@@ -2,6 +2,7 @@ import { api, ApiError, session } from '../api.js';
 import { el, toast, pageHead, avatar } from '../ui.js';
 import { HINT, passwordInput as passwordField } from '../password.js';
 import { googleButton, googleErrorMessage } from '../google.js';
+import { deleteCard } from './profile-delete.js';
 
 const CREATED_AT_FORMAT = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'America/Sao_Paulo' });
 
@@ -26,7 +27,11 @@ function fieldMessage(field, message) {
         if (message.includes('in use')) return 'Este e-mail já está em uso por outra conta.';
         return 'Informe um e-mail válido.';
     }
-    if (field === 'credential') return 'Não foi possível validar a conta Google. Tente de novo.';
+    if (field === 'credential') {
+        return message.includes('linked')
+            ? 'Essa não é a conta Google vinculada a esta conta.'
+            : 'Não foi possível validar a conta Google. Tente de novo.';
+    }
     if (field === 'name') {
         return message.includes('blank') ? 'Informe o nome.' : 'O nome deve ter até 255 caracteres.';
     }
@@ -83,7 +88,8 @@ async function load(view, focusKey) {
         dataCard(profile, reload, focus),
         emailCard(profile, focus),
         passwordCard(profile, focus),
-        googleCard(profile, reload, focus)
+        googleCard(profile, reload, focus),
+        deleteCard(profile, { fieldRow, showErrors, resetErrors })
     );
     focus[focusKey]?.focus();
 }

@@ -27,6 +27,7 @@ class FakeElement {
         const element = this;
         this.classList = {
             add: (name) => element.className = [...new Set([...element.className.split(' ').filter(Boolean), name])].join(' '),
+            remove: (name) => element.className = element.className.split(' ').filter((item) => item && item !== name).join(' '),
             contains: (name) => element.className.split(' ').includes(name)
         };
     }

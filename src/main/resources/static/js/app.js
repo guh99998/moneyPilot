@@ -222,10 +222,12 @@ async function render() {
     }
 
     if (!session.active) {
+        const notice = pendingNotice;
+        pendingNotice = null;
         root.append(renderAuth(() => {
             window.location.hash = '#/dashboard';
             render();
-        }));
+        }, { notice }));
         return;
     }
 
@@ -247,11 +249,20 @@ async function render() {
     }
 }
 
+let pendingNotice = null;
+
 window.addEventListener('hashchange', render);
 window.addEventListener('profile:updated', () => {
     const chipName = document.querySelector('.profile-chip-name');
     if (chipName) chipName.textContent = session.name || session.email || '';
     document.querySelector('.profile-chip-avatar')?.replaceChildren(userAvatar());
+});
+// A conta foi excluída pelo perfil: a sessão já foi limpa; volta ao login com o aviso, uma vez só.
+window.addEventListener('account:deleted', () => {
+    pendingNotice = 'Sua conta foi excluída. Obrigado por ter usado o moneyPilot.';
+    resetAlerts();
+    window.location.hash = '';
+    render();
 });
 window.addEventListener('session:expired', () => {
     toast('Sua sessão expirou. Entre novamente.', 'error');

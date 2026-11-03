@@ -480,6 +480,29 @@ test('the Google config and the Google login are anonymous: a 401 or 409 never f
     assert.equal(session.token, 'valid');
 });
 
+test('deleting the account posts the confirmation with the session token', async () => {
+    session.start('valid', 'user@example.com');
+    const sent = [];
+    globalThis.fetch = async (url, options = {}) => {
+        sent.push({ path: new URL(url).pathname, method: options.method, body: options.body, authorization: options.headers?.Authorization });
+        return new Response(null, { status: 204 });
+    };
+
+    await api.profile.deleteAccount({ currentPassword: 'minha frase secreta' });
+    await api.profile.deleteAccount({ credential: 'id-token' });
+
+    assert.deepEqual(sent, [
+        {
+            path: '/api/v1/profile/deletion', method: 'POST', authorization: 'Bearer valid',
+            body: JSON.stringify({ currentPassword: 'minha frase secreta' })
+        },
+        {
+            path: '/api/v1/profile/deletion', method: 'POST', authorization: 'Bearer valid',
+            body: JSON.stringify({ credential: 'id-token' })
+        }
+    ]);
+});
+
 test('linking and unlinking Google carry the current password with the session token', async () => {
     session.start('valid', 'user@example.com');
     const sent = [];

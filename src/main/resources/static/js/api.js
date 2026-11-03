@@ -254,7 +254,9 @@ export const api = {
         unlinkGoogle: (currentPassword) =>
             request('/profile/google/unlink', { method: 'POST', body: { currentPassword } }),
         hideAvatar: () => request('/profile/avatar', { method: 'DELETE' }),
-        useGoogleAvatar: () => request('/profile/avatar/google', { method: 'POST' })
+        useGoogleAvatar: () => request('/profile/avatar/google', { method: 'POST' }),
+        // Conta com senha manda `currentPassword`; conta só com Google manda `credential`. Apaga na hora, sem volta.
+        deleteAccount: (confirmation) => request('/profile/deletion', { method: 'POST', body: confirmation })
     },
     changePassword: (currentPassword, newPassword) =>
         request('/auth/password', { method: 'POST', body: { currentPassword, newPassword } }),
