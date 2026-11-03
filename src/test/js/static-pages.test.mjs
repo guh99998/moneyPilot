@@ -15,6 +15,8 @@ test('the site has a title, a description and link preview tags', () => {
         assert.ok(site.includes(`property="${tag}"`), tag);
     }
     assert.ok(site.includes('name="twitter:card"'));
+    assert.match(site, /property="og:image" content="https:\/\/[^"]+"/, 'og:image is an absolute URL');
+    assert.match(site, /<link rel="canonical" href="https:\/\/[^"]+\/">/);
 });
 
 test('the site sections come in the order of the spec', () => {

@@ -1,4 +1,26 @@
-# money-pilot
+# moneyPilot
+
+> Seu dinheiro. Seu rumo. Seu futuro.
+
+**[Abrir o moneyPilot](https://moneypilot.desenvolvedorgustavolopes.com.br/)**
+
+Controle financeiro pessoal, gratuito e de código aberto: contas, lançamentos, orçamento mensal, contas a pagar e a receber e previsão de fluxo de caixa, em uma interface que funciona bem no computador e no celular.
+
+<p align="center">
+  <img src="docs/images/visao-geral.webp" alt="Visão geral do moneyPilot: saldo em contas, receitas e despesas do mês, fluxo de caixa projetado e próximos vencimentos" width="860">
+</p>
+
+<p align="center">
+  <img src="docs/images/a-pagar-e-receber.webp" alt="Tela de contas a pagar e a receber, com filtros, status e ações por título" width="560">
+  &nbsp;
+  <img src="docs/images/visao-geral-celular.webp" alt="Visão geral no celular" width="200">
+</p>
+
+<sub>Imagens geradas com dados fictícios.</sub>
+
+**Stack:** Java 21 · Spring Boot · PostgreSQL · Flyway · JavaScript puro, sem build · Testcontainers · Docker.
+
+Os detalhes de produto, arquitetura, API e deploy estão abaixo. As funcionalidades nascem de [specs públicas](specs/README.md) (Spec-Driven Development).
 
 Aplicação de controle financeiro pessoal: contas, lançamentos, transferências, orçamento mensal, contas a pagar e a receber (com parcelamento, baixa em lote e recorrência), previsão de fluxo de caixa e relatórios. Backend em Spring Boot com API REST, e um cliente web servido pela própria aplicação.
 
