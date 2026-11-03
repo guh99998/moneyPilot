@@ -17,5 +17,5 @@
 - **Estrutura e acessibilidade:** um `h1` por página, `h2` por seção, link "Pular para o conteúdo", `main` e `nav` com rótulo, `time` com `datetime`, `lang="pt-BR"`. Links com texto próprio, sem "clique aqui".
 - **Responsividade:** mesma coluna de 46 rem das páginas de ajuda, com `overflow-wrap: anywhere`; o aviso do cadastro quebra linha sem estourar o cartão.
 - **Fontes:** `font-display: swap`, preload só da Manrope, zero requisições a domínios de fonte (teste).
-- **Promessas:** o texto só afirma o que o app e a operação fazem; por isso "avisamos por e-mail" e não "no app".
+- **Promessas:** o texto só afirma o que o app e a operação fazem; o texto não promete e-mail de novidades nem aviso dentro do app; o aviso de encerramento é no site.
 - **Falta (T8):** conferir a 390 px e 1280 px num navegador, o que a Claude não consegue fazer neste ambiente.
