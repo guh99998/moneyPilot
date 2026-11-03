@@ -23,7 +23,7 @@ A pessoa apaga a própria conta pelo perfil, confirmando que é ela, e todos os 
 - **O que a tela diz:** antes de confirmar, o cartão deixa claro que:
   - a conta e os dados serão excluídos **de imediato** e isso não pode ser desfeito;
   - os chamados de suporte da conta serão **encerrados** (e apagados junto);
-  - lamentamos a saída ("Sentimos muito por ver você ir") e as **portas continuam abertas** para a pessoa voltar quando quiser, com um novo cadastro.
+  - lamentamos a saída ("Sentimos muito por ver você ir 😢") e agradecemos por ter usado a plataforma (tristes, mas felizes por isso), e as **portas continuam abertas** para a pessoa voltar quando quiser, com um novo cadastro.
 - **Quando:** na hora, sem período de arrependimento.
 - **Motivo:** não é perguntado.
 - **Depois:** a sessão atual e as outras são encerradas, a pessoa volta para a tela de login com a mensagem "Sua conta foi excluída". Um e-mail de aviso vai para o endereço da conta.
@@ -59,5 +59,6 @@ A pessoa apaga a própria conta pelo perfil, confirmando que é ela, e todos os 
 - Exclusão na hora, sem prazo de arrependimento.
 - A palavra "EXCLUIR" existe só na tela; a API não a exige.
 - Sem pergunta de motivo.
+- A despedida (com emoji) aparece só na tela; o e-mail de aviso não a leva.
 - Chamados de suporte da conta são apagados junto.
 - Retenção dos backups fica fora desta spec e é tratada na 024.

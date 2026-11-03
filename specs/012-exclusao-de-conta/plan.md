@@ -1,7 +1,7 @@
 # 012 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** proposto
+**Status:** aprovado
 
 ## Abordagem
 
@@ -39,7 +39,7 @@ Sessões: o cookie de refresh é limpo com `RefreshCookies`; os access tokens ca
 ## Cliente web
 
 `static/js/views/profile.js`: cartão "Excluir conta" no fim do perfil.
-- Texto (CA7): a conta e os dados serão excluídos **de imediato** e não há como desfazer; os chamados de suporte serão **encerrados**; "Sentimos muito por ver você ir"; "As portas continuam abertas: você pode voltar quando quiser, com um novo cadastro".
+- Texto (CA7): a conta e os dados serão excluídos **de imediato** e não há como desfazer; os chamados de suporte serão **encerrados**; "Sentimos muito por ver você ir 😢" e um agradecimento por ter usado a plataforma (tristes, mas felizes por isso); a despedida fica só na tela, não no e-mail; "As portas continuam abertas: você pode voltar quando quiser, com um novo cadastro".
 - Pede a senha, ou mostra o `googleButton` (`js/google.js`) para conta só com Google, mais o campo "EXCLUIR", que habilita o botão.
 - Depois de excluir: limpa o `localStorage` da sessão (mesmas chaves do logout) e vai ao login com "Sua conta foi excluída".
 - `api.profile.deleteAccount` no cliente da API.
