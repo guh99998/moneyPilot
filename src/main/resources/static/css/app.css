@@ -1,5 +1,23 @@
 /* moneyPilot — tema claro único, cores da marca (azul-marinho + verde da logo).
    Mobile-first: o CSS base é o celular; @media (min-width) acrescenta o resto. */
+@font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 400 800;
+    font-display: swap;
+    src: url(/fonts/manrope-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Bricolage Grotesque';
+    font-style: normal;
+    font-weight: 600 800;
+    font-stretch: 100%;
+    font-display: swap;
+    src: url(/fonts/bricolage-grotesque-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
     color-scheme: light;
 
@@ -707,6 +725,8 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .google-slot { display: flex; justify-content: center; min-height: 44px; max-width: 100%; overflow: hidden; }
 .auth-note { text-align: center; font-size: .8rem; color: var(--text-secondary); margin: .75rem 0 0; }
+.auth-terms { text-align: center; font-size: .8rem; color: var(--text-secondary); margin: .75rem 0 0; overflow-wrap: anywhere; }
+.auth-terms a { display: inline-block; padding: .65rem .15rem; margin: -.65rem 0; color: var(--navy); font-weight: 600; }
 
 /* Avatar: foto do Google ou iniciais */
 .avatar {

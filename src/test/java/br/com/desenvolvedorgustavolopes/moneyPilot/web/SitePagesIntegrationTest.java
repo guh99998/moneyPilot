@@ -74,11 +74,31 @@ class SitePagesIntegrationTest extends AbstractIntegrationTest {
         assertNotEquals(401, status);
     }
 
-    // CA7
+    // Spec 024 CA1
     @Test
-    void privacyPath_isNotBehindLogin() throws Exception {
-        int status = mockMvc.perform(get("/privacidade/")).andReturn().getResponse().getStatus();
-        assertNotEquals(401, status);
+    void privacyAndTerms_redirectToTheTrailingSlash() throws Exception {
+        mockMvc.perform(get("/privacidade")).andExpect(redirectedUrl("/privacidade/"));
+        mockMvc.perform(get("/termos")).andExpect(redirectedUrl("/termos/"));
+    }
+
+    // Spec 024 CA1
+    @Test
+    void privacyAndTerms_areReadableWithoutLogin() throws Exception {
+        mockMvc.perform(get("/privacidade/"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/privacidade/index.html"));
+        mockMvc.perform(get("/termos/"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/termos/index.html"));
+        mockMvc.perform(get("/privacidade/index.html")).andExpect(status().isOk());
+        mockMvc.perform(get("/termos/index.html")).andExpect(status().isOk());
+    }
+
+    // Spec 024: as fontes do site são públicas; sem isso a página cai na fonte de sistema
+    @Test
+    void fonts_areServedWithoutLogin() throws Exception {
+        mockMvc.perform(get("/fonts/manrope-latin.woff2")).andExpect(status().isOk());
+        mockMvc.perform(get("/fonts/bricolage-grotesque-latin.woff2")).andExpect(status().isOk());
     }
 
     // Um recurso público que não existe é 404, não 500.

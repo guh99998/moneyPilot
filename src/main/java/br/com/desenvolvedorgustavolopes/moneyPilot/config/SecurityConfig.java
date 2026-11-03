@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/css/**").permitAll()
                         .requestMatchers("/js/**").permitAll()
                         .requestMatchers("/image/**").permitAll()
+                        .requestMatchers("/fonts/**").permitAll()
                         .requestMatchers("/data/**").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
                         .requestMatchers("/robots.txt", "/sitemap.xml").permitAll()

@@ -54,9 +54,9 @@ public class SeoController {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml.toString());
     }
 
-    /** O site, o índice da ajuda e cada página da ajuda; uma página nova entra sozinha. */
+    /** O site, as páginas legais, o índice da ajuda e cada página da ajuda; uma página de ajuda nova entra sozinha. */
     private List<String> publicPaths() throws IOException {
-        List<String> paths = new ArrayList<>(List.of("/", "/ajuda/"));
+        List<String> paths = new ArrayList<>(List.of("/", "/ajuda/", "/privacidade/", "/termos/"));
         List<String> help = new ArrayList<>();
         for (Resource page : new PathMatchingResourcePatternResolver().getResources(HELP_PATTERN)) {
             String name = page.getFilename();

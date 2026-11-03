@@ -289,6 +289,13 @@ export function renderAuth(onAuthenticated, options = {}) {
             form,
             google,
             isLogin ? el('p', { class: 'auth-note', text: 'Criou a conta com o Google? Use Entrar com Google.' }) : null,
+            isLogin ? null : el('p', { class: 'auth-terms' }, [
+                'Ao criar a conta, você concorda com os ',
+                el('a', { href: '/termos/', target: '_blank', rel: 'noopener', text: 'Termos de uso' }),
+                ' e a ',
+                el('a', { href: '/privacidade/', target: '_blank', rel: 'noopener', text: 'Política de privacidade' }),
+                '.'
+            ]),
             el('p', { class: 'auth-switch' }, [
                 el('span', { text: isLogin ? 'Ainda não tem conta?' : 'Já tem conta?' }),
                 el('button', {
