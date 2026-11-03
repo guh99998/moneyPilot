@@ -18,7 +18,7 @@
     --border-strong:  #c9d3d1;
     --text:           #17212e;
     --text-secondary: #4b5866;
-    --text-muted:     #75828e;
+    --text-muted:     #64707c;
 
     /* interação */
     --accent:         var(--navy);
@@ -379,6 +379,8 @@ button, .btn {
 }
 button:hover:not(:disabled), .btn:hover { background: var(--surface-2); }
 button:disabled { opacity: .5; cursor: not-allowed; }
+/* Sem o atraso do toque duplo (zoom) nos controles, no celular. */
+a, button, input, select, textarea, summary { touch-action: manipulation; }
 .btn-primary { background: var(--navy); border-color: var(--navy); color: #fff; }
 .btn-primary:hover:not(:disabled) { background: var(--navy-2); }
 .btn-ghost { border-color: transparent; background: transparent; padding: .3rem .5rem; color: var(--text-secondary); }
