@@ -123,6 +123,17 @@ test('when the refresh is refused the session is cleared, reported as expired, a
     assert.deepEqual(events, ['session:expired']);
 });
 
+test('several calls in flight when the session expires report it once, not once per call', async () => {
+    session.start('expired', 'user@example.com');
+    startServer({ validToken: 'never', refreshStatus: 401 });
+
+    const results = await Promise.allSettled([api.accounts.list(), api.accounts.list(), api.accounts.list()]);
+
+    assert.ok(results.every((r) => r.status === 'rejected' && r.reason.status === 401));
+    assert.equal(calls.refresh, 1);
+    assert.deepEqual(events, ['session:expired']);
+});
+
 test('when the retry itself is refused the session ends without a second refresh', async () => {
     session.start('expired', 'user@example.com');
     // refresh "succeeds" but hands out a token the API still rejects

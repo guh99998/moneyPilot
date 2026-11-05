@@ -122,8 +122,11 @@ async function send(path, { method, body, query, token }) {
 }
 
 function expireSession() {
+    // Várias chamadas em voo falham juntas quando a sessão acaba: só a primeira encontra a sessão ativa
+    // e avisa; as demais já chegam depois do clear() e não devem repetir o aviso.
+    const wasActive = session.active;
     session.clear();
-    window.dispatchEvent(new CustomEvent('session:expired'));
+    if (wasActive) window.dispatchEvent(new CustomEvent('session:expired'));
     return new ApiError(401, 'Sua sessão expirou. Entre novamente.');
 }
 
