@@ -97,3 +97,12 @@ Não altera dado existente além do default. É compatível com a versão anteri
 ## Limites
 
 Sem merge em `develop` ou `main` e sem push sem ok do Gustavo. Claude não faz deploy nem acessa produção. Nada de novidades, tutoriais por tela nem dependências novas.
+
+## Adendo: guia depois do pop-up (2026-11-05)
+
+Pedido do Gustavo ao testar: o link só jogava a pessoa na tela. Decisões: **faixa de instrução** (sem destacar elementos), **avanço automático** para o próximo passo, **três passos**, e **Dispensar tutorial só desta vez**. Sem schema nem API novos.
+
+- `onboarding.js`: `startGuide`/`endGuide` (`sessionStorage`), `guideBand(rota)` (faixa do primeiro passo pendente, com link se a pessoa estiver em outra tela e o botão "Dispensar tutorial") e `checkGuide()` (confere o progresso e navega quando um passo novo foi concluído). O link do passo no pop-up inicia o guia; `markLogin` o encerra.
+- `app.js`: depois de desenhar a rota, insere a faixa no topo do `main`; escuta `api:changed` (já disparado por toda escrita bem-sucedida) para chamar `checkGuide`.
+- Só avança se o número de passos feitos aumentou: editar ou excluir não navega.
+- `css/app.css`: faixa mobile-first, alvos de 44px. Testes: `onboarding-dialog.test.mjs` (CA10 a CA12).

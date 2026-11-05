@@ -13,6 +13,8 @@ Cada tarefa aponta para os critérios que atende. Teste primeiro, depois o códi
 - [x] **T7** — Ajuda (`static/ajuda/`) e README
 - [x] **T8** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`
 - [x] **T9** — Validação com as skills do projeto e anotar a revisão aqui
+- [ ] **T11** — Guia depois do pop-up: testes JS primeiro, depois `onboarding.js`, `app.js` e CSS (CA10, CA11, CA12)
+- [ ] **T12** — Rodar as suítes, revisar com as skills e checar no navegador (guia)
 - [ ] **T10** — Checagem no navegador a 390px e 1280px, e checagem manual (Gustavo)
 
 ## Notas de implementação
