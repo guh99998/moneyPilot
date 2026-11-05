@@ -239,6 +239,12 @@ export const api = {
         }
     },
 
+    // Primeiros passos (spec 013): o cartão de boas-vindas do painel, só em conta nova.
+    onboarding: {
+        get: () => request('/onboarding'),
+        dismiss: () => request('/onboarding/dismiss', { method: 'POST' })
+    },
+
     alerts: {
         list: () => request('/alerts'),
         dismiss: (key) => request('/alerts/dismiss', { method: 'POST', body: { key } })
