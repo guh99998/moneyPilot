@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { el, reportError } from '../ui.js';
+import { el, reportError, toast } from '../ui.js';
 
 // Cartão de primeiros passos do painel (spec 013): só aparece em conta nova.
 const STEP_TEXT = {
@@ -37,6 +37,7 @@ export function onboardingCard(onboarding, onDismissed) {
     async function dismiss() {
         try {
             await api.onboarding.dismiss();
+            toast('Primeiros passos dispensados.');
             onDismissed();
         } catch (error) {
             reportError(error);

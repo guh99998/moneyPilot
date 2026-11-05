@@ -365,7 +365,13 @@ export async function renderDashboard() {
             const refreshHero = (next) => heroSlot.replaceChildren(hero(next.currentBalance, summary, next));
 
             const welcomeCard = onboarding
-                ? onboardingCard(onboarding, () => welcomeCard.remove())
+                ? onboardingCard(onboarding, () => {
+                    welcomeCard.remove();
+                    // O botão focado sumiu com o cartão: o foco vai para o título da página.
+                    const title = view.querySelector('h1');
+                    title?.setAttribute('tabindex', '-1');
+                    title?.focus();
+                })
                 : null;
             if (welcomeCard) welcomeCard.classList.add('span-full');
 
