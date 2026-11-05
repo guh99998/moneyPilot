@@ -14,10 +14,14 @@ Ao entrar no app, a pessoa vê um aviso das novidades que ainda não viu e pode 
 
 ## Regras de negócio
 
-- Ideia inicial, a definir na conversa da spec:
-  - aviso mostrado uma vez por pessoa e por novidade, com o "já vi" guardado no servidor (vale em todos os aparelhos, como a dispensa de alertas);
-  - as novidades vêm de um arquivo versionado no repositório, sem painel de edição;
-  - o cartão de primeiros passos da 013 pode virar o primeiro tutorial.
+- Decisões já tomadas (conversa de 2026-11-05, ao revisar a 013):
+  - **Primeiro contato em pop-up (modal):** conta nova vê um pop-up com os primeiros passos, com os botões **Avançar**, **Voltar** e **Dispensar**. Os passos são os da 013: criar a primeira conta bancária, lançar a primeira despesa ou receita, criar um orçamento.
+  - **Passo da conta bancária:** o pop-up explica e leva a pessoa para a tela de contas; o formulário não é duplicado dentro do pop-up.
+  - **Caixinha "Mostrar ao iniciar":** se marcada, o pop-up aparece toda vez que a pessoa entra; se desmarcada, não volta. O valor é guardado no servidor (vale em todos os aparelhos).
+  - **Cartão de primeiros passos da 013:** sai do painel quando o pop-up entrar; o progresso dos três passos (já guardado pela 013) alimenta o pop-up.
+- A definir na conversa da spec:
+  - aviso de novidades mostrado uma vez por pessoa e por novidade, com o "já vi" guardado no servidor, como a dispensa de alertas;
+  - as novidades vêm de um arquivo versionado no repositório, sem painel de edição.
 
 ## Critérios de aceite
 
