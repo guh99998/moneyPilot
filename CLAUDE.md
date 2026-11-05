@@ -30,6 +30,16 @@ Regras:
 - Ao terminar, marque as tarefas concluídas em `tasks.md` e atualize o README se a API ou uma decisão de domínio mudou.
 - **Ao finalizar um plano ou uma feature, valide com as skills do projeto** (`.claude/skills/`): `web-design-guidelines`, `accessibility-compliance` e `responsive-design` para telas, `api-design-principles` para rotas novas ou alteradas. No plano, a validação entra como passo da verificação; na feature, rode antes de dizer que está pronta, corrija o que for apontado e anote a revisão em `tasks.md`.
 
+## GitHub Project
+
+O quadro **moneyPilot** (GitHub Projects, privado, `guh99998`, projeto nº 4) é o painel do que está feito e do que vem. Mantenha-o em dia **sempre**, na mesma sessão em que o fato muda, sem esperar pedido:
+
+- Spec nova (inclusive ideia salva só para depois) vira um item no quadro, com o campo **Spec** (número), **Área** e o corpo `specs/NNN-slug`. Ideias sem regras entram em **Ideia** (o backlog).
+- O **Status** acompanha o campo `Status` do `spec.md`: rascunho → Ideia/Spec, plano aprovado → Plano, em implementação → Implementando, só falta checagem manual ou review → Revisão, entregue → Pronto.
+- Ao abrir, concluir ou mudar de fase uma spec, atualize o item junto com `spec.md` e `tasks.md`. No início de uma sessão que mexe em specs, compare o quadro com `specs/` e corrija divergências.
+- Pelo `gh` (`gh project item-list|item-create|item-edit 4 --owner guh99998`, precisa do escopo `project`). Sem `gh` autenticado, avise o Gustavo em vez de pular a etapa.
+- O quadro é privado, mas o texto dos itens segue as regras do repositório público: sem dados de usuários reais nem detalhes de produção.
+
 ## Branches e commits
 
 - Fluxo: `feature/*` ou `fix/*` → `develop` → `main` → `deploy`. Nunca commitar direto em `main` ou `deploy`.
