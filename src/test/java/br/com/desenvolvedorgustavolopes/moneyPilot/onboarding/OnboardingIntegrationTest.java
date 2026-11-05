@@ -41,10 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Spec 013: e-mail de boas-vindas e cartão de primeiros passos. */
+/** Specs 013 e 027: e-mail de boas-vindas, progresso dos primeiros passos e pop-up de primeiro contato. */
 class OnboardingIntegrationTest extends AbstractIntegrationTest {
 
     private static final String PASSWORD = "minha frase secreta";
@@ -165,6 +166,8 @@ class OnboardingIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/onboarding").header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.visible").value(true))
+                .andExpect(jsonPath("$.eligible").value(true))
+                .andExpect(jsonPath("$.showOnStart").value(true))
                 .andExpect(jsonPath("$.steps.length()").value(3))
                 .andExpect(jsonPath("$.steps[0].key").value("ACCOUNT"))
                 .andExpect(jsonPath("$.steps[0].done").value(false))
@@ -190,50 +193,86 @@ class OnboardingIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.steps[2].done").value(false));
 
         createBudget(token);
-        onboarding(token).andExpect(jsonPath("$.visible").value(false));
+        onboarding(token).andExpect(jsonPath("$.visible").value(false))
+                .andExpect(jsonPath("$.eligible").value(false))
+                .andExpect(jsonPath("$.steps.length()").value(3))
+                .andExpect(jsonPath("$.steps[0].done").value(true))
+                .andExpect(jsonPath("$.steps[1].done").value(true))
+                .andExpect(jsonPath("$.steps[2].done").value(true));
     }
 
-    // CA5
+    // CA4: caixinha "Mostrar ao iniciar", guardada na conta
 
     @Test
-    void dismissing_hidesTheCardOnEveryDevice() throws Exception {
+    void turningShowOnStartOff_appliesToEveryDevice_andKeepsTheBoxAvailable() throws Exception {
         String email = register();
         confirm(lastTokenSentTo(email)).andExpect(status().isNoContent());
         String phone = login(email);
         String computer = login(email);
 
-        mockMvc.perform(post("/api/v1/onboarding/dismiss").header(HttpHeaders.AUTHORIZATION, bearer(phone)))
-                .andExpect(status().isNoContent());
+        savePreference(phone, false).andExpect(status().isNoContent());
         // repetir não muda nada
-        mockMvc.perform(post("/api/v1/onboarding/dismiss").header(HttpHeaders.AUTHORIZATION, bearer(phone)))
-                .andExpect(status().isNoContent());
+        savePreference(phone, false).andExpect(status().isNoContent());
 
-        onboarding(computer).andExpect(jsonPath("$.visible").value(false));
+        onboarding(computer).andExpect(jsonPath("$.visible").value(false))
+                .andExpect(jsonPath("$.eligible").value(true))
+                .andExpect(jsonPath("$.showOnStart").value(false));
         onboarding(login(email)).andExpect(jsonPath("$.visible").value(false));
+
+        savePreference(computer, true).andExpect(status().isNoContent());
+        onboarding(phone).andExpect(jsonPath("$.visible").value(true))
+                .andExpect(jsonPath("$.showOnStart").value(true));
     }
 
     @Test
-    void dismissedCard_staysHiddenEvenIfStepsAreStillPending() throws Exception {
+    void thePreferenceBody_isRequired() throws Exception {
         String token = newVerifiedAccountToken();
 
-        mockMvc.perform(post("/api/v1/onboarding/dismiss").header(HttpHeaders.AUTHORIZATION, bearer(token)))
-                .andExpect(status().isNoContent());
-        createAccount(token);
+        mockMvc.perform(put("/api/v1/onboarding/preferences")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.showOnStart").exists());
+        mockMvc.perform(put("/api/v1/onboarding/preferences")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"showOnStart\":\"talvez\"}"))
+                .andExpect(status().isBadRequest());
 
-        onboarding(token).andExpect(jsonPath("$.visible").value(false));
+        onboarding(token).andExpect(jsonPath("$.showOnStart").value(true));
     }
 
-    // CA6
+    // CA6: quem dispensou o cartão da 013 (guardado direto no banco, a rota saiu)
 
     @Test
-    void anOldAccount_hasNoCard_andDismissingDoesNothing() throws Exception {
-        String email = registerVerifiedDirectly();
+    void anAccountThatDismissedTheOldCard_isNotEligible_butStepsAreStillComputed() throws Exception {
+        String email = register();
+        confirm(lastTokenSentTo(email)).andExpect(status().isNoContent());
         String token = login(email);
+        jdbcTemplate.update("UPDATE onboarding SET dismissed_at = NOW() WHERE user_id = (SELECT id FROM users WHERE email = ?)", email);
+        createAccount(token);
 
         onboarding(token).andExpect(jsonPath("$.visible").value(false))
-                .andExpect(jsonPath("$.steps.length()").value(0));
-        mockMvc.perform(post("/api/v1/onboarding/dismiss").header(HttpHeaders.AUTHORIZATION, bearer(token)))
-                .andExpect(status().isNoContent());
+                .andExpect(jsonPath("$.eligible").value(false))
+                .andExpect(jsonPath("$.steps.length()").value(3))
+                .andExpect(jsonPath("$.steps[0].done").value(true))
+                .andExpect(jsonPath("$.steps[1].done").value(false));
+    }
+
+    @Test
+    void anOldAccount_isNotEligible_stepsAreComputedAndNoRowIsCreated() throws Exception {
+        String email = registerVerifiedDirectly();
+        String token = login(email);
+        createAccount(token);
+
+        onboarding(token).andExpect(jsonPath("$.visible").value(false))
+                .andExpect(jsonPath("$.eligible").value(false))
+                .andExpect(jsonPath("$.steps.length()").value(3))
+                .andExpect(jsonPath("$.steps[0].done").value(true))
+                .andExpect(jsonPath("$.steps[1].done").value(false))
+                .andExpect(jsonPath("$.steps[2].done").value(false));
+        savePreference(token, false).andExpect(status().isNoContent());
 
         assertEquals(0, onboardingRows(email));
         assertEquals(0, welcomesTo(email).size());
@@ -242,7 +281,18 @@ class OnboardingIntegrationTest extends AbstractIntegrationTest {
     @Test
     void theOnboardingRoutesNeedALogin() throws Exception {
         mockMvc.perform(get("/api/v1/onboarding")).andExpect(status().isUnauthorized());
-        mockMvc.perform(post("/api/v1/onboarding/dismiss")).andExpect(status().isUnauthorized());
+        mockMvc.perform(put("/api/v1/onboarding/preferences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"showOnStart\":false}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void theDismissRouteIsGone() throws Exception {
+        String token = newVerifiedAccountToken();
+
+        mockMvc.perform(post("/api/v1/onboarding/dismiss").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().is4xxClientError());
     }
 
     // CA7
@@ -376,6 +426,13 @@ class OnboardingIntegrationTest extends AbstractIntegrationTest {
     private ResultActions onboarding(String token) throws Exception {
         return mockMvc.perform(get("/api/v1/onboarding").header(HttpHeaders.AUTHORIZATION, bearer(token)))
                 .andExpect(status().isOk());
+    }
+
+    private ResultActions savePreference(String token, boolean showOnStart) throws Exception {
+        return mockMvc.perform(put("/api/v1/onboarding/preferences")
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("showOnStart", showOnStart))));
     }
 
     private List<EmailMessage> welcomesTo(String email) {
