@@ -50,7 +50,7 @@ class OnboardingIntegrationTest extends AbstractIntegrationTest {
     private static final String PASSWORD = "minha frase secreta";
     private static final Pattern TOKEN = Pattern.compile("token=(\\S+)");
     private static final Long FOOD_CATEGORY_ID = 3L; // "Alimentação", global, EXPENSE
-    private static final String WELCOME_SUBJECT = "Bem-vindo ao moneyPilot";
+    private static final String WELCOME_SUBJECT = "Boas-vindas ao moneyPilot";
     private static final AtomicInteger IP_SEQUENCE = new AtomicInteger();
 
     @Autowired

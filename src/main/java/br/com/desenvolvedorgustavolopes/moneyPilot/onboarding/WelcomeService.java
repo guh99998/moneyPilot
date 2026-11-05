@@ -55,6 +55,6 @@ public class WelcomeService {
                 O moneyPilot é gratuito e seus dados são só seus. Se precisar de ajuda, use "Falar com o suporte" dentro do app.
                 """.formatted(user.getName(), appProperties.publicUrl());
 
-        return new EmailMessage(user.getEmail(), "Bem-vindo ao moneyPilot", text);
+        return new EmailMessage(user.getEmail(), "Boas-vindas ao moneyPilot", text);
     }
 }
