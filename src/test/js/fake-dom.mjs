@@ -24,6 +24,7 @@ class FakeElement {
         this.dataset = {};
         this.className = '';
         this.value = '';
+        this.checked = false;
         const element = this;
         this.classList = {
             add: (name) => element.className = [...new Set([...element.className.split(' ').filter(Boolean), name])].join(' '),
@@ -96,6 +97,20 @@ class FakeElement {
 
     focus() {
         globalThis.document.activeElement = this;
+    }
+
+    /** <dialog>: opens as modal and records it; close() fires `close` like the browser (Esc does the same). */
+    showModal() {
+        this.modal = true;
+        this.setAttribute('open', '');
+        this.previousFocus = globalThis.document.activeElement;
+    }
+
+    close() {
+        if (!this.hasAttribute('open')) return;
+        this.removeAttribute('open');
+        if (this.previousFocus) this.previousFocus.focus();
+        this.listeners.get('close')?.forEach((listener) => listener({ type: 'close', target: this }));
     }
 }
 
