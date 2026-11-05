@@ -265,3 +265,34 @@ test('after the help link was used, a second render does not open it again', asy
     assert.equal(openDialog(), undefined);
     assert.equal(requests.length, 1);
 });
+
+test('the checkbox is never disabled while saving, so the keyboard focus is not lost', async () => {
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    startServer(async () => { await gate; return new Response(null, { status: 204 }); });
+    openOnboarding(state(STEPS(false, false, false)));
+    const box = checkbox(openDialog());
+
+    box.checked = false;
+    const saving = box.dispatch('change');
+
+    assert.equal(box.disabled, false);
+    release();
+    await saving;
+});
+
+test('two quick changes are saved in order and the last one wins', async () => {
+    openOnboarding(state(STEPS(false, false, false)));
+    const box = checkbox(openDialog());
+
+    box.checked = false;
+    const first = box.dispatch('change');
+    box.checked = true;
+    const second = box.dispatch('change');
+    await Promise.all([first, second]);
+
+    assert.deepEqual(requests.map((request) => request.body), [
+        JSON.stringify({ showOnStart: false }),
+        JSON.stringify({ showOnStart: true })
+    ]);
+});

@@ -50,20 +50,23 @@ export function openOnboarding(state) {
         const id = `onboarding-show-${Math.random().toString(36).slice(2, 7)}`;
         const box = el('input', { type: 'checkbox', id });
         box.checked = state.showOnStart !== false;
-        box.addEventListener('change', async () => {
+        // Sem `disabled` durante o salvamento: o navegador tiraria o foco de quem usa o teclado.
+        // Mudanças seguidas entram numa fila, para o servidor receber na ordem e a última valer.
+        let queue = Promise.resolve();
+        box.addEventListener('change', () => {
             const wanted = box.checked;
-            box.disabled = true;
-            errorBox.hidden = true;
-            try {
-                await api.onboarding.savePreferences(wanted);
-                state.showOnStart = wanted;
-            } catch (error) {
-                box.checked = !wanted;
-                errorBox.textContent = error?.message || 'Não foi possível salvar.';
-                errorBox.hidden = false;
-            } finally {
-                box.disabled = false;
-            }
+            queue = queue.then(async () => {
+                errorBox.hidden = true;
+                try {
+                    await api.onboarding.savePreferences(wanted);
+                    state.showOnStart = wanted;
+                } catch (error) {
+                    box.checked = !wanted;
+                    errorBox.textContent = error?.message || 'Não foi possível salvar.';
+                    errorBox.hidden = false;
+                }
+            });
+            return queue;
         });
         return el('div', { class: 'onboarding-pref' }, [box, el('label', { for: id, text: 'Mostrar ao iniciar' })]);
     }

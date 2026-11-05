@@ -12,7 +12,7 @@ Cada tarefa aponta para os critérios que atende. Teste primeiro, depois o códi
 - [x] **T6** — Remover o cartão do painel (CA8)
 - [x] **T7** — Ajuda (`static/ajuda/`) e README
 - [x] **T8** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`
-- [ ] **T9** — Validação com as skills do projeto e anotar a revisão aqui
+- [x] **T9** — Validação com as skills do projeto e anotar a revisão aqui
 - [ ] **T10** — Checagem no navegador a 390px e 1280px, e checagem manual (Gustavo)
 
 ## Notas de implementação
@@ -25,4 +25,6 @@ Cada tarefa aponta para os critérios que atende. Teste primeiro, depois o códi
 ## Revisão
 
 - `web-design-guidelines` (regras lidas e aplicadas ao `onboarding.js` e ao CSS): caixinha e rótulo sem zona morta de clique (gap trocado por padding no rótulo) e `overscroll-behavior: contain` nos dialogs. Foco com `:focus-visible` no título; nenhum `outline: none` sem substituto.
-- `accessibility-compliance`, `responsive-design` e `api-design-principles`: **ainda não rodei as skills**; conferi à mão o que o plano pedia (dialog nativo com `aria-labelledby`, foco no título, estado escrito, mobile-first com 44px, `PUT` idempotente com `204`/`400`/`401` documentados). Falta rodar as três com a skill antes de fechar a revisão.
+- `accessibility-compliance`: dialog nativo com `aria-labelledby`, foco no título ao abrir e a cada passo, Esc como Dispensar, estado escrito, erro com `role="alert"`. Corrigido: a caixinha ficava `disabled` durante o salvamento, o que tira o foco de quem usa o teclado; agora não desabilita e as mudanças seguidas entram numa fila (testes `never disabled while saving` e `two quick changes`).
+- `responsive-design`: mobile-first, largura `min(480px, 100vw - 24px)`, botões que quebram linha, alvos de 44px e nenhuma rolagem horizontal a 390px (conferido no navegador). Nada a corrigir.
+- `api-design-principles`: recurso no substantivo sob `/api/v1`; `GET` `200` e `PUT /preferences` idempotente com `204`, `400` e `401` documentados com `ErrorResponse`. Observação aceita: o `GET` grava os marcos dos passos (idempotente), como na 013.
