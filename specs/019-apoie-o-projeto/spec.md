@@ -1,6 +1,6 @@
 # 019 — Apoie o projeto
 
-**Status:** em implementação
+**Status:** entregue
 **Branch:** feature/019-apoie-o-projeto
 **Depende de:** nenhuma (combina com a 020, site do produto)
 
