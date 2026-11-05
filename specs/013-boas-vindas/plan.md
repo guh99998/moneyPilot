@@ -1,7 +1,7 @@
 # 013 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** proposto (implementação iniciada a pedido do Gustavo, que aprovou a spec com as respostas dadas)
+**Status:** aprovado e implementado (em revisão)
 
 ## Abordagem
 

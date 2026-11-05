@@ -15,7 +15,8 @@ Cada tarefa aponta para os critérios que atende. Teste primeiro, depois o códi
 - [x] **T9** — Ajuda do painel (`static/ajuda/`) e README (API e decisão de domínio)
 - [x] **T10** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`
 - [x] **T11** — Validação com as skills do projeto (`web-design-guidelines`, `accessibility-compliance`, `responsive-design`, `api-design-principles`) e anotar a revisão aqui
-- [ ] **T12** — Checagem manual no navegador a 390px e 1280px (Gustavo) e backup antes do deploy (Gustavo)
+- [x] **T12** — Checagem manual no navegador a 390px e 1280px (Gustavo)
+- [ ] **T13** — Backup manual antes do deploy (Gustavo)
 
 ## Notas de implementação
 

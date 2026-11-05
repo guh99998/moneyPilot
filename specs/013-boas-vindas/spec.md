@@ -1,6 +1,6 @@
 # 013 — Boas-vindas
 
-**Status:** em implementação
+**Status:** em revisão
 **Branch:** feature/013-boas-vindas
 **Depende de:** 001 (e-mail), 002 (verificação), 004 (login com Google)
 
@@ -19,7 +19,7 @@ A pessoa se sente recebida e sabe quais são os primeiros passos para o app ser 
   - Google: ao criar a conta no primeiro login.
   - Conta não verificada que entra pelo Google (004) também conta como conta nova.
 - **Os dois canais:** a pessoa recebe o e-mail de boas-vindas **e** vê o cartão de primeiros passos no painel.
-- **E-mail de boas-vindas:** curto, em português, com os primeiros passos e o link do app. Enviado uma vez por conta. O texto proposto está no fim desta spec e o Gustavo ajusta antes da aprovação.
+- **E-mail de boas-vindas:** curto, em português, com os primeiros passos e o link do app. Enviado uma vez por conta. O texto está no fim desta spec.
 - **Cartão de primeiros passos no painel:** cada passo é marcado quando feito:
   1. criar a primeira conta bancária;
   2. lançar a primeira despesa ou receita;
@@ -32,14 +32,14 @@ A pessoa se sente recebida e sabe quais são os primeiros passos para o app ser 
 
 ## Critérios de aceite
 
-- [ ] **CA1** — Dada uma conta nova por e-mail, quando o link de verificação é confirmado, então chega um e-mail de boas-vindas.
-- [ ] **CA2** — Dada uma conta nova pelo Google, quando ela é criada, então chega o e-mail de boas-vindas.
-- [ ] **CA3** — Dada uma conta que já recebeu as boas-vindas, quando é verificada de novo ou entra outra vez, então não recebe outro e-mail.
-- [ ] **CA4** — Dada uma conta nova, quando abre o painel, então vê o cartão de primeiros passos, com cada passo feito marcado.
-- [ ] **CA5** — Dado o cartão, quando a pessoa dispensa ou conclui os passos, então ele não aparece mais, em nenhum aparelho.
-- [ ] **CA6** — Dada uma conta antiga, quando abre o painel, então não vê o cartão e não recebeu o e-mail.
-- [ ] **CA7** — Dado um passo já marcado, quando a pessoa apaga o que o cumpriu, então o passo continua marcado.
-- [ ] **CA8** — Dada uma falha do provedor de e-mail nas boas-vindas, quando a conta é verificada, então a verificação e o login valem e o e-mail não é reenviado.
+- [x] **CA1** — Dada uma conta nova por e-mail, quando o link de verificação é confirmado, então chega um e-mail de boas-vindas.
+- [x] **CA2** — Dada uma conta nova pelo Google, quando ela é criada, então chega o e-mail de boas-vindas.
+- [x] **CA3** — Dada uma conta que já recebeu as boas-vindas, quando é verificada de novo ou entra outra vez, então não recebe outro e-mail.
+- [x] **CA4** — Dada uma conta nova, quando abre o painel, então vê o cartão de primeiros passos, com cada passo feito marcado.
+- [x] **CA5** — Dado o cartão, quando a pessoa dispensa ou conclui os passos, então ele não aparece mais, em nenhum aparelho.
+- [x] **CA6** — Dada uma conta antiga, quando abre o painel, então não vê o cartão e não recebeu o e-mail.
+- [x] **CA7** — Dado um passo já marcado, quando a pessoa apaga o que o cumpriu, então o passo continua marcado.
+- [x] **CA8** — Dada uma falha do provedor de e-mail nas boas-vindas, quando a conta é verificada, então a verificação e o login valem e o e-mail não é reenviado.
 
 ## Casos de borda
 
@@ -59,11 +59,11 @@ A pessoa se sente recebida e sabe quais são os primeiros passos para o app ser 
 
 ## Perguntas em aberto
 
-- Nenhuma de regra. Falta só o Gustavo aprovar o texto do e-mail abaixo.
+- Nenhuma.
 
-## Texto proposto do e-mail (para ajuste)
+## Texto do e-mail
 
-**Assunto:** Bem-vindo ao moneyPilot
+**Assunto:** Boas-vindas ao moneyPilot
 
 > Olá, {nome}!
 >
