@@ -1,6 +1,6 @@
 # 027 — Pop-up de primeiro contato
 
-**Status:** rascunho (regras fechadas em 2026-11-05, aguardando aprovação)
+**Status:** implementando (regras fechadas e plano aprovado em 2026-11-05)
 **Branch:** feature/027-novidades-e-tutorial
 **Depende de:** 013 (boas-vindas), 017 (painel de chamados)
 
@@ -10,37 +10,40 @@ O cartão de primeiros passos da 013 fica no painel e é fácil de ignorar. A pe
 
 ## Objetivo
 
-Ao entrar no app, a pessoa nova vê um pop-up com os primeiros passos, pode navegar entre eles e escolher se quer vê-lo nas próximas entradas. O aviso de novidades e os tutoriais de cada tela ficam para uma spec separada.
+Ao fazer login, a pessoa nova vê um pop-up com os primeiros passos, pode navegar entre eles e escolher se quer vê-lo nos próximos logins. O aviso de novidades e os tutoriais de cada tela ficam para uma spec separada.
 
 ## Regras de negócio
 
 - **Pop-up (modal) de primeiro contato** com os botões **Avançar**, **Voltar** e **Dispensar**. Os passos são os da 013: criar a primeira conta bancária, lançar a primeira despesa ou receita, criar um orçamento.
 - **Passo da conta bancária:** o pop-up explica e leva a pessoa para a tela de contas; o formulário não é duplicado dentro do pop-up. O mesmo vale para os outros passos.
-- **Caixinha "Mostrar ao iniciar":** começa **marcada**. Marcada, o pop-up aparece toda vez que a pessoa entra; desmarcada, não volta sozinho. O valor é guardado no servidor, então vale em todos os aparelhos.
+- **"Entrar" é fazer login**, com senha ou Google. F5, aba nova e sessão renovada sozinha não reabrem o pop-up; quem fica logado só o vê de novo quando precisar entrar outra vez, inclusive depois de a sessão expirar.
+- **O pop-up abre no primeiro passo pendente.** Sem pendência (reabertura pela ajuda), abre no passo 1.
+- **Caixinha "Mostrar ao iniciar":** começa **marcada**. Marcada, o pop-up aparece a cada login; desmarcada, não volta sozinho. O valor é guardado no servidor, então vale em todos os aparelhos.
 - **Dispensar** fecha o pop-up **só desta vez**: não altera a caixinha. Para não ver mais, a pessoa desmarca "Mostrar ao iniciar".
 - **Fim automático:** quando os três passos estão feitos, o pop-up deixa de aparecer sozinho, mesmo com a caixinha marcada. O progresso dos passos vem da 013 e passo feito continua feito.
 - **Quem dispensou o cartão da 013 não vê o pop-up.** Conta antiga (sem registro da 013) também não.
-- **Reabrir:** a pessoa pode abrir o pop-up de novo pela ajuda, a qualquer momento, inclusive depois de desmarcar a caixinha. Aberto assim, mostra o estado atual dos passos.
+- **Reabrir:** a pessoa pode abrir o pop-up de novo pela ajuda, a qualquer momento, inclusive depois de desmarcar a caixinha. Aberto assim, mostra o estado atual dos passos. Em conta antiga, ou de quem dispensou o cartão ou concluiu os passos, os passos são calculados na hora, sem gravar nada, e a caixinha não aparece, porque não teria efeito.
 - **Cartão de primeiros passos da 013:** sai do painel; o pop-up o substitui e usa o mesmo progresso.
-- Estado e preferência valem para a conta, não para o aparelho; recurso de outra pessoa responde `404`.
+- Estado e preferência valem para a conta, não para o aparelho. As rotas não têm id: sempre valem para a conta autenticada.
 
 ## Critérios de aceite
 
-- [ ] **CA1** — Dada uma conta nova com a caixinha marcada e passos pendentes, quando a pessoa entra no app, então vê o pop-up com o primeiro passo.
+- [ ] **CA1** — Dada uma conta nova com a caixinha marcada e passos pendentes, quando a pessoa faz login, então vê o pop-up no primeiro passo pendente.
 - [ ] **CA2** — Dado o pop-up, quando a pessoa usa Avançar e Voltar, então navega entre os três passos sem sair do pop-up, e Voltar não existe no primeiro passo.
-- [ ] **CA3** — Dado o pop-up, quando a pessoa clica em Dispensar, então ele fecha e volta a aparecer na próxima entrada, enquanto a caixinha estiver marcada.
-- [ ] **CA4** — Dado o pop-up, quando a pessoa desmarca "Mostrar ao iniciar", então ele não aparece mais nas próximas entradas, em nenhum aparelho.
-- [ ] **CA5** — Dada uma conta com os três passos feitos, quando entra no app, então o pop-up não aparece, mesmo com a caixinha marcada.
-- [ ] **CA6** — Dada uma conta que dispensou o cartão da 013, ou uma conta antiga, quando entra no app, então não vê o pop-up.
-- [ ] **CA7** — Dado qualquer estado, quando a pessoa abre o pop-up pela ajuda, então ele abre com o estado atual dos passos, mesmo com a caixinha desmarcada ou os passos feitos.
+- [ ] **CA3** — Dado o pop-up, quando a pessoa clica em Dispensar, então ele fecha e volta a aparecer no próximo login, enquanto a caixinha estiver marcada.
+- [ ] **CA4** — Dado o pop-up, quando a pessoa desmarca "Mostrar ao iniciar", então ele não aparece mais nos próximos logins, em nenhum aparelho.
+- [ ] **CA5** — Dada uma conta com os três passos feitos, quando faz login, então o pop-up não aparece, mesmo com a caixinha marcada.
+- [ ] **CA6** — Dada uma conta que dispensou o cartão da 013, ou uma conta antiga, quando faz login, então não vê o pop-up.
+- [ ] **CA7** — Dado qualquer estado, quando a pessoa abre o pop-up pela ajuda, então ele abre com o estado atual dos passos, mesmo com a caixinha desmarcada ou os passos feitos, e sem a caixinha quando ela não teria efeito (conta antiga, cartão dispensado ou passos concluídos).
 - [ ] **CA8** — Dado o painel de uma conta nova, quando ele carrega, então o cartão de primeiros passos da 013 não aparece mais.
 - [ ] **CA9** — Dado o pop-up aberto, quando a pessoa usa só o teclado ou um leitor de tela, então o foco fica dentro do pop-up, Esc o fecha como Dispensar e o foco volta para onde estava.
 
 ## Casos de borda
 
-- Duas abas abertas: desmarcar a caixinha em uma vale na próxima entrada da outra.
+- Duas abas abertas: desmarcar a caixinha em uma vale no próximo login da outra.
 - Falha de rede ao salvar a caixinha: a pessoa vê o erro e o valor anterior continua valendo.
-- Conta nova que conclui o terceiro passo com o pop-up aberto: o pop-up mostra os três passos feitos e não volta sozinho depois.
+- Conclui o terceiro passo em outra aba com o pop-up aberto: ele mostra o estado de quando abriu e não volta no próximo login.
+- Link da ajuda aberto sem sessão: depois do login a pessoa vai para a Visão geral, sem reabrir o pop-up sozinho.
 
 ## Fora de escopo
 
