@@ -16,7 +16,7 @@ import { renderSupport } from './views/support.js';
 import { renderAdminTickets } from './views/admin-tickets.js';
 import { renderContribution } from './views/contribution.js';
 import { renderAiGuide } from './views/ai-guide.js';
-import { markLogin, maybeOpenOnboarding } from './views/onboarding.js';
+import { markLogin, maybeOpenOnboarding, guideBand, checkGuide } from './views/onboarding.js';
 import { renderBell, refreshAlerts, resetAlerts } from './alerts.js';
 
 const ROUTES = [
@@ -253,11 +253,16 @@ async function render() {
 
     // Consome a flag do login já nesta renderização; a outra (login + hashchange) a encontra apagada.
     maybeOpenOnboarding();
+
+    // Faixa do guia nas telas dos passos; falha ou ausência não mostra nada.
+    guideBand(route.path).then((band) => { if (band) main.prepend(band); });
 }
 
 let pendingNotice = null;
 
 window.addEventListener('hashchange', render);
+// Concluir um passo (conta, lançamento, orçamento) leva ao próximo, enquanto o guia estiver ativo.
+window.addEventListener('api:changed', checkGuide);
 window.addEventListener('profile:updated', () => {
     const chipName = document.querySelector('.profile-chip-name');
     if (chipName) chipName.textContent = session.name || session.email || '';

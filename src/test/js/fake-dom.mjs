@@ -148,6 +148,12 @@ export function installFakeDom() {
         setItem: (key, value) => storage.set(key, String(value)),
         removeItem: (key) => storage.delete(key)
     };
+    const sessionItems = new Map();
+    globalThis.sessionStorage = {
+        getItem: (key) => (sessionItems.has(key) ? sessionItems.get(key) : null),
+        setItem: (key, value) => sessionItems.set(key, String(value)),
+        removeItem: (key) => sessionItems.delete(key)
+    };
     globalThis.document = {
         activeElement: null,
         body: new FakeElement('body'),

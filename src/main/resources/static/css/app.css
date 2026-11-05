@@ -586,6 +586,15 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .onboarding-actions button { min-height: 44px; }
 .onboarding-actions { justify-content: flex-start; }
 @media (min-width: 480px) { .onboarding-actions { justify-content: flex-end; } }
+/* Faixa do guia (spec 027): no topo das telas dos passos. */
+.guide-band { margin: 0 0 1rem; padding: .85rem 1rem; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 10px; background: var(--surface); }
+.guide-band p { margin: 0; overflow-wrap: anywhere; }
+.guide-band-step { font-size: .75rem; font-weight: 700; color: var(--text-secondary); }
+.guide-band-title { margin-top: .15rem; font-weight: 700; }
+.guide-band-hint { margin-top: .2rem; font-size: .9rem; color: var(--text-secondary); }
+.guide-band-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; margin-top: .4rem; }
+.guide-band-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; color: var(--navy-3); }
+.guide-band-actions button { min-height: 44px; }
 
 .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .kpis > .card + .card { margin-top: 0; }

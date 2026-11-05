@@ -13,8 +13,8 @@ Cada tarefa aponta para os critérios que atende. Teste primeiro, depois o códi
 - [x] **T7** — Ajuda (`static/ajuda/`) e README
 - [x] **T8** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`
 - [x] **T9** — Validação com as skills do projeto e anotar a revisão aqui
-- [ ] **T11** — Guia depois do pop-up: testes JS primeiro, depois `onboarding.js`, `app.js` e CSS (CA10, CA11, CA12)
-- [ ] **T12** — Rodar as suítes, revisar com as skills e checar no navegador (guia)
+- [x] **T11** — Guia depois do pop-up: testes JS primeiro, depois `onboarding.js`, `app.js` e CSS (CA10, CA11, CA12)
+- [x] **T12** — Rodar as suítes, revisar com as skills e checar no navegador (guia)
 - [ ] **T10** — Checagem no navegador a 390px e 1280px, e checagem manual (Gustavo)
 
 ## Notas de implementação
@@ -23,6 +23,9 @@ Cada tarefa aponta para os critérios que atende. Teste primeiro, depois o códi
 - Decisão: a lógica do fluxo (flag do login, link da ajuda, busca silenciosa) ficou em `onboarding.js` (`markLogin`, `maybeOpenOnboarding`) e `app.js` só chama. O `app.js` roda `render()` ao ser importado e não é testável sem navegador; assim os testes de fluxo (CA1, CA3, CA7) cobrem a mesma lógica.
 - Bug pego pelo teste: `replaceChildren` com `null` no DOM real escreveria "null"; os filhos nulos são filtrados.
 - Navegador (Playwright, 390px e 1280px, conta nova): login abre o pop-up no passo 1 com o foco no título; F5 não reabre; novo login reabre; Avançar move o foco para o título; Esc fecha; desmarcar a caixinha e entrar de novo não abre; o link da ajuda reabre (caixinha desmarcada refletida) e o F5 depois não repete; o painel não mostra mais o cartão (CA8). Alvos de 44px e sem rolagem horizontal. Não testado no navegador: concluir os três passos pela interface e o login com Google (mesmo callback da senha).
+
+- Guia (T11): testes JS escritos antes (14 novos, falhando), depois `onboarding.js` (`startGuide`, `guideBand`, `checkGuide`), `app.js` e CSS. `node --test`: 240 testes, nenhuma falha. A faixa só avança quando o número de passos feitos aumenta, usando o evento `api:changed` que o `api.js` já disparava; nenhuma mudança no backend nem no `api.js`. A dica da faixa nomeia o botão ("Nova conta" etc.) em vez de abri-lo, para não mexer nas telas.
+- Navegador (390px, usuário de teste): link do pop-up leva a Contas com a faixa do passo 1; criar a conta leva sozinho a Lançamentos com a faixa do passo 2 e o aviso; Dispensar tutorial remove a faixa e ela não volta em Orçamentos. Não testei no navegador o fim do terceiro passo (coberto por teste JS).
 
 ## Revisão
 

@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { el } from '../ui.js';
+import { el, toast } from '../ui.js';
 
 // Pop-up de primeiro contato (spec 027): os três passos da 013, num <dialog> nativo.
 // O showModal prende o foco, trata o Esc e devolve o foco a quem estava com ele ao fechar.
@@ -8,19 +8,22 @@ const STEP_TEXT = {
         title: 'Crie sua primeira conta bancária',
         text: 'A conta é onde o seu dinheiro fica. Cadastre a carteira ou o banco que você mais usa e informe o saldo de hoje.',
         link: 'Ir para Contas',
-        href: '#/accounts'
+        href: '#/accounts',
+        hint: 'Toque em “Nova conta”, dê um nome, escolha o tipo e informe o saldo de hoje.'
     },
     TRANSACTION: {
         title: 'Lance sua primeira despesa ou receita',
         text: 'Cada compra ou entrada de dinheiro vira um lançamento. Comece pelo último gasto de que você se lembra.',
         link: 'Ir para Lançamentos',
-        href: '#/transactions'
+        href: '#/transactions',
+        hint: 'Toque em “Novo lançamento”, escolha a conta, a categoria e o valor.'
     },
     BUDGET: {
         title: 'Crie um orçamento',
         text: 'Defina quanto você quer gastar por mês em uma categoria e acompanhe o quanto já usou.',
         link: 'Ir para Orçamentos',
-        href: '#/budgets'
+        href: '#/budgets',
+        hint: 'Toque em “Novo orçamento”, escolha a categoria e o valor do mês.'
     }
 };
 
@@ -88,7 +91,16 @@ export function openOnboarding(state) {
             el('p', { class: `onboarding-state ${item.done ? 'is-done' : ''}`, text: item.done ? 'Feito' : 'A fazer' }),
             el('h3', { class: 'onboarding-step-title', text: text.title }),
             el('p', { class: 'dialog-lead', text: text.text }),
-            el('a', { class: 'onboarding-link', href: text.href, text: text.link, onClick: () => dialog.close() }),
+            el('a', {
+                class: 'onboarding-link',
+                href: text.href,
+                text: text.link,
+                onClick: () => {
+                    // Seguir o link começa o guia, se ainda houver passo pendente.
+                    if (steps.some((pending) => !pending.done)) startGuide();
+                    dialog.close();
+                }
+            }),
             errorBox,
             preference,
             el('div', { class: 'dialog-actions dialog-actions-wrap onboarding-actions' }, [
@@ -118,6 +130,112 @@ let loginPending = false;
 /** Chamado pelo callback do login (senha ou Google): a próxima renderização pode abrir o pop-up. */
 export function markLogin() {
     loginPending = true;
+    // Novo login, nova sessão: um guia deixado de antes não continua.
+    endGuide();
+}
+
+// ---- Guia depois do pop-up (spec 027): faixa nas telas dos passos e avanço automático.
+// O guia vale só na sessão do navegador; Dispensar tutorial não grava nada no servidor.
+const GUIDE_KEY = 'moneypilot.guide';
+const GUIDE_ROUTES = ['accounts', 'transactions', 'budgets'];
+
+let doneCount = null;
+let currentBand = null;
+
+function storage(action) {
+    try {
+        return action(globalThis.sessionStorage);
+    } catch {
+        return null;
+    }
+}
+
+export function guideActive() {
+    return storage((store) => store.getItem(GUIDE_KEY)) === '1';
+}
+
+function startGuide() {
+    doneCount = null;
+    storage((store) => store.setItem(GUIDE_KEY, '1'));
+}
+
+export function endGuide() {
+    storage((store) => store.removeItem(GUIDE_KEY));
+    doneCount = null;
+    currentBand?.remove();
+    currentBand = null;
+}
+
+async function loadSteps() {
+    try {
+        const state = await api.onboarding.get();
+        const steps = (state?.steps || []).filter((item) => STEP_TEXT[item.key]);
+        return steps.length ? steps : null;
+    } catch {
+        return null;
+    }
+}
+
+const countDone = (steps) => steps.filter((item) => item.done).length;
+
+/**
+ * A faixa do guia para a tela `routePath`: o primeiro passo pendente, o que fazer e Dispensar tutorial.
+ * Devolve null sem guia, fora das telas dos passos, com falha ao buscar ou sem passo pendente (e então o guia acaba).
+ */
+export async function guideBand(routePath) {
+    if (!guideActive() || !GUIDE_ROUTES.includes(routePath)) return null;
+
+    const steps = await loadSteps();
+    if (!steps) return null;
+
+    const index = steps.findIndex((item) => !item.done);
+    if (index === -1) {
+        endGuide();
+        return null;
+    }
+    doneCount = countDone(steps);
+
+    const text = STEP_TEXT[steps[index].key];
+    const onItsScreen = text.href === `#/${routePath}`;
+    const band = el('section', { class: 'guide-band', 'aria-label': 'Primeiros passos' }, [
+        el('p', { class: 'guide-band-step', text: `Passo ${index + 1} de ${steps.length}` }),
+        el('p', { class: 'guide-band-title', text: text.title }),
+        el('p', { class: 'guide-band-hint', text: text.hint }),
+        el('div', { class: 'guide-band-actions' }, [
+            onItsScreen ? null : el('a', { class: 'guide-band-link', href: text.href, text: text.link }),
+            el('button', { type: 'button', class: 'btn-ghost', text: 'Dispensar tutorial', onClick: endGuide })
+        ].filter(Boolean))
+    ]);
+    currentBand?.remove();
+    currentBand = band;
+    return band;
+}
+
+/**
+ * Chamado depois de toda escrita bem-sucedida (`api:changed`). Só avança quando o número de passos feitos
+ * aumentou: editar ou excluir não navega. Falha ao conferir não mostra erro.
+ */
+export async function checkGuide() {
+    if (!guideActive()) return;
+
+    const steps = await loadSteps();
+    if (!steps) return;
+
+    const done = countDone(steps);
+    const previous = doneCount;
+    doneCount = done;
+
+    const next = steps.find((item) => !item.done);
+    if (!next) {
+        endGuide();
+        toast('Primeiros passos concluídos. Bom uso do moneyPilot!');
+        return;
+    }
+    if (previous === null || done <= previous) return;
+
+    const text = STEP_TEXT[next.key];
+    toast(`Passo concluído. Próximo: ${text.title}.`);
+    window.location.hash = text.href;
 }
 
 /**

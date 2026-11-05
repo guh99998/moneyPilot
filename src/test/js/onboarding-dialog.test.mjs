@@ -5,7 +5,7 @@ import { installFakeDom, findAll, findByTag, findByText } from './fake-dom.mjs';
 
 const { toasts } = installFakeDom();
 
-const { openOnboarding, markLogin, maybeOpenOnboarding } = await import('../../main/resources/static/js/views/onboarding.js');
+const { openOnboarding, markLogin, maybeOpenOnboarding, guideBand, checkGuide, guideActive, endGuide } = await import('../../main/resources/static/js/views/onboarding.js');
 const { session } = await import('../../main/resources/static/js/api.js');
 
 const STEPS = (a, t, b) => [
@@ -36,6 +36,7 @@ beforeEach(() => {
     session.clear();
     session.start('token-123', 'ana@example.com');
     document.body.replaceChildren();
+    endGuide();
     window.location.hash = '';
     toasts.replaceChildren();
     startServer();
@@ -295,4 +296,160 @@ test('two quick changes are saved in order and the last one wins', async () => {
         JSON.stringify({ showOnStart: false }),
         JSON.stringify({ showOnStart: true })
     ]);
+});
+
+// Guia depois do pop-up (CA10, CA11, CA12)
+
+const serverWith = (steps) => startServer(() => Response.json(state(steps)));
+
+/** Opens the pop-up and follows the link of the step on screen, which starts the guide. */
+async function beginGuide(steps) {
+    openOnboarding(state(steps));
+    await findByTag(openDialog(), 'a')[0].dispatch('click');
+}
+
+test('following a step link in the pop-up starts the guide', async () => {
+    await beginGuide(STEPS(false, false, false));
+
+    assert.equal(guideActive(), true);
+});
+
+test('with nothing pending (reopened from the help) the link does not start a guide', async () => {
+    await beginGuide(STEPS(true, true, true));
+
+    assert.equal(guideActive(), false);
+});
+
+test('a login ends a guide left from before', async () => {
+    await beginGuide(STEPS(false, false, false));
+
+    markLogin();
+
+    assert.equal(guideActive(), false);
+});
+
+test('without a guide there is no band', async () => {
+    serverWith(STEPS(false, false, false));
+
+    assert.equal(await guideBand('accounts'), null);
+    assert.equal(requests.length, 0);
+});
+
+test('the band shows the first pending step, what to do, the button name and Dispensar tutorial', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(false, false, false));
+
+    const band = await guideBand('accounts');
+
+    assert.match(band.textContent, /Passo 1 de 3/);
+    assert.match(band.textContent, /Crie sua primeira conta bancária/);
+    assert.match(band.textContent, /Nova conta/);
+    assert.ok(findByText(band, 'button', 'Dispensar tutorial'));
+    assert.equal(findByTag(band, 'a').length, 0, 'already on the screen of the step');
+});
+
+test('on another step screen the band links to the screen of the pending step', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(true, false, false));
+
+    const band = await guideBand('accounts');
+
+    assert.match(band.textContent, /Passo 2 de 3/);
+    assert.deepEqual(findByTag(band, 'a').map((link) => link.getAttribute('href')), ['#/transactions']);
+});
+
+test('the band only appears on the three step screens', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(false, false, false));
+
+    assert.equal(await guideBand('dashboard'), null);
+    assert.equal(await guideBand('bills'), null);
+    assert.ok(await guideBand('budgets'));
+});
+
+test('Dispensar tutorial removes the band, ends the guide and saves nothing on the server', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(false, false, false));
+    const holder = document.createElement('div');
+    const band = await guideBand('accounts');
+    holder.append(band);
+
+    await findByText(band, 'button', 'Dispensar tutorial').dispatch('click');
+
+    assert.equal(holder.children.length, 0);
+    assert.equal(guideActive(), false);
+    assert.equal(await guideBand('accounts'), null);
+    assert.deepEqual(requests.map((request) => request.method), ['GET']);
+});
+
+test('the band ends the guide when nothing is pending anymore', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(true, true, true));
+
+    assert.equal(await guideBand('accounts'), null);
+    assert.equal(guideActive(), false);
+});
+
+test('concluding a step takes the person to the screen of the next pending step', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(false, false, false));
+    await guideBand('accounts');
+    window.location.hash = '#/accounts';
+
+    serverWith(STEPS(true, false, false));
+    await checkGuide();
+
+    assert.equal(window.location.hash, '#/transactions');
+    assert.equal(toasts.children.length, 1);
+    assert.equal(guideActive(), true);
+});
+
+test('editing or deleting without concluding a new step does not navigate', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(true, false, false));
+    await guideBand('transactions');
+    window.location.hash = '#/transactions';
+
+    await checkGuide();
+
+    assert.equal(window.location.hash, '#/transactions');
+    assert.equal(toasts.children.length, 0);
+});
+
+test('concluding the third step ends the guide with a notice and removes the band', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(true, true, false));
+    const holder = document.createElement('div');
+    const band = await guideBand('budgets');
+    holder.append(band);
+    window.location.hash = '#/budgets';
+
+    serverWith(STEPS(true, true, true));
+    await checkGuide();
+
+    assert.equal(guideActive(), false);
+    assert.equal(holder.children.length, 0);
+    assert.equal(toasts.children.length, 1);
+    assert.equal(window.location.hash, '#/budgets');
+});
+
+test('without a guide, checking does not call the server', async () => {
+    serverWith(STEPS(false, false, false));
+
+    await checkGuide();
+
+    assert.equal(requests.length, 0);
+});
+
+test('a failure while checking neither navigates nor shows an error', async () => {
+    await beginGuide(STEPS(false, false, false));
+    serverWith(STEPS(false, false, false));
+    await guideBand('accounts');
+    window.location.hash = '#/accounts';
+
+    startServer(() => Response.json({ message: 'Erro' }, { status: 500 }));
+    await checkGuide();
+
+    assert.equal(window.location.hash, '#/accounts');
+    assert.equal(toasts.children.length, 0);
 });
