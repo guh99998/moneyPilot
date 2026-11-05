@@ -2,6 +2,7 @@ import { api, fetchAll, normalizePage } from '../api.js';
 import { el, fmtMoney, monthName, monthPicker, pageHead, emptyState, reportError, todayIso } from '../ui.js';
 import { lineChart, groupedColumns, legend, tableToggle } from '../charts.js';
 import { presetBillFilters } from './bills.js';
+import { loadOnboarding, onboardingCard } from './onboarding.js';
 
 const now = new Date();
 let month = now.getMonth() + 1;
@@ -348,7 +349,8 @@ export async function renderDashboard() {
 
         try {
             const months = trendMonths();
-            const [summary, spending, budgets, balances, billsSummary, forecast, upcoming, ...trend] = await Promise.all([
+            const [onboarding, summary, spending, budgets, balances, billsSummary, forecast, upcoming, ...trend] = await Promise.all([
+                loadOnboarding(),
                 api.reports.monthlySummary(month, year),
                 api.reports.spendingByCategory(month, year),
                 api.reports.budgetVsActual(month, year),
@@ -362,9 +364,21 @@ export async function renderDashboard() {
             const heroSlot = el('div', { style: 'display:contents' }, hero(forecast.currentBalance, summary, forecast));
             const refreshHero = (next) => heroSlot.replaceChildren(hero(next.currentBalance, summary, next));
 
+            const welcomeCard = onboarding
+                ? onboardingCard(onboarding, () => {
+                    welcomeCard.remove();
+                    // O botão focado sumiu com o cartão: o foco vai para o título da página.
+                    const title = view.querySelector('h1');
+                    title?.setAttribute('tabindex', '-1');
+                    title?.focus();
+                })
+                : null;
+            if (welcomeCard) welcomeCard.classList.add('span-full');
+
             view.replaceChildren(
                 head(),
                 el('div', { class: 'dash' }, [
+                    welcomeCard,
                     heroSlot,
                     el('div', { class: 'kpis' }, [
                         statTile('Receitas do mês', fmtMoney(summary.totalIncome), 'pos'),

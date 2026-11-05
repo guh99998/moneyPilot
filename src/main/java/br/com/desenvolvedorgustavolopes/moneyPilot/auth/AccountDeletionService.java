@@ -14,6 +14,7 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.exception.UnauthenticatedRequ
 import br.com.desenvolvedorgustavolopes.moneyPilot.mail.EmailMessage;
 import br.com.desenvolvedorgustavolopes.moneyPilot.mail.EmailSender;
 import br.com.desenvolvedorgustavolopes.moneyPilot.notification.DismissedAlertRepository;
+import br.com.desenvolvedorgustavolopes.moneyPilot.onboarding.OnboardingRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.support.SupportTicketRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.transaction.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class AccountDeletionService {
     private final TransactionRepository transactionRepository;
     private final BudgetRepository budgetRepository;
     private final DismissedAlertRepository dismissedAlertRepository;
+    private final OnboardingRepository onboardingRepository;
     private final SupportTicketRepository supportTicketRepository;
     private final CategoryRepository categoryRepository;
     private final AccountRepository accountRepository;
@@ -118,6 +120,7 @@ public class AccountDeletionService {
         transactionRepository.deleteAllByUserId(userId);
         budgetRepository.deleteAllByUserId(userId);
         dismissedAlertRepository.deleteAllByUserId(userId);
+        onboardingRepository.deleteAllByUserId(userId);
         supportTicketRepository.deleteAllByUserId(userId);
         categoryRepository.deleteAllByUserId(userId);
         accountRepository.deleteAllByUserId(userId);

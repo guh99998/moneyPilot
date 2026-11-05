@@ -5,6 +5,7 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidVerification
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.TooManyAttemptsException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.mail.EmailMessage;
 import br.com.desenvolvedorgustavolopes.moneyPilot.mail.EmailSender;
+import br.com.desenvolvedorgustavolopes.moneyPilot.onboarding.WelcomeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class EmailVerificationService {
     private final AttemptLimiter attemptLimiter;
     private final RateLimitProperties rateLimit;
     private final EmailSender emailSender;
+    private final WelcomeService welcomeService;
     private final AppProperties appProperties;
     private final Clock clock;
 
@@ -95,6 +97,7 @@ public class EmailVerificationService {
         token.setUsedAt(now);
         userRepository.saveAndFlush(user);
         tokenRepository.saveAndFlush(token);
+        welcomeService.welcome(user);
     }
 
     /** Responde igual exista ou não a conta; falhas de envio só vão para o log. */

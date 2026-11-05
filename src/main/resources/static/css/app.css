@@ -572,6 +572,17 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 .hero .facts .up { color: #8fd8ac; }
 .hero .facts .down { color: #f2a59f; }
 
+.onboarding { border-left: 4px solid var(--accent); }
+.onboarding-intro { margin: 0 0 .6rem; font-size: .88rem; color: var(--text-secondary); }
+.onboarding-steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.onboarding-step { display: flex; align-items: center; gap: .75rem; min-height: 44px; padding: .35rem 0; border-top: 1px solid var(--border); }
+.onboarding-step:first-child { border-top: 0; }
+.onboarding-state { flex: none; min-width: 4.2rem; padding: .15rem .55rem; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-strong); font-size: .75rem; font-weight: 700; color: var(--text-secondary); text-align: center; }
+.onboarding-step.is-done .onboarding-state { background: var(--accent-soft); color: var(--text); border-color: var(--income); }
+.onboarding-step.is-done a { color: var(--text-muted); text-decoration: line-through; }
+.onboarding-step a { flex: 1 1 auto; display: flex; align-items: center; min-height: 44px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.onboarding .card-head .btn-sm { min-height: 44px; }
+
 .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .kpis > .card + .card { margin-top: 0; }
 

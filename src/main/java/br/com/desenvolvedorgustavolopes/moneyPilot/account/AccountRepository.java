@@ -14,6 +14,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     Page<Account> findAllByUserId(Long userId, Pageable pageable);
 
+    /** Boas-vindas (spec 013): a pessoa já criou alguma conta bancária? */
+    boolean existsByUserId(Long userId);
+
     /** Exclusão de conta (spec 012): apaga em lote, sem carregar entidades. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM Account a WHERE a.userId = :userId")

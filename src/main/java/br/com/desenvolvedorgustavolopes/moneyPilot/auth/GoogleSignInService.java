@@ -5,6 +5,7 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidCurrentPassw
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidGoogleCredentialException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidGoogleTokenException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.UnauthenticatedRequestException;
+import br.com.desenvolvedorgustavolopes.moneyPilot.onboarding.WelcomeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class GoogleSignInService {
     private final RefreshTokenService refreshTokenService;
     private final AttemptLimiter attemptLimiter;
     private final RateLimitProperties rateLimit;
+    private final WelcomeService welcomeService;
     private final Clock clock;
 
     /** O e-mail é o da conta no app, que pode ser diferente do e-mail do Google. */
@@ -42,14 +44,26 @@ public class GoogleSignInService {
         GoogleIdentity identity = normalized(verifier.verify(credential));
 
         // A conta é achada pelo sub: quem mudou o e-mail no Google continua entrando.
-        User user = userRepository.findByGoogleSubject(identity.subject())
-                .orElseGet(() -> accountForNewGoogle(identity));
+        User user = userRepository.findByGoogleSubject(identity.subject()).orElse(null);
+        boolean welcome = false;
+
+        if (user == null) {
+            // Conta criada agora, ou ainda não verificada e que o Google acabou de verificar: é conta nova (spec 013).
+            welcome = userRepository.findUserByEmail(identity.email())
+                    .map(found -> found.getEmailVerifiedAt() == null)
+                    .orElse(true);
+            user = accountForNewGoogle(identity);
+        }
 
         user.setGoogleEmail(identity.email());
         if (!user.isAvatarHidden()) {
             user.setAvatarUrl(pictureOf(identity));
         }
         userRepository.saveAndFlush(user);
+
+        if (welcome) {
+            welcomeService.welcome(user);
+        }
 
         AuthTokens tokens = new AuthTokens(jwtService.generateToken(user.getId()), refreshTokenService.issue(user.getId()));
         return new SignInResult(tokens, user.getEmail());
