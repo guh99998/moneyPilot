@@ -1,6 +1,6 @@
 # 013 — Boas-vindas
 
-**Status:** rascunho (decisões fechadas com o Gustavo; aguardando aprovação)
+**Status:** em implementação
 **Branch:** feature/013-boas-vindas
 **Depende de:** 001 (e-mail), 002 (verificação), 004 (login com Google)
 
