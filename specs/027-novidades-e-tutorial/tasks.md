@@ -12,7 +12,7 @@ Cada tarefa aponta para os critérios que atende. Teste primeiro, depois o códi
 - [x] **T6** — Remover o cartão do painel (CA8)
 - [x] **T7** — Ajuda (`static/ajuda/`) e README
 - [x] **T8** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`
-- [x] **T9** — Validação com as skills do projeto e anotar a revisão aqui
+- [ ] **T9** — Validação com as skills do projeto e anotar a revisão aqui
 - [ ] **T10** — Checagem no navegador a 390px e 1280px, e checagem manual (Gustavo)
 
 ## Notas de implementação
