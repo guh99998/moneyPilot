@@ -26,6 +26,9 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
                                  Pageable pageable
     );
 
+    /** Boas-vindas (spec 013): a pessoa já criou algum orçamento? */
+    boolean existsByUserId(Long userId);
+
     /** Exclusão de conta (spec 012): apaga em lote, sem carregar entidades. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM Budget b WHERE b.userId = :userId")

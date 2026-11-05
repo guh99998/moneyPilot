@@ -30,6 +30,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     Long countAllByAccountId(Long accountId);
 
+    /** Boas-vindas (spec 013): a pessoa já tem algum lançamento, em qualquer conta? */
+    @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.accountId IN (SELECT a.id FROM Account a WHERE a.userId = :userId)")
+    boolean existsAnyByUserId(@Param("userId") Long userId);
+
     /** Exclusão de conta (spec 012): apaga os lançamentos de todas as contas da pessoa. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM Transaction t WHERE t.accountId IN (SELECT a.id FROM Account a WHERE a.userId = :userId)")
