@@ -304,6 +304,8 @@ docker compose -f docker-compose.prod.yml logs -f app   # conferir o Flyway apli
 
 Para voltar uma versão, use a tag com o SHA do commit anterior no lugar de `latest`. Migration já aplicada não é desfeita pela troca de imagem — por isso o dump antes.
 
+**Migrations compatíveis com a versão anterior:** para o rollback ser só trocar a imagem, toda migration precisa deixar o código da versão anterior funcionando. Na prática: criar tabela, coluna anulável ou com default, e índice é seguro; renomear ou apagar coluna/tabela, e tornar obrigatória uma coluna que o código antigo não preenche, não é — isso se faz em duas versões (primeiro o código novo para de usar, depois uma migration remove). Verificado com a V17 (tabela `onboarding`): o app da versão anterior sobe sobre um banco com ela aplicada, porque o Flyway só avisa que o schema é mais novo que as migrations conhecidas e o `ddl-auto=validate` ignora tabela extra.
+
 **Backup:** um cron diário na VPS faz o dump do Postgres e o envia, criptografado, para um armazenamento externo. O dump manual acima é a garantia extra para o momento exato antes de uma migration.
 
 ## Testes
