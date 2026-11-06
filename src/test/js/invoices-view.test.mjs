@@ -6,24 +6,38 @@ import { installFakeDom, findAll, findByTag } from './fake-dom.mjs';
 installFakeDom();
 
 const {
-    renderInvoices, payableThrough, payInvoicePayload, installmentPayload, purchasePayload, selectInvoiceCard, openPayInvoiceDialog, INVOICE_STATUS
+    renderInvoices, payableThrough, payInvoicePayload, installmentPayload, purchasePayload,
+    selectInvoiceCard, openPayInvoiceDialog, INVOICE_STATUS
 } = await import('../../main/resources/static/js/views/invoices.js');
 
 const page = (content) => ({ content, page: { number: 0, totalPages: 1 }, totalPages: 1, number: 0 });
 
-const INVOICES = [
-    { periodStart: '2026-01-10', periodEnd: '2026-02-09', closingDate: '2026-02-10', dueDate: '2026-02-17', total: '120.00', paid: '100.00', remaining: '20.00', status: 'OVERDUE' },
-    { periodStart: '2026-02-10', periodEnd: '2026-03-09', closingDate: '2026-03-10', dueDate: '2026-03-17', total: '200.00', paid: '0.00', remaining: '200.00', status: 'CLOSED' },
-    { periodStart: '2026-03-10', periodEnd: '2026-04-09', closingDate: '2026-04-10', dueDate: '2026-04-17', total: '50.50', paid: '0.00', remaining: '50.50', status: 'OPEN' }
-];
+const inv = (dueDate, status, total, paid = '0.00', extra = {}) => ({
+    periodStart: '2026-01-10', periodEnd: '2026-02-09', closingDate: '2026-02-10', dueDate, status,
+    total, paid, remaining: (Number(total) - Number(paid)).toFixed(2), ...extra
+});
 
-function mockApi({ accounts, invoices = INVOICES }) {
+const NUBANK_INVOICES = [
+    inv('2026-02-17', 'OVERDUE', '120.00', '100.00'),
+    inv('2026-03-17', 'CLOSED', '200.00'),
+    inv('2026-04-17', 'OPEN', '50.50', '0.00', { closingDate: '2026-04-10' }),
+    inv('2026-05-17', 'FUTURE', '90.00')
+];
+const INTER_INVOICES = [inv('2026-03-12', 'PAID', '80.00', '80.00'), inv('2026-04-12', 'OPEN', '300.00', '0.00', { closingDate: '2026-04-05' })];
+
+const CHECKING = { id: 1, name: 'Corrente', type: 'CHECKING' };
+const NUBANK = { id: 7, name: 'Nubank', type: 'CREDIT_CARD', closingDay: 10, dueDay: 17, invoicesFrom: '2026-01-10' };
+const INTER = { id: 9, name: 'Inter', type: 'CREDIT_CARD', closingDay: 5, dueDay: 12, invoicesFrom: '2026-02-05' };
+const NO_DAYS = { id: 8, name: 'Cartão sem dias', type: 'CREDIT_CARD' };
+
+function mockApi({ accounts, invoices = { 7: NUBANK_INVOICES, 9: INTER_INVOICES } }) {
     const calls = [];
     globalThis.fetch = async (url, options = {}) => {
         const path = new URL(url, 'http://localhost').pathname;
         calls.push(`${options.method || 'GET'} ${path}`);
         if (path === '/api/v1/accounts') return Response.json(page(accounts));
-        if (path.endsWith('/invoices')) return Response.json(invoices);
+        const match = path.match(/^\/api\/v1\/accounts\/(\d+)\/invoices$/);
+        if (match) return Response.json(invoices[match[1]] || []);
         if (path === '/api/v1/transactions') return Response.json(page([]));
         if (path === '/api/v1/categories') return Response.json(page([]));
         return new Response(null, { status: 500 });
@@ -31,15 +45,18 @@ function mockApi({ accounts, invoices = INVOICES }) {
     return calls;
 }
 
-const CARD = { id: 7, name: 'Nubank', type: 'CREDIT_CARD', closingDay: 10, dueDay: 17 };
-const CHECKING = { id: 1, name: 'Corrente', type: 'CHECKING' };
 const text = (root) => root.textContent.replace(/\s+/g, ' ');
 const byClass = (root, name) => findAll(root, (node) => node.className.split(' ').includes(name));
+const bodyRows = (view) => findAll(view, (node) => node.tagName === 'TR' && node.parent?.tagName === 'TBODY');
+const dueDates = (view) => bodyRows(view).map((row) => findByTag(row, 'td')[0].textContent);
+const buttonsOf = (root) => findByTag(root, 'button').map((button) => button.textContent);
+
+test.beforeEach(() => selectInvoiceCard(''));
 
 test('payableThrough sums what is left on the invoice and on every older one, in whole cents', () => {
-    assert.equal(payableThrough(INVOICES, 0), '20.00');
-    assert.equal(payableThrough(INVOICES, 1), '220.00');
-    assert.equal(payableThrough(INVOICES, 2), '270.50');
+    assert.equal(payableThrough(NUBANK_INVOICES, 0), '20.00');
+    assert.equal(payableThrough(NUBANK_INVOICES, 1), '220.00');
+    assert.equal(payableThrough(NUBANK_INVOICES, 2), '270.50');
     assert.equal(payableThrough([{ remaining: '0.10' }, { remaining: '0.20' }], 1), '0.30');
 });
 
@@ -61,6 +78,14 @@ test('installmentPayload turns the form into the installment purchase request', 
     });
 });
 
+test('purchasePayload makes an expense on the card', () => {
+    const payload = purchasePayload({ categoryId: '3', description: 'Mercado', amount: '49.90', date: '2026-03-15' }, 7);
+
+    assert.deepEqual(payload, {
+        accountId: 7, categoryId: 3, amount: '49.90', type: 'EXPENSE', description: 'Mercado', date: '2026-03-15'
+    });
+});
+
 test('every invoice status has a label and a badge kind', () => {
     for (const status of ['OPEN', 'CLOSED', 'OVERDUE', 'PAID', 'FUTURE']) {
         assert.ok(INVOICE_STATUS[status].label, status);
@@ -68,42 +93,153 @@ test('every invoice status has a label and a badge kind', () => {
     }
 });
 
-test('the open invoice is the highlight, with its total and due date', async () => {
-    mockApi({ accounts: [CHECKING, CARD] });
-
-    const view = await renderInvoices();
-
-    const highlight = byClass(view, 'invoice-current')[0];
-    assert.ok(highlight, 'highlight card');
-    assert.match(text(highlight), /Fatura atual/);
-    assert.match(text(highlight), /R\$\s50,50/);
-    assert.match(text(highlight), /Vence em 17\/04\/2026/);
-    assert.match(text(highlight), /Fecha em 10\/04\/2026/);
+test('openPayInvoiceDialog is exported for the payable list to reuse', () => {
+    assert.equal(typeof openPayInvoiceDialog, 'function');
 });
 
-test('the other invoices are listed with their status', async () => {
-    mockApi({ accounts: [CHECKING, CARD] });
+test('one list shows the invoices of every card, newest due date first', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
 
     const view = await renderInvoices();
 
-    const listed = text(byClass(view, 'invoice-list')[0]);
-    assert.match(listed, /Vencida/);
-    assert.match(listed, /Fechada/);
-    assert.match(listed, /R\$\s200,00/);
+    assert.deepEqual(dueDates(view), [
+        '17/05/2026', '17/04/2026', '12/04/2026', '17/03/2026', '12/03/2026', '17/02/2026'
+    ]);
+    const cards = bodyRows(view).map((row) => findByTag(row, 'td')[1].textContent);
+    assert.ok(cards.some((cell) => cell.includes('Nubank')));
+    assert.ok(cards.some((cell) => cell.includes('Inter')));
 });
 
-test('each invoice with something left offers to pay it, and the card offers an installment purchase', async () => {
-    mockApi({ accounts: [CHECKING, CARD] });
+test('each row shows the situation, the total and what is left', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK] });
 
     const view = await renderInvoices();
 
-    const labels = findByTag(view, 'button').map((button) => button.textContent);
-    assert.ok(labels.filter((label) => label === 'Pagar fatura').length >= 2, 'pay buttons');
+    const overdue = bodyRows(view).find((row) => text(row).includes('17/02/2026'));
+    assert.match(text(overdue), /Vencida/);
+    assert.match(text(overdue), /R\$\s120,00/);
+    assert.match(text(overdue), /R\$\s20,00/);
+});
+
+test('the summary counts what is due, what is overdue and the open invoices', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+
+    const view = await renderInvoices();
+
+    const summary = text(byClass(view, 'invoice-summary')[0]);
+    assert.match(summary, /A pagar R\$\s570,50/);
+    assert.match(summary, /Vencido R\$\s20,00/);
+    assert.match(summary, /2 abertas/);
+});
+
+test('each card has its current invoice highlighted, with the date the invoices count from', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+
+    const view = await renderInvoices();
+
+    const highlights = byClass(view, 'invoice-current');
+    assert.equal(highlights.length, 2);
+    assert.match(text(highlights[0]), /Fatura atual · Nubank/);
+    assert.match(text(highlights[0]), /R\$\s50,50/);
+    assert.match(text(highlights[0]), /Vence em 17\/04\/2026/);
+    assert.match(text(highlights[0]), /Faturas contam desde 10\/01\/2026/);
+    assert.match(text(highlights[1]), /Fatura atual · Inter/);
+    assert.match(text(highlights[1]), /Faturas contam desde 05\/02\/2026/);
+});
+
+test('each highlight offers a new purchase, an installment purchase and to pay', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK] });
+
+    const view = await renderInvoices();
+
+    const labels = buttonsOf(byClass(view, 'invoice-current')[0]);
+    assert.ok(labels.includes('Nova compra'));
     assert.ok(labels.includes('Compra parcelada'));
+    assert.ok(labels.includes('Pagar fatura'));
+});
+
+test('only invoices with something left to pay, and not future, offer to be paid', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK] });
+
+    const view = await renderInvoices();
+
+    const rows = bodyRows(view);
+    const pay = (row) => buttonsOf(row).includes('Pagar fatura');
+    assert.equal(pay(rows.find((row) => text(row).includes('17/05/2026'))), false, 'future');
+    assert.equal(pay(rows.find((row) => text(row).includes('17/04/2026'))), true, 'open');
+    assert.equal(pay(rows.find((row) => text(row).includes('17/03/2026'))), true, 'closed');
+    assert.equal(pay(rows.find((row) => text(row).includes('17/02/2026'))), true, 'overdue');
+});
+
+test('every row can open the purchases of its cycle', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK] });
+
+    const view = await renderInvoices();
+
+    for (const row of bodyRows(view)) {
+        assert.ok(findByTag(row, 'summary').some((node) => /Ver compras/.test(node.textContent)), text(row));
+    }
+});
+
+test('the card filter narrows the list to that card', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+    const view = await renderInvoices();
+
+    const select = findByTag(view, 'select').find((node) => node.parent.textContent.includes('Cartão'));
+    select.value = '9';
+    await select.dispatch('change');
+
+    assert.deepEqual(dueDates(view), ['12/04/2026', '12/03/2026']);
+});
+
+test('the status filter keeps only that situation', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+    const view = await renderInvoices();
+
+    const select = findByTag(view, 'select').find((node) => node.parent.textContent.includes('Situação'));
+    select.value = 'OPEN';
+    await select.dispatch('change');
+
+    assert.deepEqual(dueDates(view), ['17/04/2026', '12/04/2026']);
+});
+
+test('clicking a column header sorts by it, and again reverses', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+    const view = await renderInvoices();
+
+    const header = () => findByTag(view, 'button').find((node) => node.className === 'sort-btn' && node.textContent.startsWith('Total'));
+    await header().dispatch('click');
+    const ascending = bodyRows(view).map((row) => findByTag(row, 'td')[3].textContent);
+    await header().dispatch('click');
+    const descending = bodyRows(view).map((row) => findByTag(row, 'td')[3].textContent);
+
+    assert.match(ascending[0], /R\$\s50,50/);
+    assert.match(descending[0], /R\$\s300,00/);
+});
+
+test('selectInvoiceCard opens the screen filtered on that card', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+    selectInvoiceCard(9);
+
+    const view = await renderInvoices();
+
+    assert.deepEqual(dueDates(view), ['12/04/2026', '12/03/2026']);
+    const select = findByTag(view, 'select').find((node) => node.parent.textContent.includes('Cartão'));
+    assert.equal(select.value, '9');
+});
+
+test('invoices of every card are fetched, one request per card with days', async () => {
+    const calls = mockApi({ accounts: [CHECKING, NUBANK, INTER, NO_DAYS] });
+
+    await renderInvoices();
+
+    assert.ok(calls.includes('GET /api/v1/accounts/7/invoices'));
+    assert.ok(calls.includes('GET /api/v1/accounts/9/invoices'));
+    assert.ok(!calls.some((call) => call.includes('/accounts/8/')), 'card without days');
 });
 
 test('without a card that has closing and due days, the screen explains how to set one up', async () => {
-    mockApi({ accounts: [CHECKING, { id: 8, name: 'Cartão sem dias', type: 'CREDIT_CARD' }] });
+    mockApi({ accounts: [CHECKING, NO_DAYS] });
 
     const view = await renderInvoices();
 
@@ -113,43 +249,15 @@ test('without a card that has closing and due days, the screen explains how to s
     assert.equal(byClass(view, 'invoice-current').length, 0);
 });
 
-test('a future invoice does not offer to be paid yet', async () => {
-    const future = { periodStart: '2026-05-10', periodEnd: '2026-06-09', closingDate: '2026-06-10', dueDate: '2026-06-17', total: '90.00', paid: '0.00', remaining: '90.00', status: 'FUTURE' };
-    mockApi({ accounts: [CHECKING, CARD], invoices: [INVOICES[2], future] });
-
+test('no invoice matching the filters shows an empty message, not a broken table', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: NUBANK_INVOICES } });
+    selectInvoiceCard(7);
     const view = await renderInvoices();
+    const select = findByTag(view, 'select').find((node) => node.parent.textContent.includes('Situação'));
 
-    const labels = findByTag(view, 'button').map((button) => button.textContent);
-    assert.equal(labels.filter((label) => label === 'Pagar fatura').length, 1, 'only the open invoice');
-});
+    select.value = 'PAID';
+    await select.dispatch('change');
 
-test('purchasePayload makes an expense on the card', () => {
-    const payload = purchasePayload({ categoryId: '3', description: 'Mercado', amount: '49.90', date: '2026-03-15' }, 7);
-
-    assert.deepEqual(payload, {
-        accountId: 7, categoryId: 3, amount: '49.90', type: 'EXPENSE', description: 'Mercado', date: '2026-03-15'
-    });
-});
-
-test('the highlight offers a new purchase next to the installment purchase', async () => {
-    mockApi({ accounts: [CHECKING, CARD] });
-
-    const view = await renderInvoices();
-
-    const labels = findByTag(view, 'button').map((button) => button.textContent);
-    assert.ok(labels.includes('Nova compra'));
-});
-
-test('selectInvoiceCard makes the screen open on that card', async () => {
-    const calls = mockApi({ accounts: [CHECKING, CARD, { id: 9, name: 'Inter', type: 'CREDIT_CARD', closingDay: 5, dueDay: 12 }] });
-    selectInvoiceCard(9);
-
-    await renderInvoices();
-
-    assert.ok(calls.includes('GET /api/v1/accounts/9/invoices'), calls.join(', '));
-    assert.ok(!calls.includes('GET /api/v1/accounts/7/invoices'));
-});
-
-test('openPayInvoiceDialog is exported for the payable list to reuse', () => {
-    assert.equal(typeof openPayInvoiceDialog, 'function');
+    assert.equal(bodyRows(view).length, 0);
+    assert.match(text(view), /Nenhuma fatura com esses filtros/);
 });

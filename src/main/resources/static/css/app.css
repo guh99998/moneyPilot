@@ -1038,3 +1038,8 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .invoice-row .actions .btn-sm { margin-left: .35rem; }
 .invoice-row a.btn { text-decoration: none; display: inline-flex; align-items: center; }
 .invoice-row td.desc, .invoice-row td.desc .desc-main, .invoice-row .cell-tag { white-space: normal; overflow: visible; text-overflow: clip; }
+.invoice-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .25rem; padding: .25rem; margin-bottom: 1rem; }
+.invoice-summary .stat .value.neg { color: var(--expense); }
+.invoices-table td.actions { text-align: right; }
+.invoices-table td.desc .invoice-purchases { margin-top: .25rem; }
+.invoices-table tr.is-overdue td.due { color: var(--overdue); font-weight: 700; }

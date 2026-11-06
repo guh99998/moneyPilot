@@ -1,7 +1,9 @@
 import { api, fetchAll, normalizePage } from '../api.js';
 import {
-    el, fmtMoney, fmtDate, badge, toast, reportError, pageHead, emptyState, formDialog, todayIso
+    el, fmtMoney, fmtDate, badge, toast, reportError, pageHead, emptyState, formDialog, todayIso,
+    collapsibleFilters, isCommittedDate, sortHeader, sortSelect, stackable
 } from '../ui.js';
+import { EMPTY_FILTERS, SORT_OPTIONS, buildRows, filterInvoices, sortInvoices, summarize } from './invoices-list.js';
 
 export const INVOICE_STATUS = {
     OPEN: { label: 'Aberta', kind: 'open' },
@@ -14,7 +16,9 @@ export const INVOICE_STATUS = {
 const toCents = (value) => Math.round(Number(value) * 100);
 const fromCents = (cents) => (cents / 100).toFixed(2);
 
-let selectedCardId = null;
+const DEFAULT_SORT = { key: 'dueDate', dir: 'desc' };
+let filters = { ...EMPTY_FILTERS };
+let sort = { ...DEFAULT_SORT };
 
 /**
  * O pagamento abate da fatura mais antiga para a mais nova (regra 6 da spec 016), então pagar uma
@@ -58,9 +62,13 @@ export function purchasePayload(values, cardId) {
     };
 }
 
-/** Abre a tela de Faturas já neste cartão (usado pela linha da fatura em A pagar e receber). */
+/**
+ * Abre a tela de Faturas já filtrada neste cartão (usado pela linha da fatura em A pagar e receber e em
+ * Próximos vencimentos). Os outros filtros e a ordenação voltam ao padrão; id vazio limpa tudo.
+ */
 export function selectInvoiceCard(id) {
-    selectedCardId = Number(id);
+    filters = { ...EMPTY_FILTERS, cardId: id === '' || id === null || id === undefined ? '' : String(id) };
+    sort = { ...DEFAULT_SORT };
 }
 
 /**
@@ -154,17 +162,33 @@ function purchasesDetails(card, invoice) {
             }
         }
     }, [
-        el('summary', { text: `Compras de ${fmtDate(invoice.periodStart)} a ${fmtDate(invoice.periodEnd)}` }),
+        el('summary', {
+            text: 'Ver compras',
+            'aria-label': `Ver compras de ${fmtDate(invoice.periodStart)} a ${fmtDate(invoice.periodEnd)}`
+        }),
         body
+    ]);
+}
+
+const STAT_ICON_CLASS = { neg: 'neg', pos: 'pos' };
+
+function stat(label, value, tone) {
+    return el('div', { class: 'stat' }, [
+        el('span', { class: 'label', text: label }),
+        ' ',
+        el('span', { class: `value ${STAT_ICON_CLASS[tone] || ''}`.trim(), text: value })
     ]);
 }
 
 export async function renderInvoices() {
     const view = el('div');
     let accounts = [];
+    let cards = [];
+    let byCard = new Map();
+    let allRows = [];
 
-    function head(actions = []) {
-        return pageHead('Faturas', 'Quanto está a fatura do cartão e quando ela vence', actions);
+    function head() {
+        return pageHead('Faturas', 'Quanto está a fatura de cada cartão e quando ela vence');
     }
 
     async function expenseCategories() {
@@ -234,86 +258,142 @@ export async function renderInvoices() {
         });
     }
 
-    function payButton(card, invoices, index) {
-        if (invoices[index].status === 'FUTURE' || Number(invoices[index].remaining) <= 0) return null;
+    function payButton({ card, invoice, payAmount }) {
+        if (invoice.status === 'FUTURE' || Number(invoice.remaining) <= 0) return null;
         return el('button', {
             type: 'button',
             class: 'btn-primary btn-sm',
             text: 'Pagar fatura',
-            'aria-label': `Pagar fatura com vencimento em ${fmtDate(invoices[index].dueDate)}`,
-            onClick: () => openPayInvoiceDialog({ card, amount: payableThrough(invoices, index), accounts, onDone: load })
+            'aria-label': `Pagar fatura do ${card.name} com vencimento em ${fmtDate(invoice.dueDate)}`,
+            onClick: () => openPayInvoiceDialog({ card, amount: payAmount, accounts, onDone: load })
         });
     }
 
-    function currentCard(card, invoices, index) {
+    function summaryCard() {
+        const totals = summarize(allRows);
+        return el('section', { class: 'card invoice-summary', 'aria-label': 'Resumo das faturas' }, [
+            stat('A pagar', fmtMoney(totals.payableCents / 100)),
+            stat('Vencido', fmtMoney(totals.overdueCents / 100), totals.overdueCents > 0 ? 'neg' : ''),
+            stat('Faturas', `${totals.openCount} ${totals.openCount === 1 ? 'aberta' : 'abertas'}`)
+        ]);
+    }
+
+    function currentCard(card) {
+        const invoices = byCard.get(card.id) || [];
+        const index = invoices.findIndex((invoice) => invoice.status === 'OPEN');
+        if (index < 0) return null;
         const invoice = invoices[index];
+        const row = { card, invoice, payAmount: payableThrough(invoices, index) };
         const earlierOwed = invoices.slice(0, index).reduce((sum, item) => sum + toCents(item.remaining), 0);
         const facts = [
             el('span', { text: `Fecha em ${fmtDate(invoice.closingDate)}` }),
             el('span', { text: `Vence em ${fmtDate(invoice.dueDate)}` })
         ];
         if (Number(invoice.paid) > 0) facts.push(el('span', { text: `Já pago: ${fmtMoney(invoice.paid)}` }));
+        const titleId = `invoice-current-${card.id}`;
 
-        return el('section', { class: 'card invoice-current', 'aria-labelledby': 'invoice-current-title' }, [
+        return el('section', { class: 'card invoice-current', 'aria-labelledby': titleId }, [
             el('div', { class: 'card-head' }, [
-                el('h2', { id: 'invoice-current-title', text: 'Fatura atual' }),
+                el('h2', { id: titleId, text: `Fatura atual · ${card.name}` }),
                 statusBadge(invoice.status)
             ]),
             el('p', { class: 'invoice-figure', text: fmtMoney(invoice.total) }),
             el('p', { class: 'invoice-facts' }, facts),
+            card.invoicesFrom ? el('p', { class: 'meter-foot', text: `Faturas contam desde ${fmtDate(card.invoicesFrom)}` }) : null,
             earlierOwed > 0
                 ? el('p', { class: 'forecast-note critical', text: `Há ${fmtMoney(earlierOwed / 100)} em faturas anteriores ainda em aberto.` })
                 : null,
             el('div', { class: 'invoice-actions' }, [
-                payButton(card, invoices, index),
+                payButton(row),
                 el('button', { type: 'button', class: 'btn-sm', text: 'Nova compra', onClick: () => purchaseDialog(card) }),
                 el('button', { type: 'button', class: 'btn-sm', text: 'Compra parcelada', onClick: () => installmentDialog(card) })
-            ]),
-            purchasesDetails(card, invoice)
+            ])
         ]);
     }
 
-    function otherInvoices(card, invoices, currentIndex) {
-        const rows = invoices
-            .map((invoice, index) => ({ invoice, index }))
-            .filter(({ index }) => index !== currentIndex)
-            .reverse();
-
-        if (!rows.length) return null;
-
-        return el('section', { class: 'card', 'aria-labelledby': 'invoice-list-title' }, [
-            el('div', { class: 'card-head' }, [el('h2', { id: 'invoice-list-title', text: 'Outras faturas' })]),
-            el('ul', { class: 'invoice-list' }, rows.map(({ invoice, index }) => el('li', { class: 'invoice-item' }, [
-                el('div', { class: 'invoice-item-head' }, [
-                    el('div', { class: 'invoice-item-main' }, [
-                        el('strong', { text: `Vence em ${fmtDate(invoice.dueDate)}` }),
-                        statusBadge(invoice.status)
-                    ]),
-                    el('div', { class: 'invoice-item-amounts' }, [
-                        el('span', { class: 'invoice-item-total', text: fmtMoney(invoice.total) }),
-                        Number(invoice.remaining) > 0 && Number(invoice.paid) > 0
-                            ? el('span', { class: 'meter-foot', text: `Falta ${fmtMoney(invoice.remaining)}` })
-                            : null
-                    ]),
-                    payButton(card, invoices, index)
-                ]),
-                purchasesDetails(card, invoice)
-            ])))
+    function selectField(label, key, options, allLabel) {
+        const select = el('select', {
+            onChange: () => { filters[key] = select.value; render(); }
+        }, [
+            el('option', { value: '', text: allLabel }),
+            ...options.map((option) => el('option', { value: option.value, text: option.label }))
         ]);
+        select.value = String(filters[key]);
+        return el('div', { class: 'field' }, [el('label', { text: label }), select]);
     }
 
-    function cardPicker(cards, card) {
-        if (cards.length < 2) return null;
-        return el('div', { class: 'field invoice-picker' }, [
-            el('label', { for: 'invoice-card', text: 'Cartão' }),
-            el('select', {
-                id: 'invoice-card',
-                onChange: (event) => {
-                    selectedCardId = Number(event.target.value);
-                    load();
-                }
-            }, cards.map((option) => el('option', { value: option.id, text: option.name, selected: option.id === card.id })))
-        ]);
+    function dateField(label, key) {
+        const input = el('input', {
+            type: 'date',
+            value: filters[key],
+            min: '1900-01-01',
+            max: '2200-12-31',
+            onChange: () => {
+                if (!isCommittedDate(input.value)) return;
+                filters[key] = input.value;
+                render();
+            }
+        });
+        return el('div', { class: 'field' }, [el('label', { text: label }), input]);
+    }
+
+    function filterBar() {
+        const active = Object.entries(filters).filter(([name, value]) => value && value !== EMPTY_FILTERS[name]).length;
+        return collapsibleFilters('invoices', el('div', { class: 'filters' }, [
+            selectField('Cartão', 'cardId', cards.map((card) => ({ value: card.id, label: card.name })), 'Todos'),
+            selectField('Situação', 'status', Object.entries(INVOICE_STATUS).map(([value, info]) => ({ value, label: info.label })), 'Todas'),
+            dateField('Vence de', 'dueFrom'),
+            dateField('até', 'dueTo'),
+            el('button', {
+                type: 'button',
+                class: 'btn-sm',
+                text: 'Limpar',
+                onClick: () => { selectInvoiceCard(''); render(); }
+            })
+        ]), active);
+    }
+
+    function changeSort(next) {
+        sort = next;
+        render();
+    }
+
+    function table(rows) {
+        return stackable(el('div', { class: 'table-wrap' }, [
+            el('table', { class: 'invoices-table' }, [
+                el('thead', {}, el('tr', {}, [
+                    sortHeader({ label: 'Vencimento', key: 'dueDate', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Cartão', key: 'card', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Situação', key: 'status', sort, onSort: changeSort }),
+                    sortHeader({ label: 'Total', key: 'total', sort, onSort: changeSort, numeric: true }),
+                    sortHeader({ label: 'Falta pagar', key: 'remaining', sort, onSort: changeSort, numeric: true }),
+                    el('th', { text: '' })
+                ])),
+                el('tbody', {}, rows.map((row) => el('tr', { class: row.invoice.status === 'OVERDUE' ? 'is-overdue' : null }, [
+                    el('td', { class: 'due', text: fmtDate(row.invoice.dueDate) }),
+                    el('td', { class: 'desc' }, [
+                        el('span', { class: 'desc-main', text: row.card.name }),
+                        purchasesDetails(row.card, row.invoice)
+                    ]),
+                    el('td', { class: 'status' }, statusBadge(row.invoice.status)),
+                    el('td', { class: 'num', text: fmtMoney(row.invoice.total) }),
+                    el('td', { class: 'num', text: Number(row.invoice.remaining) > 0 ? fmtMoney(row.invoice.remaining) : '—' }),
+                    el('td', { class: 'actions' }, payButton(row))
+                ])))
+            ])
+        ]));
+    }
+
+    function render() {
+        const rows = sortInvoices(filterInvoices(allRows, filters), sort);
+        view.replaceChildren(
+            head(),
+            summaryCard(),
+            ...cards.map(currentCard).filter(Boolean),
+            filterBar(),
+            el('div', { class: 'sort-only' }, sortSelect({ options: SORT_OPTIONS, sort, onSort: changeSort })),
+            el('div', { class: 'card' }, [rows.length ? table(rows) : emptyState('Nenhuma fatura com esses filtros.')])
+        );
     }
 
     async function load() {
@@ -321,7 +401,7 @@ export async function renderInvoices() {
 
         try {
             accounts = await fetchAll(api.accounts.list);
-            const cards = accounts.filter((account) => account.type === 'CREDIT_CARD' && account.closingDay);
+            cards = accounts.filter((account) => account.type === 'CREDIT_CARD' && account.closingDay);
 
             if (!cards.length) {
                 view.replaceChildren(head(), el('div', { class: 'card' }, [
@@ -333,17 +413,10 @@ export async function renderInvoices() {
                 return;
             }
 
-            const card = cards.find((option) => option.id === selectedCardId) || cards[0];
-            selectedCardId = card.id;
-            const invoices = await api.accounts.invoices(card.id);
-            const currentIndex = invoices.findIndex((invoice) => invoice.status === 'OPEN');
-
-            view.replaceChildren(
-                head(),
-                cardPicker(cards, card) || '',
-                currentIndex >= 0 ? currentCard(card, invoices, currentIndex) : '',
-                otherInvoices(card, invoices, currentIndex) || ''
-            );
+            const lists = await Promise.all(cards.map((card) => api.accounts.invoices(card.id)));
+            byCard = new Map(cards.map((card, index) => [card.id, lists[index]]));
+            allRows = buildRows(cards, byCard);
+            render();
         } catch (error) {
             reportError(error);
             view.replaceChildren(head(), emptyState(error?.message || 'Não foi possível carregar as faturas.'));

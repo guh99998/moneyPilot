@@ -97,6 +97,23 @@ class FakeElement {
     focus() {
         globalThis.document.activeElement = this;
     }
+
+    /** Only what the views use: tag names, optionally chained with spaces ("thead th"). */
+    querySelectorAll(selector) {
+        const chain = selector.trim().split(/\s+/).map((part) => part.toUpperCase());
+        const last = chain.at(-1);
+        const matches = (node) => {
+            if (node.tagName !== last) return false;
+            let ancestor = node.parent;
+            for (let i = chain.length - 2; i >= 0; i--) {
+                while (ancestor && ancestor.tagName !== chain[i]) ancestor = ancestor.parent;
+                if (!ancestor) return false;
+                ancestor = ancestor.parent;
+            }
+            return true;
+        };
+        return findAll(this, (node) => node !== this && matches(node));
+    }
 }
 
 BOOLEAN_ATTRIBUTES.forEach((name) => {
@@ -144,7 +161,8 @@ export function installFakeDom() {
         history: {
             replaceState: (state, title, url) => { globalThis.window.location.hash = url; }
         },
-        dispatchEvent: () => {}
+        dispatchEvent: () => {},
+        matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} })
     };
 
     return { toasts };
