@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Contas", description = "Contas bancárias, carteiras e cartões da pessoa autenticada.")
 @RestController
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController {
 
     private final AccountService service;
+    private final InvoiceService invoiceService;
 
     @Operation(summary = "Cria uma conta", description = "Cria uma conta com o saldo inicial informado (2 casas decimais, ponto decimal).")
     @ApiResponses({
@@ -93,6 +96,20 @@ public class AccountController {
     @ResponseStatus(HttpStatus.OK)
     public BalanceResponse getAccountBalance(@PathVariable Long id) {
         return service.getAccountBalance(id);
+    }
+
+    @Operation(summary = "Lista as faturas do cartão",
+            description = "Faturas do cartão da mais antiga à mais nova, calculadas na hora: do ciclo em que as faturas começaram até o último ciclo com lançamento (ou o ciclo atual). Cada fatura soma despesas menos receitas do ciclo; pagamentos são transferências para o cartão e abatem da fatura mais antiga para a mais nova. Conta sem dia de fechamento e vencimento responde 409.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Faturas do cartão"),
+            @ApiResponse(responseCode = "401", description = "Sem sessão ou token de acesso inválido ou vencido", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Recurso não encontrado (ou de outra conta)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Conflito com o estado atual do recurso: a conta não tem fechamento e vencimento", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @GetMapping("/{id}/invoices")
+    @ResponseStatus(HttpStatus.OK)
+    public List<InvoiceResponse> getInvoices(@PathVariable Long id) {
+        return invoiceService.getInvoices(id);
     }
 
 }

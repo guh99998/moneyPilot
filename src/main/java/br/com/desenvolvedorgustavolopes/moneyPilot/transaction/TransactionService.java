@@ -2,6 +2,7 @@ package br.com.desenvolvedorgustavolopes.moneyPilot.transaction;
 
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.Account;
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.AccountRepository;
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.AccountType;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.Bill;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRepository;
@@ -16,8 +17,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -128,6 +132,9 @@ public class TransactionService {
         if (transaction.getTransferGroupId() != null)
             throw new TransactionIsTransferException(id);
 
+        if (transaction.getInstallmentGroupId() != null)
+            throw new TransactionIsInstallmentException(id);
+
         if (billRepository.existsByTransactionId(id))
             throw new TransactionLinkedToBillException(id);
 
@@ -159,6 +166,8 @@ public class TransactionService {
 
         if (transaction.getTransferGroupId() != null) {
             repository.deleteAll(repository.findAllByTransferGroupId(transaction.getTransferGroupId()));
+        } else if (transaction.getInstallmentGroupId() != null) {
+            repository.deleteAll(repository.findAllByInstallmentGroupId(transaction.getInstallmentGroupId()));
         } else {
             repository.delete(transaction);
         }
@@ -202,5 +211,65 @@ public class TransactionService {
         Transaction toTransactionSave = repository.save(toTransaction);
 
         return List.of(new TransactionResponse(fromTransactionSave, fromAccount.getName(), null), new TransactionResponse(toTransactionSave, toAccount.getName(), null));
+    }
+
+    /** Spec 016, regra 8: N despesas no cartão, uma por mês; o centavo que sobra fica na primeira parcela. */
+    @Transactional
+    public List<TransactionResponse> createInstallmentPurchase(InstallmentPurchaseRequest request) {
+        Long userId = userProvider.getCurrentUserId();
+        Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
+
+        if (account.getType() != AccountType.CREDIT_CARD)
+            throw new InstallmentRequiresCreditCardException(account.getId());
+
+        Category category = categoryService.findVisibleCategory(request.categoryId());
+
+        if (!category.getType().name().equals(TransactionType.EXPENSE.name()))
+            throw new CategoryTypeMismatchException(request.categoryId(), TransactionType.EXPENSE);
+
+        int count = request.installments();
+        if (request.totalAmount().compareTo(BigDecimal.valueOf(count, 2)) < 0)
+            throw new InstallmentAmountTooSmallException(BigDecimal.valueOf(count, 2), count);
+
+        BigDecimal base = request.totalAmount().divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+        BigDecimal residue = request.totalAmount().subtract(base.multiply(BigDecimal.valueOf(count)));
+
+        UUID groupId = UUID.randomUUID();
+        Instant now = Instant.now();
+        List<Transaction> installments = new ArrayList<>();
+
+        for (int i = 1; i <= count; i++) {
+            Transaction transaction = new Transaction();
+
+            transaction.setAccountId(account.getId());
+            transaction.setCategoryId(category.getId());
+            transaction.setAmount(i == 1 ? base.add(residue) : base);
+            transaction.setType(TransactionType.EXPENSE);
+            transaction.setDescription(request.description());
+            transaction.setDate(request.date().plusMonths(i - 1));
+            transaction.setInstallmentGroupId(groupId);
+            transaction.setInstallmentNumber(i);
+            transaction.setInstallmentTotal(count);
+            transaction.setCreatedAt(now);
+            transaction.setUpdatedAt(now);
+
+            installments.add(transaction);
+        }
+
+        return repository.saveAll(installments).stream()
+                .map(t -> new TransactionResponse(t, account.getName(), category.getName()))
+                .toList();
+    }
+
+    @Transactional
+    public void deleteInstallmentGroup(UUID groupId) {
+        Long userId = userProvider.getCurrentUserId();
+        List<Transaction> installments = repository.findAllByInstallmentGroupId(groupId);
+
+        if (installments.isEmpty()
+                || accountRepository.findByIdAndUserId(installments.get(0).getAccountId(), userId).isEmpty())
+            throw new InstallmentGroupNotFoundException(groupId);
+
+        repository.deleteAll(installments);
     }
 }

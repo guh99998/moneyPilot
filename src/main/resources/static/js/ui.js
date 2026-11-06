@@ -125,8 +125,8 @@ export function formDialog({ title, fields, values = {}, submitLabel = 'Salvar',
 
             const payload = {};
             fields.forEach((field) => {
-                const raw = inputs.get(field.name).value;
-                payload[field.name] = raw === '' ? null : raw;
+                const input = inputs.get(field.name);
+                payload[field.name] = input.disabled || input.value === '' ? null : input.value;
             });
 
             try {
@@ -178,12 +178,26 @@ export function formDialog({ title, fields, values = {}, submitLabel = 'Salvar',
 
         inputs.set(field.name, input);
         errors.set(field.name, errorNode);
-        body.append(el('div', { class: 'field' }, [
+        const group = el('div', { class: 'field' }, [
             el('label', { for: id, text: field.label }),
             input,
             field.hint ? el('span', { class: 'meter-foot', text: field.hint }) : null,
             errorNode
-        ]));
+        ]);
+
+        // Campo condicional: só aparece (e só vale) quando outro campo, já criado acima, tem o valor pedido.
+        if (field.showWhen) {
+            const controller = inputs.get(field.showWhen.name);
+            const toggle = () => {
+                const visible = controller.value === field.showWhen.value;
+                group.hidden = !visible;
+                input.disabled = !visible;
+            };
+            controller.addEventListener('change', toggle);
+            toggle();
+        }
+
+        body.append(group);
     });
 
     body.append(el('div', { class: 'dialog-actions' }, [

@@ -1,4 +1,6 @@
 import { api, fetchAll, normalizePage, session } from '../api.js';
+import { loadInvoiceRows, invoiceRow } from './bills-invoices.js';
+import { openPayInvoiceDialog } from './invoices.js';
 import {
     el, clear, fmtMoney, fmtDate, badge, toast, reportError,
     pageHead, emptyState, pager, collapsibleFilters, sortHeader, sortSelect, confirmDialog, todayIso, stackable, isCommittedDate
@@ -601,6 +603,9 @@ export async function renderBills() {
         fetchAll(api.categories.list)
     ]);
     let rows = [];
+    // Faturas de cartão (spec 016): calculadas pelo servidor, ficam no topo da primeira página.
+    let invoiceRows = [];
+    let invoicesFailed = false;
 
     function selectField(label, key, options, allLabel) {
         const select = el('select', {
@@ -846,7 +851,7 @@ export async function renderBills() {
                     sortHeader({ label: 'Valor', key: 'amount', sort, onSort: changeSort, numeric: true }),
                     el('th', { text: '' })
                 ])),
-                el('tbody', {}, rows.map((bill) => {
+                el('tbody', {}, [...invoiceRows.map((row) => invoiceRow(row, { onPay: payInvoice })), ...rows.map((bill) => {
                     const checkbox = el('input', {
                         type: 'checkbox',
                         'aria-label': `Selecionar ${bill.description || bill.categoryName}`,
@@ -869,15 +874,24 @@ export async function renderBills() {
                         amountCell(bill),
                         el('td', { class: 'actions' }, actions(bill))
                     ]);
-                }))
+                })])
             ])
         ]));
+    }
+
+    function payInvoice(row) {
+        openPayInvoiceDialog({
+            card: { id: row.invoice.accountId, name: row.invoice.accountName },
+            amount: row.payAmount,
+            accounts,
+            onDone: load
+        });
     }
 
     let result = null;
 
     function render() {
-        const content = rows.length
+        const content = rows.length || invoiceRows.length
             ? el('div', { class: 'card' }, [
                 table(),
                 pager({
@@ -891,15 +905,27 @@ export async function renderBills() {
                 ? 'Nada em aberto. Cadastre um título ou um parcelamento para acompanhar o que vence.'
                 : 'Nenhum título encontrado com esses filtros.')]);
 
-        view.replaceChildren(head(), filterBar(), selectionBar() || '', content);
+        view.replaceChildren(
+            head(),
+            filterBar(),
+            invoicesFailed ? el('p', { class: 'meter-foot', role: 'status', text: 'Não foi possível carregar as faturas do cartão. Os títulos abaixo estão completos.' }) : '',
+            selectionBar() || '',
+            content
+        );
     }
 
     async function load() {
         view.replaceChildren(head(), filterBar(), el('div', { class: 'empty', text: 'Carregando…' }));
 
         try {
-            result = normalizePage(await api.bills.list({ ...filters, page, size: 20, sort: [`${sort.key},${sort.dir}`, `id,${sort.dir}`] }));
+            const [billsPage, invoices] = await Promise.all([
+                api.bills.list({ ...filters, page, size: 20, sort: [`${sort.key},${sort.dir}`, `id,${sort.dir}`] }),
+                loadInvoiceRows(filters, page)
+            ]);
+            result = normalizePage(billsPage);
             rows = result.content;
+            invoiceRows = invoices.rows;
+            invoicesFailed = invoices.failed;
             // Atualiza a cópia guardada de quem continua selecionado; quem saiu de OPEN sai da seleção.
             rows.forEach((bill) => {
                 if (!selected.has(bill.id)) return;

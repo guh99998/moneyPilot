@@ -122,8 +122,11 @@ async function send(path, { method, body, query, token }) {
 }
 
 function expireSession() {
+    // Várias chamadas em voo falham juntas quando a sessão acaba: só a primeira encontra a sessão ativa
+    // e avisa; as demais já chegam depois do clear() e não devem repetir o aviso.
+    const wasActive = session.active;
     session.clear();
-    window.dispatchEvent(new CustomEvent('session:expired'));
+    if (wasActive) window.dispatchEvent(new CustomEvent('session:expired'));
     return new ApiError(401, 'Sua sessão expirou. Entre novamente.');
 }
 
@@ -236,6 +239,12 @@ export const api = {
         }
     },
 
+    // Primeiros passos (specs 013 e 027): o pop-up de primeiro contato, só em conta nova.
+    onboarding: {
+        get: () => request('/onboarding'),
+        savePreferences: (showOnStart) => request('/onboarding/preferences', { method: 'PUT', body: { showOnStart } })
+    },
+
     alerts: {
         list: () => request('/alerts'),
         dismiss: (key) => request('/alerts/dismiss', { method: 'POST', body: { key } })
@@ -271,7 +280,12 @@ export const api = {
         create: (body) => request('/accounts', { method: 'POST', body }),
         update: (id, body) => request(`/accounts/${id}`, { method: 'PUT', body }),
         remove: (id) => request(`/accounts/${id}`, { method: 'DELETE' }),
-        balance: (id) => request(`/accounts/${id}/balance`)
+        balance: (id) => request(`/accounts/${id}/balance`),
+        invoices: (id) => request(`/accounts/${id}/invoices`)
+    },
+
+    invoices: {
+        payable: () => request('/invoices/payable')
     },
 
     categories: {
@@ -286,7 +300,9 @@ export const api = {
         create: (body) => request('/transactions', { method: 'POST', body }),
         update: (id, body) => request(`/transactions/${id}`, { method: 'PUT', body }),
         remove: (id) => request(`/transactions/${id}`, { method: 'DELETE' }),
-        transfer: (body) => request('/transactions/transfers', { method: 'POST', body })
+        transfer: (body) => request('/transactions/transfers', { method: 'POST', body }),
+        createInstallments: (body) => request('/transactions/installments', { method: 'POST', body }),
+        removeInstallments: (groupId) => request(`/transactions/installments/${groupId}`, { method: 'DELETE' })
     },
 
     budgets: {

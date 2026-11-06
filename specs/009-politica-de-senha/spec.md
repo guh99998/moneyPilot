@@ -1,6 +1,6 @@
 # 009 — Política de senha
 
-**Status:** em implementação
+**Status:** entregue
 **Branch:** feature/009-politica-de-senha
 **Depende de:** 003 (reset usa as mesmas regras), fix do limite de 72 bytes (`@NewPassword`)
 

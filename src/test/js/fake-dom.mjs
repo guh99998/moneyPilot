@@ -24,6 +24,7 @@ class FakeElement {
         this.dataset = {};
         this.className = '';
         this.value = '';
+        this.checked = false;
         const element = this;
         this.classList = {
             add: (name) => element.className = [...new Set([...element.className.split(' ').filter(Boolean), name])].join(' '),
@@ -89,13 +90,44 @@ class FakeElement {
     }
 
     /** Fires the listeners and waits for async ones, like the browser would let the page run. */
-    async dispatch(type) {
-        const event = { type, target: this, preventDefault() {} };
+    async dispatch(type, init = {}) {
+        const event = { type, target: this, preventDefault() { this.defaultPrevented = true; }, ...init };
         await Promise.all((this.listeners.get(type) || []).map((listener) => listener(event)));
     }
 
     focus() {
         globalThis.document.activeElement = this;
+    }
+
+    /** <dialog>: opens as modal and records it; close() fires `close` like the browser (Esc does the same). */
+    showModal() {
+        this.modal = true;
+        this.setAttribute('open', '');
+        this.previousFocus = globalThis.document.activeElement;
+    }
+
+    close() {
+        if (!this.hasAttribute('open')) return;
+        this.removeAttribute('open');
+        if (this.previousFocus) this.previousFocus.focus();
+        this.listeners.get('close')?.forEach((listener) => listener({ type: 'close', target: this }));
+    }
+
+    /** Only what the views use: tag names, optionally chained with spaces ("thead th"). */
+    querySelectorAll(selector) {
+        const chain = selector.trim().split(/\s+/).map((part) => part.toUpperCase());
+        const last = chain.at(-1);
+        const matches = (node) => {
+            if (node.tagName !== last) return false;
+            let ancestor = node.parent;
+            for (let i = chain.length - 2; i >= 0; i--) {
+                while (ancestor && ancestor.tagName !== chain[i]) ancestor = ancestor.parent;
+                if (!ancestor) return false;
+                ancestor = ancestor.parent;
+            }
+            return true;
+        };
+        return findAll(this, (node) => node !== this && matches(node));
     }
 }
 
@@ -133,6 +165,12 @@ export function installFakeDom() {
         setItem: (key, value) => storage.set(key, String(value)),
         removeItem: (key) => storage.delete(key)
     };
+    const sessionItems = new Map();
+    globalThis.sessionStorage = {
+        getItem: (key) => (sessionItems.has(key) ? sessionItems.get(key) : null),
+        setItem: (key, value) => sessionItems.set(key, String(value)),
+        removeItem: (key) => sessionItems.delete(key)
+    };
     globalThis.document = {
         activeElement: null,
         body: new FakeElement('body'),
@@ -144,7 +182,8 @@ export function installFakeDom() {
         history: {
             replaceState: (state, title, url) => { globalThis.window.location.hash = url; }
         },
-        dispatchEvent: () => {}
+        dispatchEvent: () => {},
+        matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} })
     };
 
     return { toasts };

@@ -22,7 +22,10 @@ public record TransactionResponse(
         @Schema(description = "Nome da conta", example = "Carteira") String accountName,
         @Schema(description = "Nome da categoria", example = "Mercado") String categoryName,
         @Schema(description = "Conta a pagar ou receber ligada, se houver", example = "7") Long billId,
-        @Schema(description = "Tipo da conta ligada, se houver", enumAsRef = true) BillType billType
+        @Schema(description = "Tipo da conta ligada, se houver", enumAsRef = true) BillType billType,
+        @Schema(description = "Grupo da compra parcelada, se o lançamento for uma parcela", example = "9d1c2a4e-6b3f-4c8d-8e55-0a7b1f2c3d4e", nullable = true) UUID installmentGroupId,
+        @Schema(description = "Número desta parcela (a partir de 1), se for uma parcela", example = "2", nullable = true) Integer installmentNumber,
+        @Schema(description = "Total de parcelas da compra, se for uma parcela", example = "6", nullable = true) Integer installmentTotal
 ) {
         public TransactionResponse(Transaction transaction, String accountName, String categoryName) {
                 this(transaction, accountName, categoryName, null);
@@ -44,7 +47,10 @@ public record TransactionResponse(
                         accountName,
                         categoryName,
                         bill != null ? bill.getId() : null,
-                        bill != null ? bill.getType() : null
+                        bill != null ? bill.getType() : null,
+                        transaction.getInstallmentGroupId(),
+                        transaction.getInstallmentNumber(),
+                        transaction.getInstallmentTotal()
                 );
         }
 }

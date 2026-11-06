@@ -1,5 +1,8 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.notification;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.InvoiceService;
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.InvoiceStatus;
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.PayableInvoiceResponse;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillAlertTotals;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRepository;
@@ -45,6 +48,7 @@ public class AlertService {
     private final ReportRepository reportRepository;
     private final SupportTicketRepository ticketRepository;
     private final DismissedAlertRepository dismissedRepository;
+    private final InvoiceService invoiceService;
     private final Clock clock;
 
     private record Computed(AlertResponse alert, String fingerprint) {
@@ -108,6 +112,13 @@ public class AlertService {
         Map<BillType, BillAlertTotals> overdue = byType(billRepository.summarizeOpenDueBefore(userId, today));
         Map<BillType, BillAlertTotals> dueSoon = byType(
                 billRepository.summarizeOpenDueBetween(userId, today, today.plusDays(DUE_SOON_DAYS)));
+
+        // Spec 016, regra 22: só fatura fechada ou vencida alerta; a aberta ainda está crescendo.
+        List<PayableInvoiceResponse> invoices = invoiceService.payableOf(userId, today);
+        addInvoices(overdue, invoices.stream().filter(i -> i.status() == InvoiceStatus.OVERDUE).toList());
+        addInvoices(dueSoon, invoices.stream()
+                .filter(i -> i.status() == InvoiceStatus.CLOSED && !i.dueDate().isAfter(today.plusDays(DUE_SOON_DAYS)))
+                .toList());
 
         for (BillType type : BillType.values()) {
             if (overdue.containsKey(type)) {
@@ -197,6 +208,48 @@ public class AlertService {
     }
 
     private Map<BillType, BillAlertTotals> byType(List<BillAlertTotals> totals) {
-        return totals.stream().collect(Collectors.toMap(BillAlertTotals::getType, t -> t));
+        return totals.stream().collect(Collectors.toMap(BillAlertTotals::getType, t -> t, (a, b) -> a, HashMap::new));
+    }
+
+    /** Soma as faturas ao a pagar que já existe (ou cria a entrada): a fatura é uma conta a pagar calculada. */
+    private void addInvoices(Map<BillType, BillAlertTotals> totals, List<PayableInvoiceResponse> invoices) {
+        if (invoices.isEmpty()) {
+            return;
+        }
+        BillAlertTotals current = totals.get(BillType.PAYABLE);
+        long count = current == null ? 0 : current.getBillCount();
+        BigDecimal total = current == null ? BigDecimal.ZERO : current.getTotal();
+        LocalDate last = current == null ? null : current.getLastDueDate();
+
+        for (PayableInvoiceResponse invoice : invoices) {
+            count++;
+            total = total.add(invoice.remaining());
+            if (last == null || invoice.dueDate().isAfter(last)) {
+                last = invoice.dueDate();
+            }
+        }
+        totals.put(BillType.PAYABLE, new InvoiceInclusiveTotals(BillType.PAYABLE, count, total, last));
+    }
+
+    private record InvoiceInclusiveTotals(BillType type, Long count, BigDecimal total, LocalDate lastDue) implements BillAlertTotals {
+        @Override
+        public BillType getType() {
+            return type;
+        }
+
+        @Override
+        public Long getBillCount() {
+            return count;
+        }
+
+        @Override
+        public BigDecimal getTotal() {
+            return total;
+        }
+
+        @Override
+        public LocalDate getLastDueDate() {
+            return lastDue;
+        }
     }
 }

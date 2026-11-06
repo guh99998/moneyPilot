@@ -3,7 +3,7 @@ import {
     el, fmtMoney, toast, reportError, pageHead, emptyState, formDialog, confirmDialog, stackable, sortHeader, sortSelect
 } from '../ui.js';
 
-const TYPE_LABEL = {
+export const TYPE_LABEL = {
     CHECKING: 'Conta corrente',
     SAVING: 'Poupança',
     CREDIT_CARD: 'Cartão de crédito',
@@ -36,17 +36,49 @@ function sortRows(rows) {
     });
 }
 
+const CARD_ONLY = { name: 'accountType', value: 'CREDIT_CARD' };
+
 const TYPE_OPTIONS = Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label }));
 
-function accountFields() {
+export function accountFields() {
     return [
         { name: 'name', label: 'Nome', type: 'text', required: true, placeholder: 'Ex.: Nubank' },
         { name: 'accountType', label: 'Tipo', type: 'select', options: TYPE_OPTIONS, required: true },
         {
             name: 'initialBalance', label: 'Saldo inicial', type: 'number', step: '0.01', required: true,
             hint: 'Quanto havia nessa conta antes do primeiro lançamento.'
+        },
+        {
+            name: 'closingDay', label: 'Dia do fechamento da fatura', type: 'number', step: '1', min: 1, max: 31,
+            showWhen: CARD_ONLY,
+            hint: 'Compra feita nesse dia entra na fatura seguinte. Informe junto com o vencimento para acompanhar a fatura.'
+        },
+        {
+            name: 'dueDay', label: 'Dia do vencimento da fatura', type: 'number', step: '1', min: 1, max: 31,
+            showWhen: CARD_ONLY,
+            hint: 'Em mês mais curto vale o último dia. Depois de informado, só dá para trocar os dias.'
+        },
+        {
+            name: 'invoicesFrom', label: 'Contar faturas desde', type: 'date', showWhen: CARD_ONLY,
+            hint: 'Compras de antes desse ciclo não entram em fatura. Para trazer uma fatura antiga ou atrasada, escolha uma data anterior. Vazio: vale o ciclo de hoje, ou o que já está guardado.'
         }
     ];
+}
+
+/** Corpo do pedido: os dias só vão para cartão, e vazios ficam de fora para a edição manter os atuais. */
+export function accountPayload(values) {
+    const payload = {
+        name: values.name,
+        accountType: values.accountType,
+        initialBalance: values.initialBalance
+    };
+    if (values.accountType === 'CREDIT_CARD') {
+        if (values.closingDay) payload.closingDay = Number(values.closingDay);
+        if (values.dueDay) payload.dueDay = Number(values.dueDay);
+        // O início só vale junto com os dias; vazio deixa o servidor manter o atual.
+        if (values.closingDay && values.dueDay && values.invoicesFrom) payload.invoicesFrom = values.invoicesFrom;
+    }
+    return payload;
 }
 
 export async function renderAccounts() {
@@ -63,14 +95,13 @@ export async function renderAccounts() {
             title: account ? 'Editar conta' : 'Nova conta',
             fields: accountFields(),
             values: account
-                ? { name: account.name, accountType: account.type, initialBalance: account.initialBalance }
+                ? {
+                    name: account.name, accountType: account.type, initialBalance: account.initialBalance,
+                    closingDay: account.closingDay, dueDay: account.dueDay, invoicesFrom: account.invoicesFrom
+                }
                 : { initialBalance: '0' },
             onSubmit: async (values) => {
-                const payload = {
-                    name: values.name,
-                    accountType: values.accountType,
-                    initialBalance: values.initialBalance
-                };
+                const payload = accountPayload(values);
                 if (account) await api.accounts.update(account.id, payload);
                 else await api.accounts.create(payload);
                 toast(account ? 'Conta atualizada.' : 'Conta criada.', 'success');

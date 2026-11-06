@@ -3,6 +3,8 @@ import { el, toast, pageHead, avatar } from '../ui.js';
 import { HINT, passwordInput as passwordField } from '../password.js';
 import { googleButton, googleErrorMessage } from '../google.js';
 import { deleteCard } from './profile-delete.js';
+import { tabs } from './profile-tabs.js';
+import { availabilityCard } from './profile-availability.js';
 
 const CREATED_AT_FORMAT = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'America/Sao_Paulo' });
 
@@ -58,6 +60,9 @@ function resetErrors(fieldErrors, errorBox) {
     errorBox.hidden = true;
 }
 
+/** Aba aberta; fica em memória para sobreviver ao redesenho depois de uma ação (vincular, foto, senha). */
+let activeTab = 'data';
+
 export async function renderProfile() {
     const view = el('div');
     await load(view);
@@ -83,14 +88,41 @@ async function load(view, focusKey) {
         }
     };
 
+    // As contas só são buscadas quando a aba "Saldo disponível" abre.
+    const availabilitySlot = el('div', {}, el('p', { class: 'muted', text: 'Carregando…' }));
+    let availabilityLoaded = false;
+    const loadAvailability = async () => {
+        if (availabilityLoaded) return;
+        availabilityLoaded = true;
+        availabilitySlot.replaceChildren(await availabilityCard());
+    };
+
     view.replaceChildren(
         pageHead('Perfil', 'Seus dados e a segurança da conta'),
-        dataCard(profile, reload, focus),
-        emailCard(profile, focus),
-        passwordCard(profile, focus),
-        googleCard(profile, reload, focus),
-        deleteCard(profile, { fieldRow, showErrors, resetErrors })
+        tabs({
+            label: 'Seções do perfil',
+            selected: activeTab,
+            onSelect: (id) => {
+                activeTab = id;
+                if (id === 'available') loadAvailability();
+            },
+            items: [
+                { id: 'data', label: 'Dados', content: [dataCard(profile, reload, focus)] },
+                { id: 'available', label: 'Preferências', content: [availabilitySlot] },
+                {
+                    id: 'security',
+                    label: 'Acesso e segurança',
+                    content: [
+                        emailCard(profile, focus),
+                        passwordCard(profile, focus),
+                        googleCard(profile, reload, focus),
+                        deleteCard(profile, { fieldRow, showErrors, resetErrors })
+                    ]
+                }
+            ]
+        })
     );
+    if (activeTab === 'available') await loadAvailability();
     focus[focusKey]?.focus();
 }
 

@@ -5,6 +5,7 @@ export const HELP_PAGES = {
     bills: 'a-pagar-e-receber.html',
     forecast: 'previsao.html',
     accounts: 'contas.html',
+    invoices: 'faturas.html',
     categories: 'categorias.html',
     budgets: 'orcamentos.html',
     profile: 'perfil-e-seguranca.html',

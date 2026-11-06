@@ -15,7 +15,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende.
 - [x] **T9** — Prints com dados fictícios (CA8) — Claude (WebP em `static/image/site/`, de uma conta de demonstração local)
 - [x] **T10** — Testes JS: `site.test.mjs`, `static-pages.test.mjs` e o ajuste do `fake-dom` (CA1–CA3, CA8, CA10) — Claude
 - [x] **T11** — README: o app em `/app/`, o site na raiz, o formato dos links de e-mail e as rotas públicas (todos os CA) — Claude
-- [ ] **T12** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`, a checagem manual e as skills do projeto (`web-design-guidelines`, `accessibility-compliance`, `responsive-design`), e anotar a revisão aqui — Claude, com a parte em produção do Gustavo
+- [x] **T12** — Rodar `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`, a checagem manual e as skills do projeto (`web-design-guidelines`, `accessibility-compliance`, `responsive-design`), e anotar a revisão aqui — Claude, com a parte em produção do Gustavo
 - [x] **T13** — Checklist de deploy e de rollback — Claude prepara, Gustavo executa
 
 ## Verificação
@@ -36,7 +36,7 @@ Descobertas durante a implementação que afetaram a spec ou o plano.
 
 - `./mvnw verify`: 461 testes, nenhuma falha. `node --test "src/test/js/*.test.mjs"`: 172 testes, nenhuma falha.
 - **Conferido no navegador (Edge headless, app local):** CA1, CA2 (com um token no `localStorage`), CA3 (`/#/transacoes` termina em `/app/#/transacoes`; com `?token=` o redirect preserva o token e a tela de verificação o tira da barra de propósito), CA8 e CA9 (390, 900, 1280 e 1440px, sem rolagem horizontal).
-- **Pendente (Gustavo):** CA4 (sessão aberta na versão antiga e depois na nova) e CA5 (login com Google em `/app/`), que exigem sessão e credenciais reais.
+- **Conferido (Gustavo, em produção):** CA4 (sessão aberta na versão antiga e depois na nova) e CA5 (login com Google em `/app/`).
 - `web-design-guidelines` e `accessibility-compliance`: acrescentados o link "Pular para o conteúdo", `scroll-padding-top` por causa do topo fixo, `fetchpriority` nos prints da abertura, `text-wrap: balance` nos títulos, `translate="no"` na marca, número dos passos com contraste de 5:1 e ícones decorativos com `aria-hidden`. A linha verde só se anima com `prefers-reduced-motion: no-preference`.
 - `responsive-design`: mobile-first, alvos de toque de 44px no topo e no rodapé, print do computador só a partir de 700px (no celular entra o print do celular), linha de projeção só a partir de 1100px.
 - **Achado fora da 020:** os campos de data dos filtros do app têm problemas de acessibilidade (por exemplo, o campo "até" sem contexto). Ficou registrado como pendência separada.

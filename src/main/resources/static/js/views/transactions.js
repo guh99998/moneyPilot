@@ -257,11 +257,14 @@ export async function renderTransactions() {
 
     function askDelete(transaction) {
         const isTransfer = Boolean(transaction.transferGroupId);
+        const isInstallment = Boolean(transaction.installmentGroupId);
         confirmDialog({
-            title: isTransfer ? 'Excluir transferência' : 'Excluir lançamento',
+            title: isTransfer ? 'Excluir transferência' : (isInstallment ? 'Excluir compra parcelada' : 'Excluir lançamento'),
             message: isTransfer
                 ? `A transferência de ${fmtMoney(transaction.amount)} será desfeita por inteiro: os dois lançamentos (saída e entrada) somem juntos. Essa ação não pode ser desfeita.`
-                : `"${transaction.description || transaction.categoryName}" de ${fmtMoney(transaction.amount)} será removido. Essa ação não pode ser desfeita.`,
+                : (isInstallment
+                    ? `"${transaction.description || transaction.categoryName}" é a parcela ${transaction.installmentNumber} de ${transaction.installmentTotal}. Todas as ${transaction.installmentTotal} parcelas serão removidas juntas. Essa ação não pode ser desfeita.`
+                    : `"${transaction.description || transaction.categoryName}" de ${fmtMoney(transaction.amount)} será removido. Essa ação não pode ser desfeita.`),
             confirmLabel: 'Excluir',
             onConfirm: async () => {
                 await api.transactions.remove(transaction.id);
@@ -289,7 +292,11 @@ export async function renderTransactions() {
                     return el('tr', {}, [
                         el('td', { class: 'due', text: fmtDate(transaction.date) }),
                         el('td', { class: 'desc' }, [
-                            el('span', { class: 'desc-main', text: transaction.description || '—' }),
+                            el('span', {
+                                class: 'desc-main',
+                                text: (transaction.description || '—')
+                                    + (transaction.installmentNumber ? ` (${transaction.installmentNumber}/${transaction.installmentTotal})` : '')
+                            }),
                             fromBill ? el('a', {
                                 class: 'cell-tag bill-link',
                                 href: '#/bills',
@@ -309,7 +316,7 @@ export async function renderTransactions() {
                         el('td', { class: 'actions' }, fromBill
                             ? [el('button', { class: 'btn-ghost btn-sm', text: 'Desfazer baixa', onClick: () => askUnsettle(transaction) })]
                             : [
-                                isTransfer
+                                isTransfer || transaction.installmentGroupId
                                     ? el('span', { class: 'meter-foot', text: 'não editável' })
                                     : el('button', { class: 'btn-ghost btn-sm', text: 'Editar', onClick: () => openTransactionDialog(transaction) }),
                                 el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(transaction) })

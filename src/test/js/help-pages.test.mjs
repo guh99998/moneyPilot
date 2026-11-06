@@ -15,7 +15,7 @@ const tutorials = readdirSync(AJUDA).filter((name) => name.endsWith('.html') && 
 const main = (html) => html.slice(html.indexOf('<main'), html.indexOf('</main>'));
 const h2s = (html) => [...main(html).matchAll(/<h2>([^<]+)<\/h2>/g)].map((m) => m[1]);
 
-const AREAS = ['primeiros-passos', 'contas', 'categorias', 'lancamentos', 'orcamentos', 'a-pagar-e-receber',
+const AREAS = ['primeiros-passos', 'contas', 'faturas', 'categorias', 'lancamentos', 'orcamentos', 'a-pagar-e-receber',
     'previsao', 'visao-geral', 'alertas', 'perfil-e-seguranca', 'suporte', 'usando-com-ia'];
 
 // CA1
