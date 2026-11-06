@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Tag(name = "Lançamentos", description = "Receitas e despesas lançadas nas contas, e transferências entre contas.")
 @RestController
@@ -102,5 +103,30 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.CREATED)
     public List<TransactionResponse> createTransfer(@RequestBody @Valid TransferRequest request) {
         return service.createTransfer(request);
+    }
+
+    @Operation(summary = "Lança uma compra parcelada no cartão", description = "Cria uma despesa por parcela no cartão de crédito, no mesmo dia dos meses seguintes (limitado ao último dia do mês). O centavo que sobra da divisão fica na primeira parcela. Parcela não é editada sozinha: apagar uma remove o grupo todo.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "As parcelas criadas, da primeira à última"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada (conta que não é cartão, categoria de receita, valor pequeno demais para as parcelas)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Sem sessão ou token de acesso inválido ou vencido", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Recurso não encontrado (ou de outra conta)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/installments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<TransactionResponse> createInstallmentPurchase(@RequestBody @Valid InstallmentPurchaseRequest request) {
+        return service.createInstallmentPurchase(request);
+    }
+
+    @Operation(summary = "Apaga uma compra parcelada", description = "Remove todas as parcelas do grupo.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Parcelas apagadas"),
+            @ApiResponse(responseCode = "401", description = "Sem sessão ou token de acesso inválido ou vencido", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Recurso não encontrado (ou de outra conta)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @DeleteMapping("/installments/{groupId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteInstallmentGroup(@PathVariable UUID groupId) {
+        service.deleteInstallmentGroup(groupId);
     }
 }

@@ -43,6 +43,15 @@ public class Transaction {
     @Column(name = "transfer_group_id")
     private UUID transferGroupId;
 
+    @Column(name = "installment_group_id")
+    private UUID installmentGroupId;
+
+    @Column(name = "installment_number")
+    private Integer installmentNumber;
+
+    @Column(name = "installment_total")
+    private Integer installmentTotal;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
