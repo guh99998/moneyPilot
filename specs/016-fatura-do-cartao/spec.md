@@ -1,6 +1,6 @@
 # 016 — Fatura do cartão de crédito
 
-**Status:** em implementação
+**Status:** em revisão (implementada; falta o ok do Gustavo antes do merge)
 **Branch:** feature/016-fatura-do-cartao
 **Depende de:** 015 (campo `countsAsAvailable`). Ordem de merge: 027, 015, 016 (migrations V18, V19, V20).
 

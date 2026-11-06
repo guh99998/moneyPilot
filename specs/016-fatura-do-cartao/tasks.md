@@ -16,7 +16,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T10** — Aviso em Novidades e página na ajuda
 - [x] **T11** — Verificação manual local (desktop e mobile)
 - [x] **T12** — Skills: `web-design-guidelines`, `accessibility-compliance`, `responsive-design`, `api-design-principles`; anotar a revisão aqui
-- [ ] **T13** — README, `./mvnw verify` e `node --test`, atualizar o quadro
+- [x] **T13** — README, `./mvnw verify` e `node --test`, atualizar o quadro
 
 ## Notas de implementação
 
