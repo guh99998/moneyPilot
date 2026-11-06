@@ -36,7 +36,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T23** - Funções puras da lista de faturas: `filterInvoices`, `sortInvoices`, `summarize` (CA21, CA22)
 - [x] **T24** - Tela Faturas como lista única: resumo, destaque por cartão, filtros, ordenação e "Ver compras" (CA21, CA22)
 - [x] **T25** - `selectInvoiceCard` fixa o filtro de cartão; "Ver itens da fatura" abre a lista já filtrada (CA22)
-- [ ] **T26** - Ajuda e README
+- [x] **T26** - Ajuda e README
 - [ ] **T27** - Verificação manual (dois cartões, fatura antiga, filtros, ordenação, mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4
 
 ## Notas de implementação
