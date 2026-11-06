@@ -1,7 +1,7 @@
 # 016 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** aprovado (2026-11-06), inclusive a seção "Mudança: fatura em A pagar e receber"; seção "Mudança: início das faturas e lista única" aguardando aprovação
+**Status:** aprovado (2026-11-06), inclusive a seção "Mudança: fatura em A pagar e receber", inclusive "Mudança: início das faturas e lista única"
 
 ## Abordagem
 

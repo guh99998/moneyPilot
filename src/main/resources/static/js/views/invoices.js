@@ -312,18 +312,22 @@ export async function renderInvoices() {
     }
 
     function selectField(label, key, options, allLabel) {
+        const id = `invoice-filter-${key}`;
         const select = el('select', {
+            id,
             onChange: () => { filters[key] = select.value; render(); }
         }, [
             el('option', { value: '', text: allLabel }),
             ...options.map((option) => el('option', { value: option.value, text: option.label }))
         ]);
         select.value = String(filters[key]);
-        return el('div', { class: 'field' }, [el('label', { text: label }), select]);
+        return el('div', { class: 'field' }, [el('label', { for: id, text: label }), select]);
     }
 
     function dateField(label, key) {
+        const id = `invoice-filter-${key}`;
         const input = el('input', {
+            id,
             type: 'date',
             value: filters[key],
             min: '1900-01-01',
@@ -334,7 +338,7 @@ export async function renderInvoices() {
                 render();
             }
         });
-        return el('div', { class: 'field' }, [el('label', { text: label }), input]);
+        return el('div', { class: 'field' }, [el('label', { for: id, text: label }), input]);
     }
 
     function filterBar() {

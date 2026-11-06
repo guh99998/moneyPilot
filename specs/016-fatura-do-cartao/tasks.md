@@ -37,7 +37,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T24** - Tela Faturas como lista única: resumo, destaque por cartão, filtros, ordenação e "Ver compras" (CA21, CA22)
 - [x] **T25** - `selectInvoiceCard` fixa o filtro de cartão; "Ver itens da fatura" abre a lista já filtrada (CA22)
 - [x] **T26** - Ajuda e README
-- [ ] **T27** - Verificação manual (dois cartões, fatura antiga, filtros, ordenação, mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4
+- [x] **T27** - Verificação manual (dois cartões, fatura antiga, filtros, ordenação, mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4
 
 ## Notas de implementação
 
@@ -63,3 +63,12 @@ Descobertas durante a implementação que afetaram a spec ou o plano.
 - `api-design-principles`: `GET /invoices/payable` (recurso novo, `200`/`401`), fora de `/bills` porque a lista de títulos é paginada e filtrada no servidor; `OpenApiContractIntegrationTest` verde.
 - Verificação manual no navegador: linha de fatura em A pagar e receber, pagamento parcial a partir da linha (a linha passa a mostrar "falta R$ 50,00"), "Ver itens da fatura" abre a tela Faturas no cartão, quadro "A pagar" (R$ 220 = fatura 150 + título 70), "Próximos vencimentos" e previsão (R$ 2.780 em 30 dias, sem contar a fatura duas vezes).
 - Corrigido na verificação: o `display:flex` na célula de ações desalinhava a linha da tabela; o nome da fatura em "Próximos vencimentos" quebrava junto do status.
+
+### Revisão da mudança "início das faturas e lista única" (2026-11-06)
+
+- `web-design-guidelines`: os filtros têm `label` associado ao campo por `for`/`id`; a ordenação por cabeçalho tem `aria-sort`; o estado vazio da lista é uma mensagem, não uma tabela quebrada.
+- `accessibility-compliance`: "Ver compras" é `details/summary` com `aria-label` que traz o período; cada "Pagar fatura" nomeia o cartão e o vencimento; a situação sai em texto, não só cor.
+- `responsive-design`: conferido a 375px (a tabela empilha em cartões com os rótulos das colunas, a ordenação vira o seletor "Ordenar por", sem rolagem horizontal).
+- `api-design-principles`: `invoicesFrom` opcional em `POST/PUT /accounts` (omitido mantém), `400` com erro no campo para data futura ou sem os dias, sem rota nova; `OpenApiContractIntegrationTest` verde.
+- Verificação manual no navegador (dois cartões, fatura antiga de R$ 1.200 trazida por "Contar faturas desde"): resumo (A pagar R$ 2.040, vencido R$ 1.200), uma fatura atual por cartão com "Faturas contam desde", filtro por cartão, ordenação por total e "Ver compras".
+- Corrigido na verificação: os rótulos dos filtros não estavam ligados aos campos.
