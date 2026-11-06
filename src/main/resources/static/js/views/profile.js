@@ -108,6 +108,7 @@ async function load(view, focusKey) {
             },
             items: [
                 { id: 'data', label: 'Dados', content: [dataCard(profile, reload, focus)] },
+                { id: 'available', label: 'Saldo disponível', content: [availabilitySlot] },
                 {
                     id: 'security',
                     label: 'Acesso e segurança',
@@ -117,8 +118,7 @@ async function load(view, focusKey) {
                         googleCard(profile, reload, focus),
                         deleteCard(profile, { fieldRow, showErrors, resetErrors })
                     ]
-                },
-                { id: 'available', label: 'Saldo disponível', content: [availabilitySlot] }
+                }
             ]
         })
     );
