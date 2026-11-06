@@ -48,7 +48,7 @@ export function invoiceNewsCard(cardCount, onDismiss) {
             el('li', {}, ['Abra ', el('a', { href: '#/accounts', text: 'Contas' }), ', edite o cartão e informe o dia do fechamento e o do vencimento.']),
             el('li', {}, [
                 'Veja a fatura em ', el('a', { href: '#/invoices', text: 'Faturas' }),
-                '. O cartão sai do saldo disponível e o vencimento entra na previsão. Compras de antes de você informar os dias não entram.'
+                '. O cartão sai do saldo disponível, e a fatura aparece também em A pagar e receber, na Visão geral e na previsão. Compras de antes de você informar os dias não entram.'
             ]),
             el('li', { text: 'Pague pela própria tela de Faturas: o pagamento é uma transferência para o cartão, não uma nova despesa.' })
         ]),
