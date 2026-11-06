@@ -4,6 +4,7 @@ import { lineChart, groupedColumns, legend, tableToggle } from '../charts.js';
 import { presetBillFilters } from './bills.js';
 import { loadOnboarding, onboardingCard } from './onboarding.js';
 import { availableNewsCard } from './news-available.js';
+import { invoiceNewsCard } from './news-invoices.js';
 
 const now = new Date();
 let month = now.getMonth() + 1;
@@ -407,11 +408,20 @@ export async function renderDashboard() {
             });
             if (newsCard) newsCard.classList.add('span-full');
 
+            const invoiceNews = invoiceNewsCard(balances.filter((row) => row.type === 'CREDIT_CARD').length, () => {
+                invoiceNews.remove();
+                const title = view.querySelector('h1');
+                title?.setAttribute('tabindex', '-1');
+                title?.focus();
+            });
+            if (invoiceNews) invoiceNews.classList.add('span-full');
+
             view.replaceChildren(
                 head(),
                 el('div', { class: 'dash' }, [
                     welcomeCard,
                     newsCard,
+                    invoiceNews,
                     heroSlot,
                     el('div', { class: 'kpis' }, [
                         statTile('Receitas do mês', fmtMoney(summary.totalIncome), 'pos'),

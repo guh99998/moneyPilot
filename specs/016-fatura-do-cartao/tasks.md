@@ -13,7 +13,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T7** — Conta: fechamento e vencimento no formulário de cartão (CA11)
 - [x] **T8** — Tela Faturas (`views/invoices.js`), menu, pagar fatura e compra parcelada (CA11)
 - [x] **T9** — Dashboard sem cartão em "Guardado" e linha de estado do Perfil (CA8)
-- [ ] **T10** — Aviso em Novidades e página na ajuda
+- [x] **T10** — Aviso em Novidades e página na ajuda
 - [ ] **T11** — Verificação manual local (desktop e mobile)
 - [ ] **T12** — Skills: `web-design-guidelines`, `accessibility-compliance`, `responsive-design`, `api-design-principles`; anotar a revisão aqui
 - [ ] **T13** — README, `./mvnw verify` e `node --test`, atualizar o quadro
