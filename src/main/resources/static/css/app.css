@@ -1034,3 +1034,5 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
     .invoice-purchase-date { grid-column: 1 / -1; font-size: .78rem; }
     .invoice-item-amounts { align-items: flex-start; margin-left: 0; }
 }
+.invoice-row .actions { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: flex-end; }
+.invoice-row a.btn { text-decoration: none; display: inline-flex; align-items: center; }
