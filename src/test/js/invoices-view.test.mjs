@@ -6,7 +6,7 @@ import { installFakeDom, findAll, findByTag } from './fake-dom.mjs';
 installFakeDom();
 
 const {
-    renderInvoices, payableThrough, payInvoicePayload, installmentPayload, INVOICE_STATUS
+    renderInvoices, payableThrough, payInvoicePayload, installmentPayload, purchasePayload, INVOICE_STATUS
 } = await import('../../main/resources/static/js/views/invoices.js');
 
 const page = (content) => ({ content, page: { number: 0, totalPages: 1 }, totalPages: 1, number: 0 });
@@ -121,4 +121,21 @@ test('a future invoice does not offer to be paid yet', async () => {
 
     const labels = findByTag(view, 'button').map((button) => button.textContent);
     assert.equal(labels.filter((label) => label === 'Pagar fatura').length, 1, 'only the open invoice');
+});
+
+test('purchasePayload makes an expense on the card', () => {
+    const payload = purchasePayload({ categoryId: '3', description: 'Mercado', amount: '49.90', date: '2026-03-15' }, 7);
+
+    assert.deepEqual(payload, {
+        accountId: 7, categoryId: 3, amount: '49.90', type: 'EXPENSE', description: 'Mercado', date: '2026-03-15'
+    });
+});
+
+test('the highlight offers a new purchase next to the installment purchase', async () => {
+    mockApi({ accounts: [CHECKING, CARD] });
+
+    const view = await renderInvoices();
+
+    const labels = findByTag(view, 'button').map((button) => button.textContent);
+    assert.ok(labels.includes('Nova compra'));
 });

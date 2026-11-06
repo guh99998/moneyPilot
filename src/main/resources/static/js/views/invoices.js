@@ -47,6 +47,17 @@ export function installmentPayload(values, cardId) {
     };
 }
 
+export function purchasePayload(values, cardId) {
+    return {
+        accountId: cardId,
+        categoryId: Number(values.categoryId),
+        amount: values.amount,
+        type: 'EXPENSE',
+        description: values.description,
+        date: values.date
+    };
+}
+
 function statusBadge(status) {
     const info = INVOICE_STATUS[status] || { label: status, kind: 'open' };
     return badge(info.kind, info.label);
@@ -147,14 +158,45 @@ export async function renderInvoices() {
         });
     }
 
-    async function installmentDialog(card) {
-        let categories;
+    async function expenseCategories() {
         try {
-            categories = (await fetchAll(api.categories.list)).filter((category) => category.type === 'EXPENSE');
+            return (await fetchAll(api.categories.list)).filter((category) => category.type === 'EXPENSE');
         } catch (error) {
             reportError(error);
-            return;
+            return null;
         }
+    }
+
+    async function purchaseDialog(card) {
+        const categories = await expenseCategories();
+        if (!categories) return;
+        formDialog({
+            title: 'Nova compra',
+            fields: [
+                {
+                    name: 'categoryId', label: 'Categoria', type: 'select', required: true,
+                    options: categories.map((category) => ({ value: category.id, label: category.name }))
+                },
+                { name: 'description', label: 'Descrição', type: 'text', placeholder: 'Ex.: Mercado' },
+                { name: 'amount', label: 'Valor', type: 'number', step: '0.01', min: '0.01', required: true },
+                {
+                    name: 'date', label: 'Data da compra', type: 'date', required: true,
+                    hint: 'A compra entra na fatura do ciclo dessa data.'
+                }
+            ],
+            values: { date: todayIso() },
+            submitLabel: 'Lançar compra',
+            onSubmit: async (values) => {
+                await api.transactions.create(purchasePayload(values, card.id));
+                toast('Compra lançada.', 'success');
+                load();
+            }
+        });
+    }
+
+    async function installmentDialog(card) {
+        const categories = await expenseCategories();
+        if (!categories) return;
         formDialog({
             title: 'Compra parcelada',
             fields: [
@@ -215,6 +257,7 @@ export async function renderInvoices() {
                 : null,
             el('div', { class: 'invoice-actions' }, [
                 payButton(card, invoices, index),
+                el('button', { type: 'button', class: 'btn-sm', text: 'Nova compra', onClick: () => purchaseDialog(card) }),
                 el('button', { type: 'button', class: 'btn-sm', text: 'Compra parcelada', onClick: () => installmentDialog(card) })
             ]),
             purchasesDetails(card, invoice)
