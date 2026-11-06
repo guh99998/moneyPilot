@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,30 @@ public class InvoiceService {
         }
 
         return this.invoicesOf(account, LocalDate.now(clock));
+    }
+
+    /** Spec 016, regra 17: faturas aberta, fechada e vencida com valor a pagar, de todos os cartões, por vencimento. */
+    public List<PayableInvoiceResponse> listPayable() {
+        return this.payableOf(userProvider.getCurrentUserId(), LocalDate.now(clock));
+    }
+
+    public List<PayableInvoiceResponse> payableOf(Long userId, LocalDate today) {
+        List<PayableInvoiceResponse> payable = new ArrayList<>();
+
+        for (Account card : accountRepository.findAllByUserIdAndClosingDayIsNotNull(userId)) {
+            for (InvoiceResponse invoice : this.invoicesOf(card, today)) {
+                if (invoice.status() == InvoiceStatus.FUTURE || invoice.remaining().signum() <= 0) {
+                    continue;
+                }
+                payable.add(new PayableInvoiceResponse(
+                        card.getId(), card.getName(),
+                        invoice.periodStart(), invoice.periodEnd(), invoice.closingDate(), invoice.dueDate(),
+                        invoice.total(), invoice.paid(), invoice.remaining(), invoice.status()));
+            }
+        }
+
+        payable.sort(Comparator.comparing(PayableInvoiceResponse::dueDate).thenComparing(PayableInvoiceResponse::accountId));
+        return payable;
     }
 
     /** Faturas de um cartão com os dias informados, da mais antiga à mais nova. */
