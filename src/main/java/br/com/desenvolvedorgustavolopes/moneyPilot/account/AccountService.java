@@ -27,6 +27,9 @@ public class AccountService {
         account.setName(request.name());
         account.setType(request.accountType());
         account.setInitialBalance(request.initialBalance());
+        account.setCountsAsAvailable(request.countsAsAvailable() != null
+                ? request.countsAsAvailable()
+                : request.accountType().countsAsAvailableByDefault());
         account.setCreatedAt(Instant.now());
         account.setUpdatedAt(Instant.now());
 
@@ -53,9 +56,16 @@ public class AccountService {
     public AccountResponse updateAccountById(Long id, AccountRequest request) {
         Account account = this.findOwnedAccount(id);
 
+        AccountType previousType = account.getType();
+
         account.setName(request.name());
         account.setType(request.accountType());
         account.setInitialBalance(request.initialBalance());
+        if (request.countsAsAvailable() != null) {
+            account.setCountsAsAvailable(request.countsAsAvailable());
+        } else if (previousType != request.accountType()) {
+            account.setCountsAsAvailable(request.accountType().countsAsAvailableByDefault());
+        }
         account.setUpdatedAt(Instant.now());
 
         return new AccountResponse(repository.save(account));

@@ -81,7 +81,7 @@ public class ReportService {
         LocalDate from = LocalDate.now(clock);
         LocalDate to = from.plusDays(days - 1);
 
-        BigDecimal currentBalance = reportRepository.getTotalBalance(userId);
+        BigDecimal currentBalance = reportRepository.getAvailableBalance(userId);
         List<BillDueTotals> dueTotals = reportRepository.findOpenBillTotalsByDueDate(userId, to);
 
         int bucketCount = (days + BUCKET_DAYS - 1) / BUCKET_DAYS;
@@ -156,7 +156,7 @@ public class ReportService {
         LocalDate from = firstMonth.atDay(1);
         LocalDate to = firstMonth.plusMonths(months - 1).atEndOfMonth();
 
-        BigDecimal currentBalance = reportRepository.getTotalBalance(userId);
+        BigDecimal currentBalance = reportRepository.getAvailableBalance(userId);
 
         BigDecimal[] payable = new BigDecimal[months];
         BigDecimal[] receivable = new BigDecimal[months];

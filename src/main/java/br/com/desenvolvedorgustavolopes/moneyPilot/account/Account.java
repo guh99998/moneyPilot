@@ -31,6 +31,9 @@ public class Account {
     @Column(name = "initial_balance", nullable = false)
     private BigDecimal initialBalance;
 
+    @Column(name = "counts_as_available", nullable = false)
+    private boolean countsAsAvailable;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
