@@ -65,7 +65,8 @@ function billTile(label, side, type) {
 /** Soma, em centavos inteiros, o saldo das contas que não contam no disponível (o "Guardado"). */
 export function savedCents(rows) {
     return rows
-        .filter((row) => row.countsAsAvailable === false)
+        // Cartão é dívida, não dinheiro guardado (spec 016): a fatura entra na previsão pelo vencimento.
+        .filter((row) => row.countsAsAvailable === false && row.type !== 'CREDIT_CARD')
         .reduce((sum, row) => sum + Math.round(Number(row.balance) * 100), 0);
 }
 
@@ -316,7 +317,10 @@ export function accountBalances(rows) {
             ])),
             el('tbody', {}, rows.map((row) => el('tr', {}, [
                 el('td', {}, row.countsAsAvailable === false
-                    ? [row.name, ' ', el('span', { class: 'sub', text: '(fora do disponível)' })]
+                    ? [row.name, ' ', el('span', {
+                        class: 'sub',
+                        text: row.type === 'CREDIT_CARD' && row.hasInvoices ? '(a fatura entra na previsão)' : '(fora do disponível)'
+                    })]
                     : row.name),
                 el('td', { class: 'num', style: Number(row.balance) < 0 ? 'color: var(--expense)' : '', text: fmtMoney(row.balance) })
             ])))
@@ -324,14 +328,23 @@ export function accountBalances(rows) {
     ]);
 }
 
+function accountRow(account) {
+    return {
+        name: account.name,
+        countsAsAvailable: account.countsAsAvailable,
+        type: account.type,
+        hasInvoices: Boolean(account.closingDay)
+    };
+}
+
 export async function loadBalances() {
     const accounts = await fetchAll(api.accounts.list);
     return Promise.all(accounts.map(async (account) => {
         try {
             const balance = await api.accounts.balance(account.id);
-            return { name: account.name, balance: balance.currentBalance, countsAsAvailable: account.countsAsAvailable };
+            return { ...accountRow(account), balance: balance.currentBalance };
         } catch {
-            return { name: account.name, balance: account.initialBalance, countsAsAvailable: account.countsAsAvailable };
+            return { ...accountRow(account), balance: account.initialBalance };
         }
     }));
 }
