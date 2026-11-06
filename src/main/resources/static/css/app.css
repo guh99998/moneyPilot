@@ -566,6 +566,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
     gap: .2rem;
 }
 .hero .label { font-size: .82rem; font-weight: 600; color: #a9bad0; }
+.hero .saved { font-size: .82rem; font-weight: 600; color: #a9bad0; margin-top: .1rem; }
 .hero .figure { font-size: 2.1rem; font-weight: 800; letter-spacing: -.03em; color: #fff; line-height: 1.15; }
 .hero .facts { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; margin-top: .55rem; font-size: .82rem; }
 .hero .facts b { color: #fff; font-weight: 700; }
