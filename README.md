@@ -122,7 +122,7 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 
 ### Modelo
 
-`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `onboarding` · `email_change_tokens` · `email_verification_tokens` · `password_reset_tokens` — migrations `V1` a `V19` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas; `V14` torna `password_hash` opcional e acrescenta as colunas do Google e da foto em `users`; `V19` acrescenta `counts_as_available` em `accounts` e desmarca as contas de investimento existentes.
+`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `onboarding` · `email_change_tokens` · `email_verification_tokens` · `password_reset_tokens` — migrations `V1` a `V20` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas; `V14` torna `password_hash` opcional e acrescenta as colunas do Google e da foto em `users`; `V18` acrescenta `show_on_start` em `onboarding` (o pop-up de primeiro contato, marcado por padrão); `V19` acrescenta `counts_as_available` em `accounts` e desmarca as contas de investimento existentes; `V20` acrescenta `closing_day`, `due_day` e `invoices_from` em `accounts` e as colunas de parcela em `transactions` (fatura do cartão), todas nulas.
 
 ## API
 
@@ -330,6 +330,6 @@ O GitHub Actions (`.github/workflows/ci.yml`) roda as duas suítes a cada push e
 
 ## Próximos passos
 
-- Rascunhos de spec ainda sem regras definidas: boas-vindas (013), autenticação em dois fatores (014), investimentos (015), marcos de uso (022), histórico de notificações (023) e política de privacidade (024).
+- Rascunhos de spec ainda sem regras definidas: autenticação em dois fatores (014), marcos de uso (022), histórico de notificações (023) e política de privacidade (024).
 - Ordenar títulos e lançamentos pelo nome da categoria e da conta (hoje a ordenação cobre data, descrição, valor e tipo).
 - Fora do horizonte imediato, de propósito: anexo de comprovante (exige S3), importação de extrato CSV, Redis e RabbitMQ.

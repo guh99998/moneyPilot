@@ -1,6 +1,6 @@
 # 027 — Pop-up de primeiro contato
 
-**Status:** implementando (regras fechadas e plano aprovado em 2026-11-05)
+**Status:** em revisão (implementada; falta a checagem manual do Gustavo, T10)
 **Branch:** feature/027-novidades-e-tutorial
 **Depende de:** 013 (boas-vindas), 017 (painel de chamados)
 

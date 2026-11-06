@@ -1,6 +1,6 @@
 # 015 — Investimentos: saldo disponível e dinheiro guardado
 
-**Status:** em implementação
+**Status:** em revisão
 **Branch:** feature/015-investimentos
 **Depende de:** nenhuma. A fatura do cartão (016) fica para depois.
 
