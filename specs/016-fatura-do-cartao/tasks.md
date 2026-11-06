@@ -29,6 +29,16 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T19b** - Ajuda, aviso em Novidades e README (CA11)
 - [x] **T20** - Verificação manual (desktop e mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4 (CA17)
 
+### Mudança: início das faturas e lista única (spec, regras 25 a 30)
+
+- [ ] **T21** - `invoicesFrom` no pedido de conta: normalização, validações e OpenAPI (CA19, CA20)
+- [ ] **T22** - Contas: campo "Contar faturas desde" e `accountPayload` (CA19)
+- [ ] **T23** - Funções puras da lista de faturas: `filterInvoices`, `sortInvoices`, `summarize` (CA21, CA22)
+- [ ] **T24** - Tela Faturas como lista única: resumo, destaque por cartão, filtros, ordenação e "Ver compras" (CA21, CA22)
+- [ ] **T25** - `selectInvoiceCard` fixa o filtro de cartão; "Ver itens da fatura" abre a lista já filtrada (CA22)
+- [ ] **T26** - Ajuda e README
+- [ ] **T27** - Verificação manual (dois cartões, fatura antiga, filtros, ordenação, mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4
+
 ## Notas de implementação
 
 Descobertas durante a implementação que afetaram a spec ou o plano.

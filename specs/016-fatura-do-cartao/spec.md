@@ -1,6 +1,6 @@
 # 016 — Fatura do cartão de crédito
 
-**Status:** em revisão (implementada, incluindo a fatura em A pagar e receber; falta o ok do Gustavo antes do merge)
+**Status:** mudança de escopo aprovada (2026-11-06): início das faturas editável e tela Faturas com filtros; plano em aprovação
 **Branch:** feature/016-fatura-do-cartao
 **Depende de:** 015 (campo `countsAsAvailable`). Ordem de merge: 027, 015, 016 (migrations V18, V19, V20).
 
@@ -51,6 +51,15 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 23. "Próximos vencimentos" da Visão geral inclui as faturas aberta, fechada e vencida, misturadas aos títulos por data de vencimento (a mais próxima primeiro), com o valor total, o selo da situação e o link para a tela Faturas.
 24. A previsão não muda (a fatura já entra nela pelo vencimento, e não é um título gravado, então não conta duas vezes).
 
+**Início das faturas e tela Faturas** (mudança de 2026-11-06)
+
+25. O pedido de conta de cartão aceita `invoicesFrom` (data, opcional): a partir de qual ciclo as faturas contam. Vale o **início do ciclo que contém a data**, calculado com os dias do cartão. Não pode ser futura (`400` com erro no campo) e só vale com fechamento e vencimento: sem eles, ou em conta que não é cartão, é `400`. Omitido na criação (ou na primeira vez que os dias aparecem), continua sendo o ciclo de hoje; omitido na edição, mantém o valor atual.
+26. Com um início anterior, as compras desde esse ciclo entram nas faturas. As faturas antigas passam a existir e, se não estiverem quitadas, aparecem como vencidas na tela Faturas, em "A pagar e receber", na Visão geral e nos alertas, até serem pagas (o pagamento é a transferência para o cartão, com a data da época). Mover o início para a frente esconde de novo as compras anteriores.
+27. A tela **Faturas** vira **uma lista única** com as faturas de todos os cartões com fechamento e vencimento, misturadas. Cada linha mostra o cartão, o vencimento, a situação, o total, o que falta pagar e as ações "Ver compras", "Pagar fatura". "Pagar fatura" vem com o valor até aquela fatura do mesmo cartão (o pagamento abate da mais antiga).
+28. A lista tem **filtros**: cartão (padrão "Todos"), situação (aberta, fechada, vencida, paga, futura) e vencimento de/até. E **ordenação** por cabeçalho: vencimento (padrão, da mais nova para a mais antiga), total, falta pagar, cartão e situação. Filtros e ordenação são feitos no navegador, com os dados de cada cartão.
+29. No topo, um resumo (quanto há a pagar, quanto está vencido, quantas faturas abertas) e, para cada cartão, a fatura atual em destaque, com "Nova compra", "Compra parcelada" e "Pagar fatura". A tela diz desde quando as faturas contam em cada cartão.
+30. "Ver itens da fatura" (em A pagar e receber e em Próximos vencimentos) abre a tela Faturas com o filtro de cartão naquele cartão.
+
 **Telas**
 
 13. Formulário de conta pede fechamento e vencimento quando o tipo é cartão.
@@ -78,6 +87,10 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 16. Os alertas incluem fatura fechada ou vencida e ignoram a aberta; pagar a fatura apaga o alerta.
 17. A previsão e o saldo disponível não mudam com essa mudança, e a fatura nunca conta duas vezes.
 18. "Próximos vencimentos" mostra as faturas junto com os títulos, ordenadas por vencimento.
+19. `invoicesFrom` aceito na criação e na edição do cartão: normalizado para o início do ciclo, `400` se futuro ou sem os dias ou em conta que não é cartão, mantido quando omitido na edição.
+20. Com um início anterior, as compras desde esse ciclo entram nas faturas, e a fatura antiga não quitada aparece como vencida; mover o início para a frente esconde as anteriores.
+21. A tela Faturas lista as faturas de todos os cartões em uma só lista, com filtros de cartão, situação e vencimento e ordenação por vencimento, total, falta, cartão e situação.
+22. A tela mostra o resumo, a fatura atual de cada cartão em destaque e desde quando as faturas contam; "Ver itens da fatura" abre a tela já filtrada no cartão.
 
 ## Casos de borda
 
@@ -102,6 +115,8 @@ Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importa
 - O cartão existente só muda quando a pessoa informa os dias.
 - A compra no dia do fechamento cai na próxima fatura.
 - Faturas em tela própria no menu.
+- O início das faturas passa a ser editável (`invoicesFrom`), para quem tem fatura antiga ou atrasada; o padrão continua sendo o ciclo de hoje (decidido em 2026-11-06).
+- A tela Faturas vira uma lista única de todos os cartões, com filtros e ordenação no navegador (decidido em 2026-11-06).
 - A fatura também aparece em "Próximos vencimentos" da Visão geral (decidido em 2026-11-06, depois da primeira versão desta mudança).
 - A fatura aparece em "A pagar e receber" como uma linha calculada, aberta, fechada ou vencida, com o valor total; entra no quadro "A pagar" da Visão geral e nos alertas (só fechada ou vencida). Decidido em 2026-11-06, em lugar de ficar fora, como a versão inicial da spec previa.
 

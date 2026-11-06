@@ -1,7 +1,7 @@
 # 016 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** aprovado (2026-11-06), inclusive a seção "Mudança: fatura em A pagar e receber"
+**Status:** aprovado (2026-11-06), inclusive a seção "Mudança: fatura em A pagar e receber"; seção "Mudança: início das faturas e lista única" aguardando aprovação
 
 ## Abordagem
 
@@ -155,3 +155,44 @@ Mais: `OpenApiContractIntegrationTest` para a rota nova, `./mvnw verify`, `node 
 - **Linhas fora da paginação e da ordenação:** ficam sempre no topo da primeira página. Em geral são de 0 a 3, então não pesa.
 - **Alerta com a fatura aberta:** ignorado de propósito, para não avisar de um valor que ainda cresce.
 - **Alternativa descartada:** gravar a fatura como `Bill`. Valor desatualizado quando uma compra muda, e a baixa criaria despesa em dobro.
+
+## Mudança: início das faturas e lista única (2026-11-06)
+
+Regras 25 a 30 da spec. Sem migration: `accounts.invoices_from` já existe.
+
+### Backend: `invoicesFrom` editável
+
+- `AccountRequest`: `LocalDate invoicesFrom` (opcional, com `@Schema`). O construtor de 6 argumentos continua existindo para os testes atuais.
+- `AccountService`: em `applyInvoiceDays` (e quando só `invoicesFrom` vem numa edição de cartão que já tem dias), o início gravado é `InvoiceCycle.cycleOf(data).start()` com os dias vigentes (os novos, se vieram no mesmo pedido). Omitido: primeira vez usa o ciclo de hoje; depois mantém.
+- Validação (`InvalidInvoiceDaysException`, `400` com `fieldErrors.invoicesFrom`): data depois de hoje (`Clock`); `invoicesFrom` em conta que não é cartão ou em cartão sem dias (nem nos dias do pedido).
+- `InvoiceService` e o resto não mudam: já leem `invoicesFrom`. Fatura antiga não quitada já aparece como vencida em A pagar e receber, Visão geral e alertas, porque isso sai de `payableOf`.
+- OpenAPI: o campo novo no pedido, descrição do `400`.
+
+### Cliente web
+
+- `views/accounts.js`: campo "Contar faturas desde" (data, só para cartão), com a dica "Só conta compras a partir do ciclo dessa data. Para trazer uma fatura antiga, escolha uma data anterior." `accountPayload` envia `invoicesFrom` só junto com os dois dias. O formulário de edição já vem preenchido com o valor atual.
+- `views/invoices.js` **reescrito** como lista única:
+  - Carrega as contas e, em paralelo, `api.accounts.invoices(id)` de cada cartão com dias. Cada linha é `{ card, invoice, payAmount }`, onde `payAmount` soma o que falta até aquela fatura **no próprio cartão, sobre a lista completa** (antes de filtrar).
+  - Funções puras e testadas: `filterInvoices(rows, filters)`, `sortInvoices(rows, sort)`, `summarize(rows)` (a pagar, vencido, quantidade de abertas) e `payableThrough`.
+  - Estado do módulo: `filters { cardId, status, dueFrom, dueTo }` e `sort` (padrão vencimento, da mais nova para a mais antiga). `selectInvoiceCard(id)` passa a **zerar os filtros e fixar o cartão** (regra 30).
+  - Interface: resumo; um destaque por cartão (a fatura atual, com "Nova compra", "Compra parcelada", "Pagar fatura" e o texto "Faturas contam desde dd/mm/aaaa"); filtros recolhíveis (`collapsibleFilters`); tabela com cabeçalho ordenável (`sortHeader`, `sortSelect` no celular), empilhando em cartões no mobile (`stackable`); "Ver compras" abre uma linha com as compras do ciclo, carregadas sob demanda.
+  - Sem rota nova de API.
+- Ajuda (`faturas.html`) e README descrevem os filtros e o campo novo.
+
+### Testes
+
+| Critério | Prova |
+|---|---|
+| CA19 | `AccountInvoiceConfigIntegrationTest`: normaliza para o início do ciclo; futura, sem dias e conta que não é cartão dão `400`; omitido na edição mantém; informado na edição muda |
+| CA20 | `InvoiceIntegrationTest` (ou `InvoicePayableIntegrationTest`): com início anterior, compras antigas entram e a fatura vencida aparece em `/invoices/payable`; mover para a frente esconde de novo |
+| CA21 | testes JS de `filterInvoices`, `sortInvoices` e da tabela (todas as faturas de dois cartões misturadas; cabeçalhos ordenáveis) |
+| CA22 | testes JS de `summarize`, do destaque por cartão, do texto "desde" e de `selectInvoiceCard` fixando o filtro |
+
+Mais: `OpenApiContractIntegrationTest`, `./mvnw verify`, `node --test`, verificação manual (dois cartões, fatura antiga, filtros, ordenação, mobile) e as skills do projeto.
+
+### Riscos
+
+- **Faturas antigas viram dívida:** ao recuar o início, o que não foi pago no app aparece como vencido e alerta. A dica do campo explica; o jeito de limpar é registrar o pagamento antigo (transferência com a data da época).
+- **Muitos ciclos:** cada cartão pode ter dezenas de ciclos. Filtrar no navegador aguenta, e as compras só carregam quando a pessoa abre a linha.
+- **Número de requisições:** uma por cartão com dias; poucos cartões, então aceitável. Se pesar, vira uma rota única.
+- **Tela atual substituída:** o destaque e a lista por cartão de hoje desaparecem em favor da lista única; os testes de `invoices-view` serão reescritos junto.
