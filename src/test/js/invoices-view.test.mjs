@@ -112,3 +112,13 @@ test('without a card that has closing and due days, the screen explains how to s
     assert.ok(link, 'link to Contas');
     assert.equal(byClass(view, 'invoice-current').length, 0);
 });
+
+test('a future invoice does not offer to be paid yet', async () => {
+    const future = { periodStart: '2026-05-10', periodEnd: '2026-06-09', closingDate: '2026-06-10', dueDate: '2026-06-17', total: '90.00', paid: '0.00', remaining: '90.00', status: 'FUTURE' };
+    mockApi({ accounts: [CHECKING, CARD], invoices: [INVOICES[2], future] });
+
+    const view = await renderInvoices();
+
+    const labels = findByTag(view, 'button').map((button) => button.textContent);
+    assert.equal(labels.filter((label) => label === 'Pagar fatura').length, 1, 'only the open invoice');
+});

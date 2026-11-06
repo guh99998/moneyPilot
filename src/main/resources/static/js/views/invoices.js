@@ -72,7 +72,7 @@ function purchaseLine(transaction) {
 
 /** Compras do ciclo, carregadas só quando a pessoa abre a lista. */
 function purchasesDetails(card, invoice) {
-    const body = el('div', { class: 'invoice-purchases-body' });
+    const body = el('div', { class: 'invoice-purchases-body', 'aria-live': 'polite' });
     let loaded = false;
 
     async function load() {
@@ -184,7 +184,7 @@ export async function renderInvoices() {
     }
 
     function payButton(card, invoices, index) {
-        if (Number(invoices[index].remaining) <= 0) return null;
+        if (invoices[index].status === 'FUTURE' || Number(invoices[index].remaining) <= 0) return null;
         return el('button', {
             type: 'button',
             class: 'btn-primary btn-sm',
