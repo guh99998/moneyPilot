@@ -1,7 +1,7 @@
 # 016 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** aguardando aprovação
+**Status:** aprovado (2026-11-06)
 
 ## Abordagem
 
