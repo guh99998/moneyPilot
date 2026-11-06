@@ -34,6 +34,9 @@ public class Onboarding {
     @Column(name = "dismissed_at")
     private Instant dismissedAt;
 
+    @Column(name = "show_on_start", nullable = false)
+    private boolean showOnStart = true;
+
     public boolean allStepsDone() {
         return accountDoneAt != null && transactionDoneAt != null && budgetDoneAt != null;
     }

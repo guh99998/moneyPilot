@@ -11,8 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
-/** Cartão de primeiros passos do painel (spec 013). */
+/** Primeiros passos: progresso (spec 013) e pop-up de primeiro contato (spec 027). */
 @Service
 @RequiredArgsConstructor
 public class OnboardingService {
@@ -25,51 +26,60 @@ public class OnboardingService {
     private final Clock clock;
 
     /**
-     * O cartão da conta autenticada. Os passos são conferidos ao ler e o que está feito é gravado: passo feito
-     * nunca desmarca, mesmo que a pessoa apague depois o que o cumpriu. Conta antiga (sem linha), conta que
-     * dispensou o cartão e conta que concluiu os três passos recebem {@code visible: false}.
+     * Estado do pop-up da conta autenticada. Os passos são sempre conferidos; só são gravados quando existe linha
+     * (conta antiga não ganha linha) e passo feito nunca desmarca, mesmo que a pessoa apague depois o que o cumpriu.
+     * {@code eligible}: tem linha, não dispensou o cartão antigo e ainda há passo pendente. {@code visible}: elegível
+     * e com "Mostrar ao iniciar" marcado.
      */
     @Transactional
     public OnboardingResponse get() {
         Long userId = userProvider.getCurrentUserId();
         Onboarding onboarding = onboardingRepository.findById(userId).orElse(null);
-
-        if (onboarding == null || onboarding.getDismissedAt() != null) {
-            return OnboardingResponse.hidden();
-        }
-
         Instant now = clock.instant();
 
-        if (onboarding.getAccountDoneAt() == null && accountRepository.existsByUserId(userId)) {
-            onboarding.setAccountDoneAt(now);
-        }
-        if (onboarding.getTransactionDoneAt() == null && transactionRepository.existsAnyByUserId(userId)) {
-            onboarding.setTransactionDoneAt(now);
-        }
-        if (onboarding.getBudgetDoneAt() == null && budgetRepository.existsByUserId(userId)) {
-            onboarding.setBudgetDoneAt(now);
-        }
-        onboardingRepository.save(onboarding);
+        Instant account = stepDone(onboarding == null ? null : onboarding.getAccountDoneAt(), now,
+                () -> accountRepository.existsByUserId(userId));
+        Instant transaction = stepDone(onboarding == null ? null : onboarding.getTransactionDoneAt(), now,
+                () -> transactionRepository.existsAnyByUserId(userId));
+        Instant budget = stepDone(onboarding == null ? null : onboarding.getBudgetDoneAt(), now,
+                () -> budgetRepository.existsByUserId(userId));
 
-        if (onboarding.allStepsDone()) {
-            return OnboardingResponse.hidden();
+        boolean allDone = account != null && transaction != null && budget != null;
+        boolean eligible = false;
+        boolean showOnStart = true;
+
+        if (onboarding != null) {
+            onboarding.setAccountDoneAt(account);
+            onboarding.setTransactionDoneAt(transaction);
+            onboarding.setBudgetDoneAt(budget);
+            onboardingRepository.save(onboarding);
+            eligible = onboarding.getDismissedAt() == null && !allDone;
+            showOnStart = onboarding.isShowOnStart();
         }
 
-        return new OnboardingResponse(true, List.of(
-                new OnboardingStepResponse(OnboardingStep.ACCOUNT, onboarding.getAccountDoneAt() != null),
-                new OnboardingStepResponse(OnboardingStep.TRANSACTION, onboarding.getTransactionDoneAt() != null),
-                new OnboardingStepResponse(OnboardingStep.BUDGET, onboarding.getBudgetDoneAt() != null)
+        return new OnboardingResponse(eligible && showOnStart, eligible, showOnStart, List.of(
+                new OnboardingStepResponse(OnboardingStep.ACCOUNT, account != null),
+                new OnboardingStepResponse(OnboardingStep.TRANSACTION, transaction != null),
+                new OnboardingStepResponse(OnboardingStep.BUDGET, budget != null)
         ));
     }
 
-    /** Esconde o cartão em qualquer aparelho. Idempotente; conta antiga (sem linha) não muda nada. */
+    /** Guarda "Mostrar ao iniciar" para a conta. Idempotente; conta antiga (sem linha) não muda nada. */
     @Transactional
-    public void dismiss() {
+    public void savePreferences(OnboardingPreferencesRequest request) {
         onboardingRepository.findById(userProvider.getCurrentUserId()).ifPresent(onboarding -> {
-            if (onboarding.getDismissedAt() == null) {
-                onboarding.setDismissedAt(clock.instant());
+            if (onboarding.isShowOnStart() != request.showOnStart()) {
+                onboarding.setShowOnStart(request.showOnStart());
                 onboardingRepository.save(onboarding);
             }
         });
+    }
+
+    /** Passo já gravado continua feito; senão confere agora. */
+    private Instant stepDone(Instant recorded, Instant now, BooleanSupplier doneNow) {
+        if (recorded != null) {
+            return recorded;
+        }
+        return doneNow.getAsBoolean() ? now : null;
     }
 }

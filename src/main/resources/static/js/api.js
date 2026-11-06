@@ -239,10 +239,10 @@ export const api = {
         }
     },
 
-    // Primeiros passos (spec 013): o cartão de boas-vindas do painel, só em conta nova.
+    // Primeiros passos (specs 013 e 027): o pop-up de primeiro contato, só em conta nova.
     onboarding: {
         get: () => request('/onboarding'),
-        dismiss: () => request('/onboarding/dismiss', { method: 'POST' })
+        savePreferences: (showOnStart) => request('/onboarding/preferences', { method: 'PUT', body: { showOnStart } })
     },
 
     alerts: {
