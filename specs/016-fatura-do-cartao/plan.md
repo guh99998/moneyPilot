@@ -1,7 +1,7 @@
 # 016 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** aprovado (2026-11-06)
+**Status:** aprovado (2026-11-06); seção "Mudança: fatura em A pagar e receber" aguardando aprovação
 
 ## Abordagem
 
@@ -113,3 +113,43 @@ Suítes completas: `./mvnw verify` e `node --test "src/test/js/*.test.mjs"`. Ski
 ## Deploy
 
 Backup do banco antes, a cargo do Gustavo. A V20 só adiciona colunas nulas; depois do deploy nenhum número muda até alguém informar os dias de um cartão. O aviso em Novidades sai junto.
+
+## Mudança: fatura em A pagar e receber (2026-11-06)
+
+Regras 17 a 23 da spec. A fatura continua **calculada**, nunca um `Bill`: a baixa de um título cria uma despesa na conta que paga, o que contaria a compra e o pagamento como despesa. O pagamento correto é a transferência para o cartão, que já existe. Sem migration nova.
+
+### Backend
+
+- `InvoiceService.payableInvoices(userId)` devolve as faturas **abertas, fechadas e vencidas com `remaining > 0`** de todos os cartões com dias (marcados ou não no disponível; a futura fica de fora). Cada item leva o cartão (`accountId`, `accountName`) e os campos da fatura. É a base das três integrações abaixo e reusa `invoicesOf`.
+- **Rota nova:** `GET /api/v1/invoices/payable` → lista de `PayableInvoiceResponse` (`accountId`, `accountName`, `periodStart`, `periodEnd`, `closingDate`, `dueDate`, `total`, `paid`, `remaining`, `status`), da que vence primeiro à que vence depois. Novo `InvoiceController` (tag "Faturas"), OpenAPI completo, `404` não se aplica (só devolve o que é da pessoa logada). Fica fora de `/bills` de propósito: a lista de títulos é paginada e filtrada no servidor, e uma fatura calculada não cabe nessa consulta.
+- **Quadro "A pagar"** (`ReportService.getBillsSummary`): soma `count` e `remaining` das faturas em `payable`, e as vencidas também em `payable.overdue`. `BillTypeSummaryResponse` não muda de formato.
+- **Alertas** (`AlertService.compute`): as faturas **vencidas** entram nos totais de `PAYABLE_OVERDUE`; as **fechadas** com vencimento em até 7 dias, nos de `PAYABLE_DUE_SOON` (com `lastDueDate` o maior vencimento). A aberta não entra. O fingerprint já é `quantidade|total`, então pagar ou comprar mais faz o alerta voltar ou sumir.
+- `ReportRepository`, `BillRepository` e a previsão não mudam.
+
+### Cliente web
+
+- `views/invoices.js`: exporta `selectInvoiceCard(id)` (grava o cartão escolhido antes de navegar) e `openPayInvoiceDialog({ card, amount, accounts, onDone })`, extraído do diálogo de pagamento de hoje, para a tela A pagar e receber reusar.
+- `views/bills.js`: na primeira página, busca `api.invoices.payable()` junto com a lista e mostra as linhas no topo, só se os filtros combinarem (regra 20, função pura e testada). Linha com selo de situação, "Aberta" com o texto de em andamento, valor total e "falta R$ X" se parcial, e os botões "Ver itens da fatura" e "Pagar fatura". Sem checkbox. Falha ao buscar as faturas não derruba a lista: mostra um aviso discreto.
+- `js/api.js`: `invoices.payable()`.
+- `alert-targets.js` e o clique no quadro "A pagar" já abrem a tela com filtros que mostram as faturas; só confirmar nos testes.
+- Ajuda: `a-pagar-e-receber.html` e `faturas.html` explicam a linha; o aviso em Novidades da fatura ganha uma frase.
+
+### Testes
+
+| Critério | Prova |
+|---|---|
+| CA12 | `InvoicePayableIntegrationTest`: `GET /invoices/payable` com aberta, fechada, vencida e futura; só vêm as três primeiras, com `remaining > 0` |
+| CA13 | teste JS da regra 20 (tipo, status, conta, vencimento, categoria) e da linha sem checkbox |
+| CA14 | teste JS: "Ver itens da fatura" grava o cartão e aponta para `#/invoices`; "Pagar fatura" chama a transferência |
+| CA15 | `BillsSummaryIntegrationTest` (ou o teste do relatório existente): faturas somam em `payable` e `payable.overdue`; título comum não muda |
+| CA16 | `AlertIntegrationTest`: vencida e fechada em até 7 dias geram alerta, aberta não; pagar a fatura apaga o alerta |
+| CA17 | `InvoiceForecastIntegrationTest` e `AvailableBalanceIntegrationTest` seguem verdes sem mudança |
+
+Mais: `OpenApiContractIntegrationTest` para a rota nova, `./mvnw verify`, `node --test`, verificação manual no navegador (desktop e mobile) e as skills do projeto.
+
+### Riscos
+
+- **Número que sobe:** a fatura aberta cresce a cada compra e o quadro "A pagar" sobe junto. É o comportamento decidido; o selo "Aberta" e o texto de em andamento deixam isso claro.
+- **Linhas fora da paginação e da ordenação:** ficam sempre no topo da primeira página. Em geral são de 0 a 3, então não pesa.
+- **Alerta com a fatura aberta:** ignorado de propósito, para não avisar de um valor que ainda cresce.
+- **Alternativa descartada:** gravar a fatura como `Bill`. Valor desatualizado quando uma compra muda, e a baixa criaria despesa em dobro.

@@ -18,6 +18,16 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T12** — Skills: `web-design-guidelines`, `accessibility-compliance`, `responsive-design`, `api-design-principles`; anotar a revisão aqui
 - [x] **T13** — README, `./mvnw verify` e `node --test`, atualizar o quadro
 
+### Mudança: fatura em A pagar e receber (spec, regras 17 a 23)
+
+- [ ] **T14** - `InvoiceService.payableInvoices` e `GET /invoices/payable`, com OpenAPI (CA12)
+- [ ] **T15** - Quadro "A pagar" da Visão geral soma as faturas (CA15)
+- [ ] **T16** - Alertas de a pagar incluem fatura fechada ou vencida (CA16)
+- [ ] **T17** - `invoices.js`: `selectInvoiceCard` e `openPayInvoiceDialog` extraído (CA14)
+- [ ] **T18** - `bills.js`: linhas de fatura no topo da primeira página, filtros e botões "Ver itens da fatura" e "Pagar fatura" (CA13, CA14)
+- [ ] **T19** - Ajuda, aviso em Novidades e README (CA11)
+- [ ] **T20** - Verificação manual (desktop e mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4 (CA17)
+
 ## Notas de implementação
 
 Descobertas durante a implementação que afetaram a spec ou o plano.

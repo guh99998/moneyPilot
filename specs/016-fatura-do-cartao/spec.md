@@ -1,6 +1,6 @@
 # 016 — Fatura do cartão de crédito
 
-**Status:** em revisão (implementada; falta o ok do Gustavo antes do merge)
+**Status:** mudança de escopo aprovada (2026-11-06): a fatura entra em "A pagar e receber"; plano em aprovação
 **Branch:** feature/016-fatura-do-cartao
 **Depende de:** 015 (campo `countsAsAvailable`). Ordem de merge: 027, 015, 016 (migrations V18, V19, V20).
 
@@ -40,6 +40,16 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 11. "Guardado" deixa de incluir cartões. Dívida não é dinheiro guardado.
 12. Relatórios e orçamento não mudam: a parcela conta no mês da sua data.
 
+**A pagar e receber, Visão geral e alertas** (mudança de 2026-11-06)
+
+17. Em "A pagar e receber", cada fatura de cartão com dias e ainda com valor a pagar aparece como **uma linha própria**, como uma conta a pagar: "Fatura do <cartão>", vencimento da fatura, **valor total** (e "falta R$ X" se houve pagamento parcial) e a situação. Entram a fatura **aberta**, a **fechada** e a **vencida**; a futura não. Não é um título gravado: a linha é calculada a cada leitura, com o mesmo cálculo da tela Faturas.
+18. A fatura **aberta** leva o selo "Aberta" e o texto "fecha em dd/mm, ainda recebe compras", porque o valor sobe a cada compra nova. Mostra o vencimento real da fatura.
+19. A linha tem os botões **"Ver itens da fatura"** (abre a tela Faturas no cartão certo) e **"Pagar fatura"** (o mesmo diálogo de pagamento da tela Faturas, uma transferência para o cartão). Fica fora da seleção em lote e não tem editar nem cancelar.
+20. As linhas de fatura ficam no topo da primeira página e só aparecem quando os filtros combinam: tipo "a pagar" (ou sem tipo); status em aberto ou todos (vencido mostra só as vencidas; baixado e cancelado não mostram); conta vazia ou igual ao cartão; intervalo de vencimento que contenha o vencimento da fatura; sem filtro de categoria. Não entram na paginação nem na ordenação da lista.
+21. O quadro "A pagar" da Visão geral soma o que falta das faturas aberta, fechada e vencida (quantidade e total; as vencidas também entram no vencido).
+22. Os alertas de a pagar incluem só fatura **fechada ou vencida**: a vencida entra no alerta de vencidas; a fechada com vencimento em até 7 dias, no de vencimento próximo. A fatura aberta não gera alerta.
+23. A previsão não muda (a fatura já entra nela pelo vencimento, e não é um título gravado, então não conta duas vezes).
+
 **Telas**
 
 13. Formulário de conta pede fechamento e vencimento quando o tipo é cartão.
@@ -60,6 +70,12 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 9. Conta de outro usuário responde `404` em todas as rotas novas.
 10. O contrato OpenAPI documenta as rotas e campos novos, e o `MoneyScaleIntegrationTest` cobre a rota de parcelas.
 11. As telas funcionam no mobile, com teclado e leitor de tela.
+12. A fatura aberta, a fechada e a vencida aparecem em "A pagar e receber" com o valor total, e a futura não; a aberta vem marcada como em andamento.
+13. As linhas respeitam os filtros da regra 20 e não entram na seleção em lote, na paginação nem na ordenação.
+14. "Ver itens da fatura" abre a tela Faturas no cartão da linha; "Pagar fatura" registra a transferência para o cartão e a linha se atualiza.
+15. O quadro "A pagar" da Visão geral soma o que falta das faturas aberta, fechada e vencida.
+16. Os alertas incluem fatura fechada ou vencida e ignoram a aberta; pagar a fatura apaga o alerta.
+17. A previsão e o saldo disponível não mudam com essa mudança, e a fatura nunca conta duas vezes.
 
 ## Casos de borda
 
@@ -71,7 +87,7 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 
 ## Fora de escopo
 
-Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importar fatura, pontos e milhas, alerta de vencimento da fatura, somar a fatura no quadro "A pagar" da Visão geral, migrar lançamentos antigos.
+Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importar fatura, pontos e milhas, migrar lançamentos antigos, gravar a fatura como título (`Bill`), incluir a fatura em "Próximos vencimentos" da Visão geral.
 
 ## Migration
 
@@ -84,9 +100,9 @@ Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importa
 - O cartão existente só muda quando a pessoa informa os dias.
 - A compra no dia do fechamento cai na próxima fatura.
 - Faturas em tela própria no menu.
+- A fatura aparece em "A pagar e receber" como uma linha calculada, aberta, fechada ou vencida, com o valor total; entra no quadro "A pagar" da Visão geral e nos alertas (só fechada ou vencida). Decidido em 2026-11-06, em lugar de ficar fora, como a versão inicial da spec previa.
 
 ## Decisões a confirmar
 
 - Limite do cartão fica fora.
-- A fatura entra na previsão, mas não no quadro "A pagar" nem nos alertas; fica uma diferença entre os dois números na Visão geral até uma próxima spec.
 - Tamanho: é a maior das três specs; revisar com calma antes da `main` pode ficar apertado.
