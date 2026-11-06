@@ -989,3 +989,7 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .availability-list input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--navy); cursor: pointer; }
 .availability-list input[type="checkbox"]:disabled { cursor: progress; opacity: .6; }
 .availability-name { font-weight: 600; }
+.news-card { border-left: 4px solid var(--navy); }
+.news-card p { margin: 0 0 .5rem; color: var(--text-secondary); }
+.news-steps { margin: 0 0 1rem; padding-left: 1.25rem; color: var(--text-secondary); }
+.news-steps li { margin-bottom: .25rem; }

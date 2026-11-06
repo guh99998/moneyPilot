@@ -3,6 +3,7 @@ import { el, fmtMoney, monthName, monthPicker, pageHead, emptyState, reportError
 import { lineChart, groupedColumns, legend, tableToggle } from '../charts.js';
 import { presetBillFilters } from './bills.js';
 import { loadOnboarding, onboardingCard } from './onboarding.js';
+import { availableNewsCard } from './news-available.js';
 
 const now = new Date();
 let month = now.getMonth() + 1;
@@ -385,10 +386,19 @@ export async function renderDashboard() {
                 : null;
             if (welcomeCard) welcomeCard.classList.add('span-full');
 
+            const newsCard = availableNewsCard(balances.length, () => {
+                newsCard.remove();
+                const title = view.querySelector('h1');
+                title?.setAttribute('tabindex', '-1');
+                title?.focus();
+            });
+            if (newsCard) newsCard.classList.add('span-full');
+
             view.replaceChildren(
                 head(),
                 el('div', { class: 'dash' }, [
                     welcomeCard,
+                    newsCard,
                     heroSlot,
                     el('div', { class: 'kpis' }, [
                         statTile('Receitas do mês', fmtMoney(summary.totalIncome), 'pos'),
