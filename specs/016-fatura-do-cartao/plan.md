@@ -131,6 +131,7 @@ Regras 17 a 23 da spec. A fatura continua **calculada**, nunca um `Bill`: a baix
 - `views/invoices.js`: exporta `selectInvoiceCard(id)` (grava o cartão escolhido antes de navegar) e `openPayInvoiceDialog({ card, amount, accounts, onDone })`, extraído do diálogo de pagamento de hoje, para a tela A pagar e receber reusar.
 - `views/bills.js`: na primeira página, busca `api.invoices.payable()` junto com a lista e mostra as linhas no topo, só se os filtros combinarem (regra 20, função pura e testada). Linha com selo de situação, "Aberta" com o texto de em andamento, valor total e "falta R$ X" se parcial, e os botões "Ver itens da fatura" e "Pagar fatura". Sem checkbox. Falha ao buscar as faturas não derruba a lista: mostra um aviso discreto.
 - `js/api.js`: `invoices.payable()`.
+- `views/dashboard.js`: "Próximos vencimentos" busca `api.invoices.payable()` junto com os títulos em aberto, mistura os dois por vencimento (função pura `mergeUpcoming`, mais próximo primeiro, 6 itens) e mostra a fatura com "Fatura do <cartão>", o selo da situação e o link para Faturas. Falha ao buscar as faturas não derruba o cartão.
 - `alert-targets.js` e o clique no quadro "A pagar" já abrem a tela com filtros que mostram as faturas; só confirmar nos testes.
 - Ajuda: `a-pagar-e-receber.html` e `faturas.html` explicam a linha; o aviso em Novidades da fatura ganha uma frase.
 
@@ -143,6 +144,7 @@ Regras 17 a 23 da spec. A fatura continua **calculada**, nunca um `Bill`: a baix
 | CA14 | teste JS: "Ver itens da fatura" grava o cartão e aponta para `#/invoices`; "Pagar fatura" chama a transferência |
 | CA15 | `BillsSummaryIntegrationTest` (ou o teste do relatório existente): faturas somam em `payable` e `payable.overdue`; título comum não muda |
 | CA16 | `AlertIntegrationTest`: vencida e fechada em até 7 dias geram alerta, aberta não; pagar a fatura apaga o alerta |
+| CA18 | teste JS de `mergeUpcoming` (ordem por vencimento, limite de 6, fatura com cartão e selo) e do cartão da Visão geral |
 | CA17 | `InvoiceForecastIntegrationTest` e `AvailableBalanceIntegrationTest` seguem verdes sem mudança |
 
 Mais: `OpenApiContractIntegrationTest` para a rota nova, `./mvnw verify`, `node --test`, verificação manual no navegador (desktop e mobile) e as skills do projeto.
