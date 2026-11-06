@@ -1,8 +1,10 @@
 import { api, fetchAll, normalizePage } from '../api.js';
-import { el, fmtMoney, monthName, monthPicker, pageHead, emptyState, reportError, todayIso } from '../ui.js';
+import { el, fmtMoney, fmtDate, monthName, monthPicker, pageHead, emptyState, reportError, todayIso } from '../ui.js';
 import { lineChart, groupedColumns, legend, tableToggle } from '../charts.js';
 import { presetBillFilters } from './bills.js';
 import { availableNewsCard } from './news-available.js';
+import { invoiceNewsCard } from './news-invoices.js';
+import { selectInvoiceCard } from './invoices.js';
 
 const now = new Date();
 let month = now.getMonth() + 1;
@@ -64,7 +66,8 @@ function billTile(label, side, type) {
 /** Soma, em centavos inteiros, o saldo das contas que não contam no disponível (o "Guardado"). */
 export function savedCents(rows) {
     return rows
-        .filter((row) => row.countsAsAvailable === false)
+        // Cartão é dívida, não dinheiro guardado (spec 016): a fatura entra na previsão pelo vencimento.
+        .filter((row) => row.countsAsAvailable === false && row.type !== 'CREDIT_CARD')
         .reduce((sum, row) => sum + Math.round(Number(row.balance) * 100), 0);
 }
 
@@ -193,27 +196,66 @@ function forecastCard(initial, onPeriodChange) {
 
 // ---- próximos vencimentos ----
 
-function upcomingCard(bills) {
+const UPCOMING_LIMIT = 6;
+
+/**
+ * Títulos em aberto e faturas de cartão (spec 016, regra 23) por vencimento, a mais próxima primeiro.
+ * Cada item é `{ dueDate, bill }` ou `{ dueDate, invoice }`.
+ */
+export function mergeUpcoming(bills, invoices, limit = UPCOMING_LIMIT) {
+    return [
+        ...bills.map((bill) => ({ dueDate: bill.dueDate, bill })),
+        ...invoices.map((invoice) => ({ dueDate: invoice.dueDate, invoice }))
+    ]
+        .sort((a, b) => (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0))
+        .slice(0, limit);
+}
+
+function upcomingItem(entry, today) {
+    const late = entry.dueDate < today;
+    const [, monthPart, day] = entry.dueDate.split('-');
+    const dayBox = el('div', { class: 'day' }, [el('b', { text: day }), el('span', { text: SHORT_MONTHS[Number(monthPart) - 1] })]);
+
+    if (entry.invoice) {
+        const invoice = entry.invoice;
+        const status = invoice.status === 'OVERDUE' || late
+            ? 'Vencido · a pagar'
+            : (invoice.status === 'OPEN' ? `Aberta · fecha em ${fmtDate(invoice.closingDate)}` : 'A vencer');
+        return el('li', { class: late ? 'is-overdue' : '' }, [
+            dayBox,
+            el('div', { class: 'what' }, [
+                el('strong', {}, el('a', {
+                    href: '#/invoices',
+                    text: `Fatura do ${invoice.accountName}`,
+                    onClick: () => selectInvoiceCard(invoice.accountId)
+                })),
+                el('span', { class: late ? 'late' : '', text: status })
+            ]),
+            el('span', { class: 'amt out', text: `− ${fmtMoney(invoice.total)}` })
+        ]);
+    }
+
+    const bill = entry.bill;
+    const payable = bill.type === 'PAYABLE';
+    return el('li', { class: late ? 'is-overdue' : '' }, [
+        dayBox,
+        el('div', { class: 'what' }, [
+            el('strong', { text: bill.description || bill.categoryName }),
+            el('span', {
+                class: late ? 'late' : '',
+                text: late
+                    ? `Vencido · ${payable ? 'a pagar' : 'a receber'}`
+                    : `${bill.categoryName}${bill.installmentNumber ? ` · ${bill.installmentNumber}/${bill.installmentTotal}` : ''}`
+            })
+        ]),
+        el('span', { class: `amt ${payable ? 'out' : 'in'}`, text: `${payable ? '−' : '+'} ${fmtMoney(bill.amount)}` })
+    ]);
+}
+
+export function upcomingCard(entries) {
     const today = todayIso();
-    const body = bills.length
-        ? el('ul', { class: 'upcoming' }, bills.map((bill) => {
-            const late = bill.dueDate < today;
-            const [, monthPart, day] = bill.dueDate.split('-');
-            const payable = bill.type === 'PAYABLE';
-            return el('li', { class: late ? 'is-overdue' : '' }, [
-                el('div', { class: 'day' }, [el('b', { text: day }), el('span', { text: SHORT_MONTHS[Number(monthPart) - 1] })]),
-                el('div', { class: 'what' }, [
-                    el('strong', { text: bill.description || bill.categoryName }),
-                    el('span', {
-                        class: late ? 'late' : '',
-                        text: late
-                            ? `Vencido · ${payable ? 'a pagar' : 'a receber'}`
-                            : `${bill.categoryName}${bill.installmentNumber ? ` · ${bill.installmentNumber}/${bill.installmentTotal}` : ''}`
-                    })
-                ]),
-                el('span', { class: `amt ${payable ? 'out' : 'in'}`, text: `${payable ? '−' : '+'} ${fmtMoney(bill.amount)}` })
-            ]);
-        }))
+    const body = entries.length
+        ? el('ul', { class: 'upcoming' }, entries.map((entry) => upcomingItem(entry, today)))
         : emptyState('Nada em aberto. Os próximos vencimentos aparecem aqui.');
 
     const link = el('a', { class: 'card-link', href: '#/bills', text: 'Ver todos' });
@@ -315,7 +357,10 @@ export function accountBalances(rows) {
             ])),
             el('tbody', {}, rows.map((row) => el('tr', {}, [
                 el('td', {}, row.countsAsAvailable === false
-                    ? [row.name, ' ', el('span', { class: 'sub', text: '(fora do disponível)' })]
+                    ? [row.name, ' ', el('span', {
+                        class: 'sub',
+                        text: row.type === 'CREDIT_CARD' && row.hasInvoices ? '(a fatura entra na previsão)' : '(fora do disponível)'
+                    })]
                     : row.name),
                 el('td', { class: 'num', style: Number(row.balance) < 0 ? 'color: var(--expense)' : '', text: fmtMoney(row.balance) })
             ])))
@@ -323,14 +368,23 @@ export function accountBalances(rows) {
     ]);
 }
 
+function accountRow(account) {
+    return {
+        name: account.name,
+        countsAsAvailable: account.countsAsAvailable,
+        type: account.type,
+        hasInvoices: Boolean(account.closingDay)
+    };
+}
+
 export async function loadBalances() {
     const accounts = await fetchAll(api.accounts.list);
     return Promise.all(accounts.map(async (account) => {
         try {
             const balance = await api.accounts.balance(account.id);
-            return { name: account.name, balance: balance.currentBalance, countsAsAvailable: account.countsAsAvailable };
+            return { ...accountRow(account), balance: balance.currentBalance };
         } catch {
-            return { name: account.name, balance: account.initialBalance, countsAsAvailable: account.countsAsAvailable };
+            return { ...accountRow(account), balance: account.initialBalance };
         }
     }));
 }
@@ -359,7 +413,7 @@ export async function renderDashboard() {
 
         try {
             const months = trendMonths();
-            const [summary, spending, budgets, balances, billsSummary, forecast, upcoming, ...trend] = await Promise.all([
+            const [summary, spending, budgets, balances, billsSummary, forecast, upcoming, payableInvoices, ...trend] = await Promise.all([
                 api.reports.monthlySummary(month, year),
                 api.reports.spendingByCategory(month, year),
                 api.reports.budgetVsActual(month, year),
@@ -367,6 +421,8 @@ export async function renderDashboard() {
                 api.reports.billsSummary(),
                 api.reports.cashFlowForecast(forecastDays),
                 api.bills.list({ status: 'OPEN', page: 0, size: 6 }),
+                // As faturas só enriquecem o cartão: se falharem, ele segue só com os títulos.
+                api.invoices.payable().catch(() => []),
                 ...months.map((item) => api.reports.monthlySummary(item.month, item.year))
             ]);
 
@@ -381,10 +437,19 @@ export async function renderDashboard() {
             });
             if (newsCard) newsCard.classList.add('span-full');
 
+            const invoiceNews = invoiceNewsCard(balances.filter((row) => row.type === 'CREDIT_CARD').length, () => {
+                invoiceNews.remove();
+                const title = view.querySelector('h1');
+                title?.setAttribute('tabindex', '-1');
+                title?.focus();
+            });
+            if (invoiceNews) invoiceNews.classList.add('span-full');
+
             view.replaceChildren(
                 head(),
                 el('div', { class: 'dash' }, [
                     newsCard,
+                    invoiceNews,
                     heroSlot,
                     el('div', { class: 'kpis' }, [
                         statTile('Receitas do mês', fmtMoney(summary.totalIncome), 'pos'),
@@ -393,7 +458,7 @@ export async function renderDashboard() {
                         billTile('A receber', billsSummary.receivable, 'RECEIVABLE')
                     ]),
                     forecastCard(forecast, refreshHero),
-                    upcomingCard(normalizePage(upcoming).content),
+                    upcomingCard(mergeUpcoming(normalizePage(upcoming).content, payableInvoices)),
                     trendCard(months, trend),
                     card('Gastos por categoria', el('span', { class: 'sub', text: monthName(month) }), spendingChart(spending), 'span-side'),
                     card('Orçado x realizado', el('span', { class: 'sub', text: monthName(month) }), budgetMeters(budgets), 'span-half'),

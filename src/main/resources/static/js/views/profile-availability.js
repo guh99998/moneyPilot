@@ -29,21 +29,28 @@ function card(body) {
         ]),
         el('ul', { class: 'availability-help' }, [
             el('li', {}, [el('b', { text: 'Marcada: ' }), 'o saldo da conta entra no Saldo disponível da Visão geral e é o ponto de partida da previsão.']),
-            el('li', {}, [el('b', { text: 'Desmarcada: ' }), 'o saldo vira Guardado e fica fora do disponível e da previsão.'])
+            el('li', {}, [el('b', { text: 'Desmarcada: ' }), 'o saldo vira Guardado e fica fora do disponível e da previsão.']),
+            el('li', {}, [el('b', { text: 'Cartão de crédito: ' }), 'dívida não é dinheiro guardado. Com fechamento e vencimento informados em Contas, o cartão sai do disponível e a fatura entra na previsão no vencimento.'])
         ]),
         el('p', { class: 'sub', text: 'Lançamentos, extrato, relatórios e orçamento não mudam.' }),
         body
     ]);
 }
 
-const STATUS = {
-    true: 'Conta no saldo disponível e na previsão',
-    false: 'Guardado: fora do saldo disponível e da previsão'
-};
+/** Linha de estado da conta. Cartão nunca é "Guardado": dívida não é dinheiro guardado (spec 016). */
+export function availabilityStatus(account) {
+    if (account.countsAsAvailable) return 'Conta no saldo disponível e na previsão';
+    if (account.type === 'CREDIT_CARD') {
+        return account.closingDay
+            ? 'Fora do saldo disponível: entra pela fatura, no vencimento da previsão'
+            : 'Fora do saldo disponível. Informe fechamento e vencimento em Contas para a fatura entrar na previsão';
+    }
+    return 'Guardado: fora do saldo disponível e da previsão';
+}
 
 function row(account, errorBox) {
     const id = `availability-${account.id}`;
-    const status = el('span', { class: 'availability-status', id: `${id}-status`, text: STATUS[account.countsAsAvailable] });
+    const status = el('span', { class: 'availability-status', id: `${id}-status`, text: availabilityStatus(account) });
     const input = el('input', { type: 'checkbox', id, name: `countsAsAvailable-${account.id}`, autocomplete: 'off', 'aria-describedby': `${id}-status` });
     input.checked = account.countsAsAvailable;
 
@@ -60,11 +67,11 @@ function row(account, errorBox) {
             });
             account.countsAsAvailable = saved.countsAsAvailable;
             input.checked = saved.countsAsAvailable;
-            status.textContent = STATUS[saved.countsAsAvailable];
+            status.textContent = availabilityStatus(account);
             toast(wanted ? `${account.name} conta no saldo disponível.` : `${account.name} saiu do saldo disponível.`, 'success');
         } catch (error) {
             input.checked = account.countsAsAvailable;
-            status.textContent = STATUS[account.countsAsAvailable];
+            status.textContent = availabilityStatus(account);
             errorBox.textContent = error?.message || 'Não foi possível salvar.';
             errorBox.hidden = false;
             toast(error?.message || 'Não foi possível salvar.', 'error');

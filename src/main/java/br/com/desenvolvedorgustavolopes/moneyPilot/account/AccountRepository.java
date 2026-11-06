@@ -7,12 +7,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByIdAndUserId(Long accountId, Long userId);
 
     Page<Account> findAllByUserId(Long userId, Pageable pageable);
+
+    /** Previsões (spec 016): cartões com fatura que ficam fora do saldo disponível. */
+    List<Account> findAllByUserIdAndClosingDayIsNotNullAndCountsAsAvailableFalse(Long userId);
+
+    /** Faturas como contas a pagar (spec 016): todos os cartões com fatura, no disponível ou não. */
+    List<Account> findAllByUserIdAndClosingDayIsNotNull(Long userId);
 
     /** Boas-vindas (spec 013): a pessoa já criou alguma conta bancária? */
     boolean existsByUserId(Long userId);

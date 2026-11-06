@@ -1,5 +1,8 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.report;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.InvoiceService;
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.InvoiceStatus;
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.PayableInvoiceResponse;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidForecastPeriodException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRecurrence;
@@ -25,6 +28,7 @@ public class ReportService {
     private final AuthenticatedUserProvider userProvider;
     private final ReportRepository reportRepository;
     private final BillRecurrenceRepository billRecurrenceRepository;
+    private final InvoiceService invoiceService;
     private final Clock clock;
 
     private static final Set<Integer> FORECAST_PERIODS = Set.of(30, 60, 90);
@@ -71,6 +75,15 @@ public class ReportService {
                 .toList();
     }
 
+    /** Títulos em aberto mais as faturas dos cartões fora do disponível (spec 016), tudo como saída no vencimento. */
+    private List<BillDueTotals> dueTotals(Long userId, LocalDate to) {
+        List<BillDueTotals> totals = new ArrayList<>(reportRepository.findOpenBillTotalsByDueDate(userId, to));
+        for (InvoiceService.InvoiceDue invoice : invoiceService.payableInvoices(userId, to)) {
+            totals.add(new InvoiceDueTotals(invoice.dueDate(), invoice.amount()));
+        }
+        return totals;
+    }
+
     public CashFlowForecastResponse getCashFlowForecast(Integer days) {
         if (!FORECAST_PERIODS.contains(days)) {
             throw new InvalidForecastPeriodException(days);
@@ -82,7 +95,7 @@ public class ReportService {
         LocalDate to = from.plusDays(days - 1);
 
         BigDecimal currentBalance = reportRepository.getAvailableBalance(userId);
-        List<BillDueTotals> dueTotals = reportRepository.findOpenBillTotalsByDueDate(userId, to);
+        List<BillDueTotals> dueTotals = this.dueTotals(userId, to);
 
         int bucketCount = (days + BUCKET_DAYS - 1) / BUCKET_DAYS;
         BigDecimal[] payable = new BigDecimal[bucketCount];
@@ -170,7 +183,7 @@ public class ReportService {
         BigDecimal overduePayable = BigDecimal.ZERO;
         BigDecimal overdueReceivable = BigDecimal.ZERO;
 
-        for (BillDueTotals totals : reportRepository.findOpenBillTotalsByDueDate(userId, to)) {
+        for (BillDueTotals totals : this.dueTotals(userId, to)) {
             int index = 0;
             if (totals.getDueDate().isBefore(today)) {
                 overdueCount += totals.getBillCount();
@@ -247,8 +260,29 @@ public class ReportService {
         LocalDate monthStart = today.withDayOfMonth(1);
 
         // "Baixado no mês" segue a data do pagamento (a do lançamento gerado), não a do clique.
-        return new BillsSummaryResponse(
+        BillsSummaryResponse bills = new BillsSummaryResponse(
                 reportRepository.findBillsSummary(userId, today, monthStart, monthStart.plusMonths(1))
         );
+
+        return new BillsSummaryResponse(this.withInvoices(bills.payable(), userId, today), bills.receivable(), bills.settledThisMonth());
+    }
+
+    /** Spec 016, regra 21: o que falta das faturas aberta, fechada e vencida soma no a pagar; a vencida também no vencido. */
+    private BillTypeSummaryResponse withInvoices(BillTypeSummaryResponse payable, Long userId, LocalDate today) {
+        long count = payable.count();
+        BigDecimal total = payable.total();
+        long overdueCount = payable.overdueCount();
+        BigDecimal overdueTotal = payable.overdueTotal();
+
+        for (PayableInvoiceResponse invoice : invoiceService.payableOf(userId, today)) {
+            count++;
+            total = total.add(invoice.remaining());
+            if (invoice.status() == InvoiceStatus.OVERDUE) {
+                overdueCount++;
+                overdueTotal = overdueTotal.add(invoice.remaining());
+            }
+        }
+
+        return new BillTypeSummaryResponse(count, total, overdueCount, overdueTotal);
     }
 }

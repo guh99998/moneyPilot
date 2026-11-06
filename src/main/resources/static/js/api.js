@@ -280,7 +280,12 @@ export const api = {
         create: (body) => request('/accounts', { method: 'POST', body }),
         update: (id, body) => request(`/accounts/${id}`, { method: 'PUT', body }),
         remove: (id) => request(`/accounts/${id}`, { method: 'DELETE' }),
-        balance: (id) => request(`/accounts/${id}/balance`)
+        balance: (id) => request(`/accounts/${id}/balance`),
+        invoices: (id) => request(`/accounts/${id}/invoices`)
+    },
+
+    invoices: {
+        payable: () => request('/invoices/payable')
     },
 
     categories: {
@@ -295,7 +300,9 @@ export const api = {
         create: (body) => request('/transactions', { method: 'POST', body }),
         update: (id, body) => request(`/transactions/${id}`, { method: 'PUT', body }),
         remove: (id) => request(`/transactions/${id}`, { method: 'DELETE' }),
-        transfer: (body) => request('/transactions/transfers', { method: 'POST', body })
+        transfer: (body) => request('/transactions/transfers', { method: 'POST', body }),
+        createInstallments: (body) => request('/transactions/installments', { method: 'POST', body }),
+        removeInstallments: (groupId) => request(`/transactions/installments/${groupId}`, { method: 'DELETE' })
     },
 
     budgets: {

@@ -67,3 +67,42 @@ test('loadBalances carries countsAsAvailable from the account, also when the bal
     assert.deepEqual(rows.map((row) => [row.name, row.balance, row.countsAsAvailable]),
         [['Corrente', '9.00', true], ['Renda fixa', '7.00', false]]);
 });
+
+test('savedCents leaves credit cards out: a debt is not money put aside', () => {
+    const rows = [
+        { name: 'Renda fixa', balance: '300.00', countsAsAvailable: false, type: 'INVESTMENT' },
+        { name: 'Nubank', balance: '-200.00', countsAsAvailable: false, type: 'CREDIT_CARD' }
+    ];
+
+    assert.equal(savedCents(rows), 30000);
+});
+
+test('the table says a card outside the available balance enters the forecast through its invoice', () => {
+    const table = accountBalances([
+        { name: 'Nubank', balance: '-200.00', countsAsAvailable: false, type: 'CREDIT_CARD', hasInvoices: true },
+        { name: 'Inter', balance: '-50.00', countsAsAvailable: false, type: 'CREDIT_CARD', hasInvoices: false }
+    ]);
+
+    const cells = findAll(table, (node) => node.tagName === 'TD').map((cell) => cell.textContent);
+    assert.ok(cells.some((cell) => cell === 'Nubank (a fatura entra na previsão)'));
+    assert.ok(cells.some((cell) => cell === 'Inter (fora do disponível)'));
+});
+
+test('loadBalances carries the account type and whether the card has invoices', async () => {
+    globalThis.fetch = async (url) => {
+        const path = new URL(url, 'http://localhost').pathname;
+        if (path === '/api/v1/accounts') {
+            return Response.json({
+                content: [{ id: 3, name: 'Nubank', type: 'CREDIT_CARD', initialBalance: '0.00', countsAsAvailable: false, closingDay: 10, dueDay: 17 }],
+                page: { number: 0, totalPages: 1 }, totalPages: 1, number: 0
+            });
+        }
+        if (path === '/api/v1/accounts/3/balance') return Response.json({ currentBalance: '-80.00' });
+        return new Response(null, { status: 500 });
+    };
+
+    const [row] = await loadBalances();
+
+    assert.equal(row.type, 'CREDIT_CARD');
+    assert.equal(row.hasInvoices, true);
+});
