@@ -1005,3 +1005,28 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .news-card p { margin: 0 0 .5rem; color: var(--text-secondary); }
 .news-steps { margin: 0 0 1rem; padding-left: 1.25rem; color: var(--text-secondary); }
 .news-steps li { margin-bottom: .25rem; }
+
+/* Faturas do cartão (spec 016) */
+.invoice-picker { max-width: 22rem; }
+.invoice-figure { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; margin: 0 0 .25rem; font-variant-numeric: tabular-nums; }
+.invoice-facts { display: flex; flex-wrap: wrap; gap: .25rem 1.1rem; margin: 0 0 .85rem; font-size: .85rem; color: var(--text-secondary); }
+.invoice-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .85rem; }
+.invoice-list { list-style: none; margin: 0; padding: 0; }
+.invoice-item { padding: .75rem 0; border-top: 1px solid var(--border); }
+.invoice-item:first-child { border-top: 0; padding-top: 0; }
+.invoice-item-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
+.invoice-item-main { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.invoice-item-amounts { display: flex; flex-direction: column; align-items: flex-end; margin-left: auto; }
+.invoice-item-total { font-weight: 700; font-variant-numeric: tabular-nums; }
+.invoice-purchases { margin-top: .5rem; font-size: .85rem; }
+.invoice-purchases summary { cursor: pointer; padding: .5rem 0; min-height: 44px; display: flex; align-items: center; color: var(--text-secondary); font-weight: 600; }
+.invoice-purchase-list { list-style: none; margin: 0; padding: 0; }
+.invoice-purchase { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: .5rem; padding: .35rem 0; border-top: 1px solid var(--border); }
+.invoice-purchase-date { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.invoice-purchase-amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.invoice-empty-link { text-align: center; margin: 0 0 1rem; }
+@media (max-width: 480px) {
+    .invoice-purchase { grid-template-columns: 1fr auto; }
+    .invoice-purchase-date { grid-column: 1 / -1; font-size: .78rem; }
+    .invoice-item-amounts { align-items: flex-start; margin-left: 0; }
+}

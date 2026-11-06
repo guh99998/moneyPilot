@@ -11,7 +11,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T5** — Faturas nas duas previsões (CA7, CA8)
 - [x] **T6** — Contrato OpenAPI, `MoneyScaleIntegrationTest`, isolamento entre usuários (CA9, CA10)
 - [x] **T7** — Conta: fechamento e vencimento no formulário de cartão (CA11)
-- [ ] **T8** — Tela Faturas (`views/invoices.js`), menu, pagar fatura e compra parcelada (CA11)
+- [x] **T8** — Tela Faturas (`views/invoices.js`), menu, pagar fatura e compra parcelada (CA11)
 - [ ] **T9** — Dashboard sem cartão em "Guardado" e linha de estado do Perfil (CA8)
 - [ ] **T10** — Aviso em Novidades e página na ajuda
 - [ ] **T11** — Verificação manual local (desktop e mobile)

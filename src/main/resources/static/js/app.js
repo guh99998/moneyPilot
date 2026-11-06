@@ -6,6 +6,7 @@ import { renderTransactions } from './views/transactions.js';
 import { renderBills, ensureRecurringBills } from './views/bills.js';
 import { renderForecast } from './views/forecast.js';
 import { renderAccounts } from './views/accounts.js';
+import { renderInvoices } from './views/invoices.js';
 import { renderCategories } from './views/categories.js';
 import { renderBudgets } from './views/budgets.js';
 import { renderProfile } from './views/profile.js';
@@ -24,6 +25,7 @@ const ROUTES = [
     { path: 'bills', label: 'A pagar e receber', render: renderBills },
     { path: 'forecast', label: 'Previsão mensal', render: renderForecast },
     { path: 'accounts', label: 'Contas', render: renderAccounts },
+    { path: 'invoices', label: 'Faturas', render: renderInvoices },
     { path: 'categories', label: 'Categorias', render: renderCategories },
     { path: 'budgets', label: 'Orçamentos', render: renderBudgets }
 ];
@@ -35,6 +37,7 @@ const NAV_ICONS = {
     bills: svgIcon('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>'),
     forecast: svgIcon('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
     accounts: svgIcon('<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>'),
+    invoices: svgIcon('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>'),
     categories: svgIcon('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>'),
     ai: svgIcon('<rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/>'),
     tickets: svgIcon('<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12"/>'),
