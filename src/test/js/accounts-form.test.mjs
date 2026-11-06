@@ -56,3 +56,30 @@ test('only one day is sent as is, so the API answers with the field error', () =
     assert.equal(payload.closingDay, 10);
     assert.equal('dueDay' in payload, false);
 });
+
+test('the invoice start field is a date, only for cards', () => {
+    const field = accountFields().find((item) => item.name === 'invoicesFrom');
+
+    assert.equal(field.type, 'date');
+    assert.equal(field.label, 'Contar faturas desde');
+    assert.equal(field.required, undefined);
+    assert.deepEqual(field.showWhen, { name: 'accountType', value: 'CREDIT_CARD' });
+});
+
+test('a card sends the invoice start together with its days', () => {
+    const payload = accountPayload({
+        name: 'Cartão', accountType: 'CREDIT_CARD', initialBalance: '0', closingDay: '10', dueDay: '17', invoicesFrom: '2026-01-20'
+    });
+
+    assert.equal(payload.invoicesFrom, '2026-01-20');
+});
+
+test('without the days the invoice start is not sent, and empty means keep', () => {
+    const noDays = accountPayload({ name: 'Cartão', accountType: 'CREDIT_CARD', initialBalance: '0', invoicesFrom: '2026-01-20' });
+    const empty = accountPayload({ name: 'Cartão', accountType: 'CREDIT_CARD', initialBalance: '0', closingDay: '10', dueDay: '17', invoicesFrom: null });
+    const other = accountPayload({ name: 'Corrente', accountType: 'CHECKING', initialBalance: '0', invoicesFrom: '2026-01-20' });
+
+    assert.equal('invoicesFrom' in noDays, false);
+    assert.equal('invoicesFrom' in empty, false);
+    assert.equal('invoicesFrom' in other, false);
+});

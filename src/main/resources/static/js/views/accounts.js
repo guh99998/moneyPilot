@@ -57,6 +57,10 @@ export function accountFields() {
             name: 'dueDay', label: 'Dia do vencimento da fatura', type: 'number', step: '1', min: 1, max: 31,
             showWhen: CARD_ONLY,
             hint: 'Em mês mais curto vale o último dia. Depois de informado, só dá para trocar os dias.'
+        },
+        {
+            name: 'invoicesFrom', label: 'Contar faturas desde', type: 'date', showWhen: CARD_ONLY,
+            hint: 'Compras de antes desse ciclo não entram em fatura. Para trazer uma fatura antiga ou atrasada, escolha uma data anterior. Vazio: vale o ciclo de hoje, ou o que já está guardado.'
         }
     ];
 }
@@ -71,6 +75,8 @@ export function accountPayload(values) {
     if (values.accountType === 'CREDIT_CARD') {
         if (values.closingDay) payload.closingDay = Number(values.closingDay);
         if (values.dueDay) payload.dueDay = Number(values.dueDay);
+        // O início só vale junto com os dias; vazio deixa o servidor manter o atual.
+        if (values.closingDay && values.dueDay && values.invoicesFrom) payload.invoicesFrom = values.invoicesFrom;
     }
     return payload;
 }
@@ -91,7 +97,7 @@ export async function renderAccounts() {
             values: account
                 ? {
                     name: account.name, accountType: account.type, initialBalance: account.initialBalance,
-                    closingDay: account.closingDay, dueDay: account.dueDay
+                    closingDay: account.closingDay, dueDay: account.dueDay, invoicesFrom: account.invoicesFrom
                 }
                 : { initialBalance: '0' },
             onSubmit: async (values) => {

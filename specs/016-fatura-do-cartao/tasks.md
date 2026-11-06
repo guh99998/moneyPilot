@@ -32,7 +32,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 ### Mudança: início das faturas e lista única (spec, regras 25 a 30)
 
 - [x] **T21** - `invoicesFrom` no pedido de conta: normalização, validações e OpenAPI (CA19, CA20)
-- [ ] **T22** - Contas: campo "Contar faturas desde" e `accountPayload` (CA19)
+- [x] **T22** - Contas: campo "Contar faturas desde" e `accountPayload` (CA19)
 - [ ] **T23** - Funções puras da lista de faturas: `filterInvoices`, `sortInvoices`, `summarize` (CA21, CA22)
 - [ ] **T24** - Tela Faturas como lista única: resumo, destaque por cartão, filtros, ordenação e "Ver compras" (CA21, CA22)
 - [ ] **T25** - `selectInvoiceCard` fixa o filtro de cartão; "Ver itens da fatura" abre a lista já filtrada (CA22)
