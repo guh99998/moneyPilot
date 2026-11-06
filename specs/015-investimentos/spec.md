@@ -1,42 +1,63 @@
-# 015 — Investimentos
+# 015 — Investimentos: saldo disponível e dinheiro guardado
 
-**Status:** rascunho (ideia para conversar, ainda sem regras)
+**Status:** rascunho (aguardando aprovação)
 **Branch:** feature/015-investimentos
-**Depende de:** a definir
+**Depende de:** nenhuma. A fatura do cartão (016) fica para depois.
 
 ## Problema
 
-Quando a pessoa investe (compra ações, fundos, renda fixa, cripto...), o dinheiro sai da conta, mas **não é despesa**: ela continua dona do valor, só mudou de lugar. Também **não é receita**. Hoje o app só tem receita e despesa, então a pessoa precisa escolher uma das duas, e qualquer escolha distorce os relatórios, o orçamento e a previsão.
+O saldo do dashboard e o ponto de partida da previsão somam todas as contas, sem olhar o tipo. Transferir dinheiro para uma conta de investimento não muda esses números, então o dinheiro guardado continua parecendo disponível.
 
 ## Objetivo
 
-A pessoa registra um investimento sem que ele conte como despesa nem como receita, e o app continua mostrando números honestos.
+A pessoa escolhe quais contas contam no **saldo disponível**. Transferir para uma conta fora dele reduz o disponível e aparece como **Guardado**.
+
+Exemplo: transferir R$ 1.000,00 da conta corrente para o investimento reduz o disponível em R$ 1.000,00 e mostra "Guardado: R$ 1.000,00".
 
 ## Regras de negócio
 
-Nenhuma definida ainda. Esta spec nasceu de uma ideia e precisa de conversa antes de qualquer regra (ver "Perguntas em aberto").
+1. Cada conta tem a opção "contar no saldo disponível".
+2. Padrão por tipo: `INVESTMENT` desmarcada; `CHECKING`, `SAVING`, `CASH` e `CREDIT_CARD` marcadas.
+3. Saldo disponível = soma dos saldos das contas marcadas. Guardado = soma dos saldos das desmarcadas.
+4. As duas previsões (fluxo de caixa e mensal) partem do saldo disponível. Todo título em aberto continua projetado como saída ou entrada do disponível.
+5. Na API, o campo `countsAsAvailable` é opcional:
+   - Na criação, se omitido, usa o padrão do tipo.
+   - Na edição, se omitido e o tipo não mudou, mantém o valor atual.
+   - Na edição, se omitido e o tipo mudou, usa o padrão do novo tipo.
+6. `/accounts/{id}/balance`, extrato, transferências, relatórios e orçamento não mudam.
+7. A tabela "Saldo por conta" continua mostrando todas as contas e identifica as que estão fora do disponível.
+8. O cartão de crédito continua marcado por padrão até a 016: a compra reduz o disponível e dinheiro comprometido não aparece como livre.
 
 ## Critérios de aceite
 
-A escrever depois da conversa.
+1. Contas de investimento existentes ficam desmarcadas após a migration; as demais, marcadas.
+2. Transferir da corrente para o investimento reduz o `currentBalance` das duas previsões pelo valor transferido.
+3. Resultado do mês, orçamento e `/accounts/{id}/balance` não mudam.
+4. As três variações da regra 5 funcionam, e conta de outro usuário responde `404`.
+5. O dashboard mostra "Saldo disponível" e, havendo conta desmarcada, "Guardado: R$ X".
+6. O Perfil permite marcar e desmarcar cada conta; em caso de erro, a caixinha volta ao estado real e o erro fica visível.
+7. O contrato OpenAPI documenta o campo novo e a mudança de significado de `currentBalance`.
 
 ## Casos de borda
 
-- Resgate (o dinheiro volta para a conta): não é receita, mas o rendimento talvez seja
-- Investimento feito com título agendado ou recorrente (aporte mensal)
-- Aporte que estoura o orçamento da categoria
-- Investimento apagado ou editado depois de já ter entrado em relatórios
+- Todas as contas desmarcadas: disponível R$ 0,00.
+- Conta mudada de tipo (regra 5).
+- Conta arquivada ou excluída: segue a regra atual de saldo.
 
 ## Fora de escopo
 
-A definir. Candidatos, a confirmar: cotação em tempo real, importação de corretora, imposto de renda sobre ganho de capital.
+- Valor atual da carteira, rendimento e dividendos.
+- Fatura do cartão: valor, fechamento, vencimento, parcelas e saída futura (spec 016).
+- Cotação, importação de corretora e imposto de renda.
+- Tela de Configurações (a opção fica em um cartão no Perfil).
+- Alterar a edição de conta em `views/accounts.js`.
 
-## Perguntas em aberto
+## Migration que altera dados existentes
 
-- Qual é o modelo? (a) novo tipo de lançamento "investimento", ao lado de receita e despesa; (b) transferência entre a conta corrente e uma conta de investimento; (c) só uma categoria especial que os relatórios ignoram.
-- O app só registra o dinheiro que entrou e saiu (aporte e resgate), ou também acompanha o valor atual e o rendimento?
-- O saldo e a previsão contam o valor investido como parte do patrimônio, ou ele "some" do saldo da conta?
-- Rendimento e dividendos entram como receita? Só o ganho, ou o resgate inteiro?
-- Aporte entra no orçamento mensal? (Hoje não é despesa, mas é dinheiro que a pessoa separou.)
-- Os relatórios ganham uma visão própria de investimentos, ou basta não poluir os números atuais?
-- Precisa migrar lançamentos antigos que a pessoa já registrou como despesa ou receita?
+`V19` adiciona `counts_as_available` e desmarca as contas `INVESTMENT`. Nenhum lançamento muda, mas o saldo em destaque e a previsão de quem tem conta de investimento **vão cair** no deploy.
+
+## Decisões a confirmar
+
+- A opção fica em um cartão no Perfil.
+- O cartão de crédito continua marcado por padrão até a 016.
+- Entra um aviso sobre a queda do saldo em Novidades (spec 027)?
