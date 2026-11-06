@@ -23,7 +23,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T14** - `InvoiceService.payableInvoices` e `GET /invoices/payable`, com OpenAPI (CA12)
 - [x] **T15** - Quadro "A pagar" da Visão geral soma as faturas (CA15)
 - [x] **T16** - Alertas de a pagar incluem fatura fechada ou vencida (CA16)
-- [ ] **T17** - `invoices.js`: `selectInvoiceCard` e `openPayInvoiceDialog` extraído (CA14)
+- [x] **T17** - `invoices.js`: `selectInvoiceCard` e `openPayInvoiceDialog` extraído (CA14)
 - [ ] **T18** - `bills.js`: linhas de fatura no topo da primeira página, filtros e botões "Ver itens da fatura" e "Pagar fatura" (CA13, CA14)
 - [ ] **T19** - Próximos vencimentos da Visão geral com as faturas, `mergeUpcoming` (CA18)
 - [ ] **T19b** - Ajuda, aviso em Novidades e README (CA11)

@@ -6,7 +6,7 @@ import { installFakeDom, findAll, findByTag } from './fake-dom.mjs';
 installFakeDom();
 
 const {
-    renderInvoices, payableThrough, payInvoicePayload, installmentPayload, purchasePayload, INVOICE_STATUS
+    renderInvoices, payableThrough, payInvoicePayload, installmentPayload, purchasePayload, selectInvoiceCard, openPayInvoiceDialog, INVOICE_STATUS
 } = await import('../../main/resources/static/js/views/invoices.js');
 
 const page = (content) => ({ content, page: { number: 0, totalPages: 1 }, totalPages: 1, number: 0 });
@@ -138,4 +138,18 @@ test('the highlight offers a new purchase next to the installment purchase', asy
 
     const labels = findByTag(view, 'button').map((button) => button.textContent);
     assert.ok(labels.includes('Nova compra'));
+});
+
+test('selectInvoiceCard makes the screen open on that card', async () => {
+    const calls = mockApi({ accounts: [CHECKING, CARD, { id: 9, name: 'Inter', type: 'CREDIT_CARD', closingDay: 5, dueDay: 12 }] });
+    selectInvoiceCard(9);
+
+    await renderInvoices();
+
+    assert.ok(calls.includes('GET /api/v1/accounts/9/invoices'), calls.join(', '));
+    assert.ok(!calls.includes('GET /api/v1/accounts/7/invoices'));
+});
+
+test('openPayInvoiceDialog is exported for the payable list to reuse', () => {
+    assert.equal(typeof openPayInvoiceDialog, 'function');
 });

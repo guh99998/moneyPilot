@@ -284,6 +284,10 @@ export const api = {
         invoices: (id) => request(`/accounts/${id}/invoices`)
     },
 
+    invoices: {
+        payable: () => request('/invoices/payable')
+    },
+
     categories: {
         list: (query) => request('/categories', { query }),
         create: (body) => request('/categories', { method: 'POST', body }),

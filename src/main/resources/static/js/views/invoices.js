@@ -58,6 +58,45 @@ export function purchasePayload(values, cardId) {
     };
 }
 
+/** Abre a tela de Faturas já neste cartão (usado pela linha da fatura em A pagar e receber). */
+export function selectInvoiceCard(id) {
+    selectedCardId = Number(id);
+}
+
+/**
+ * Diálogo de pagar fatura: uma transferência de outra conta para o cartão, não uma nova despesa.
+ * `accounts` são todas as contas da pessoa; `onDone` roda depois que o pagamento foi registrado.
+ */
+export function openPayInvoiceDialog({ card, amount, accounts, onDone }) {
+    const sources = accounts.filter((account) => account.type !== 'CREDIT_CARD' && account.id !== card.id);
+    if (!sources.length) {
+        toast('Cadastre uma conta (que não seja cartão) para pagar a fatura.', 'error');
+        return;
+    }
+    formDialog({
+        title: 'Pagar fatura',
+        fields: [
+            {
+                name: 'fromAccountId', label: 'Pagar com', type: 'select', required: true,
+                options: sources.map((account) => ({ value: account.id, label: account.name }))
+            },
+            {
+                name: 'amount', label: 'Valor', type: 'number', step: '0.01', min: '0.01', required: true,
+                hint: 'Pode ser parcial: o que sobrar continua na fatura. É uma transferência para o cartão, não uma nova despesa.'
+            },
+            { name: 'date', label: 'Data', type: 'date', required: true },
+            { name: 'description', label: 'Descrição (opcional)', type: 'text', placeholder: 'Pagamento da fatura' }
+        ],
+        values: { amount, date: todayIso() },
+        submitLabel: 'Pagar',
+        onSubmit: async (values) => {
+            await api.transactions.transfer(payInvoicePayload(values, card.id));
+            toast('Pagamento registrado.', 'success');
+            onDone?.();
+        }
+    });
+}
+
 function statusBadge(status) {
     const info = INVOICE_STATUS[status] || { label: status, kind: 'open' };
     return badge(info.kind, info.label);
@@ -126,36 +165,6 @@ export async function renderInvoices() {
 
     function head(actions = []) {
         return pageHead('Faturas', 'Quanto está a fatura do cartão e quando ela vence', actions);
-    }
-
-    function payDialog(card, amount) {
-        const sources = accounts.filter((account) => account.type !== 'CREDIT_CARD' && account.id !== card.id);
-        if (!sources.length) {
-            toast('Cadastre uma conta (que não seja cartão) para pagar a fatura.', 'error');
-            return;
-        }
-        formDialog({
-            title: 'Pagar fatura',
-            fields: [
-                {
-                    name: 'fromAccountId', label: 'Pagar com', type: 'select', required: true,
-                    options: sources.map((account) => ({ value: account.id, label: account.name }))
-                },
-                {
-                    name: 'amount', label: 'Valor', type: 'number', step: '0.01', min: '0.01', required: true,
-                    hint: 'Pode ser parcial: o que sobrar continua na fatura. É uma transferência para o cartão, não uma nova despesa.'
-                },
-                { name: 'date', label: 'Data', type: 'date', required: true },
-                { name: 'description', label: 'Descrição (opcional)', type: 'text', placeholder: 'Pagamento da fatura' }
-            ],
-            values: { amount, date: todayIso() },
-            submitLabel: 'Pagar',
-            onSubmit: async (values) => {
-                await api.transactions.transfer(payInvoicePayload(values, card.id));
-                toast('Pagamento registrado.', 'success');
-                load();
-            }
-        });
     }
 
     async function expenseCategories() {
@@ -232,7 +241,7 @@ export async function renderInvoices() {
             class: 'btn-primary btn-sm',
             text: 'Pagar fatura',
             'aria-label': `Pagar fatura com vencimento em ${fmtDate(invoices[index].dueDate)}`,
-            onClick: () => payDialog(card, payableThrough(invoices, index))
+            onClick: () => openPayInvoiceDialog({ card, amount: payableThrough(invoices, index), accounts, onDone: load })
         });
     }
 
