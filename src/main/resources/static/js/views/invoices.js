@@ -1,4 +1,5 @@
 import { api, fetchAll, normalizePage } from '../api.js';
+import { presetTransactionFilters } from './transactions.js';
 import {
     el, fmtMoney, fmtDate, badge, toast, reportError, pageHead, emptyState, formDialog, todayIso
 } from '../ui.js';
@@ -225,6 +226,16 @@ export async function renderInvoices() {
         });
     }
 
+    function transactionsLink(card, invoice) {
+        return el('a', {
+            href: '#/transactions',
+            class: 'btn btn-sm',
+            text: 'Ver lançamentos',
+            'aria-label': `Ver lançamentos da fatura com vencimento em ${fmtDate(invoice.dueDate)}`,
+            onClick: () => presetTransactionFilters({ accountId: String(card.id), from: invoice.periodStart, to: invoice.periodEnd })
+        });
+    }
+
     function payButton(card, invoices, index) {
         if (invoices[index].status === 'FUTURE' || Number(invoices[index].remaining) <= 0) return null;
         return el('button', {
@@ -248,7 +259,7 @@ export async function renderInvoices() {
         return el('section', { class: 'card invoice-current', 'aria-labelledby': 'invoice-current-title' }, [
             el('div', { class: 'card-head' }, [
                 el('h2', { id: 'invoice-current-title', text: 'Fatura atual' }),
-                statusBadge(invoice.status)
+                el('div', { class: 'invoice-head-side' }, [transactionsLink(card, invoice), statusBadge(invoice.status)])
             ]),
             el('p', { class: 'invoice-figure', text: fmtMoney(invoice.total) }),
             el('p', { class: 'invoice-facts' }, facts),
@@ -278,7 +289,8 @@ export async function renderInvoices() {
                 el('div', { class: 'invoice-item-head' }, [
                     el('div', { class: 'invoice-item-main' }, [
                         el('strong', { text: `Vence em ${fmtDate(invoice.dueDate)}` }),
-                        statusBadge(invoice.status)
+                        statusBadge(invoice.status),
+                        transactionsLink(card, invoice)
                     ]),
                     el('div', { class: 'invoice-item-amounts' }, [
                         el('span', { class: 'invoice-item-total', text: fmtMoney(invoice.total) }),

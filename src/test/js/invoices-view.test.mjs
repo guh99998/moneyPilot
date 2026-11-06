@@ -139,3 +139,38 @@ test('the highlight offers a new purchase next to the installment purchase', asy
     const labels = findByTag(view, 'button').map((button) => button.textContent);
     assert.ok(labels.includes('Nova compra'));
 });
+
+test('each invoice has a "Ver lançamentos" link to Lançamentos', async () => {
+    mockApi({ accounts: [CHECKING, CARD] });
+
+    const view = await renderInvoices();
+
+    const links = findByTag(view, 'a').filter((anchor) => anchor.textContent === 'Ver lançamentos');
+    assert.equal(links.length, 3, 'one per invoice');
+    assert.ok(links.every((anchor) => anchor.getAttribute('href') === '#/transactions'));
+});
+
+test('"Ver lançamentos" opens Lançamentos filtered by the card and the invoice period', async () => {
+    const calls = mockApi({ accounts: [CHECKING, CARD] });
+    const view = await renderInvoices();
+    const open = findByTag(view, 'a').filter((anchor) => anchor.textContent === 'Ver lançamentos');
+
+    await open[0].dispatch('click'); // a atual (10/03 a 09/04), em destaque no topo
+
+    const { renderTransactions } = await import('../../main/resources/static/js/views/transactions.js');
+    const urls = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = async (url, options) => {
+        urls.push(String(url));
+        return original(url, options);
+    };
+    globalThis.window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    await renderTransactions();
+
+    const listed = urls.find((url) => new URL(url, 'http://localhost').pathname === '/api/v1/transactions');
+    const query = new URL(listed, 'http://localhost').searchParams;
+    assert.equal(query.get('accountId'), '7');
+    assert.equal(query.get('from'), '2026-03-10');
+    assert.equal(query.get('to'), '2026-04-09');
+    assert.ok(calls.length > 0);
+});
