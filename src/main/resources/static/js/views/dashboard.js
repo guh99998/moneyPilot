@@ -2,6 +2,7 @@ import { api, fetchAll, normalizePage } from '../api.js';
 import { el, fmtMoney, monthName, monthPicker, pageHead, emptyState, reportError, todayIso } from '../ui.js';
 import { lineChart, groupedColumns, legend, tableToggle } from '../charts.js';
 import { presetBillFilters } from './bills.js';
+import { availableNewsCard } from './news-available.js';
 
 const now = new Date();
 let month = now.getMonth() + 1;
@@ -60,7 +61,14 @@ function billTile(label, side, type) {
 
 // ---- destaque: o número que abre o painel ----
 
-function hero(currentBalance, summary, forecast) {
+/** Soma, em centavos inteiros, o saldo das contas que não contam no disponível (o "Guardado"). */
+export function savedCents(rows) {
+    return rows
+        .filter((row) => row.countsAsAvailable === false)
+        .reduce((sum, row) => sum + Math.round(Number(row.balance) * 100), 0);
+}
+
+export function hero(currentBalance, summary, forecast, saved = 0) {
     const buckets = forecast.buckets || [];
     const projected = buckets.length ? Number(buckets[buckets.length - 1].projectedBalance) : Number(currentBalance);
     const lowest = buckets.reduce((low, bucket) => (Number(bucket.projectedBalance) < Number(low.projectedBalance) ? bucket : low), buckets[0] || {});
@@ -84,8 +92,9 @@ function hero(currentBalance, summary, forecast) {
     }
 
     return el('section', { class: 'card hero' }, [
-        el('span', { class: 'label', text: 'Saldo em contas hoje' }),
+        el('span', { class: 'label', text: 'Saldo disponível' }),
         el('span', { class: 'figure', text: fmtMoney(currentBalance) }),
+        saved ? el('span', { class: 'saved', text: `Guardado: ${fmtMoney(saved / 100)}` }) : null,
         el('div', { class: 'facts' }, facts)
     ]);
 }
@@ -295,7 +304,7 @@ function budgetMeters(rows) {
     }));
 }
 
-function accountBalances(rows) {
+export function accountBalances(rows) {
     if (!rows.length) return emptyState('Cadastre uma conta para começar.');
 
     return el('div', { class: 'table-wrap' }, [
@@ -305,21 +314,23 @@ function accountBalances(rows) {
                 el('th', { class: 'num', text: 'Saldo atual' })
             ])),
             el('tbody', {}, rows.map((row) => el('tr', {}, [
-                el('td', { text: row.name }),
+                el('td', {}, row.countsAsAvailable === false
+                    ? [row.name, ' ', el('span', { class: 'sub', text: '(fora do disponível)' })]
+                    : row.name),
                 el('td', { class: 'num', style: Number(row.balance) < 0 ? 'color: var(--expense)' : '', text: fmtMoney(row.balance) })
             ])))
         ])
     ]);
 }
 
-async function loadBalances() {
+export async function loadBalances() {
     const accounts = await fetchAll(api.accounts.list);
     return Promise.all(accounts.map(async (account) => {
         try {
             const balance = await api.accounts.balance(account.id);
-            return { name: account.name, balance: balance.currentBalance };
+            return { name: account.name, balance: balance.currentBalance, countsAsAvailable: account.countsAsAvailable };
         } catch {
-            return { name: account.name, balance: account.initialBalance };
+            return { name: account.name, balance: account.initialBalance, countsAsAvailable: account.countsAsAvailable };
         }
     }));
 }
@@ -359,12 +370,21 @@ export async function renderDashboard() {
                 ...months.map((item) => api.reports.monthlySummary(item.month, item.year))
             ]);
 
-            const heroSlot = el('div', { style: 'display:contents' }, hero(forecast.currentBalance, summary, forecast));
-            const refreshHero = (next) => heroSlot.replaceChildren(hero(next.currentBalance, summary, next));
+            const heroSlot = el('div', { style: 'display:contents' }, hero(forecast.currentBalance, summary, forecast, savedCents(balances)));
+            const refreshHero = (next) => heroSlot.replaceChildren(hero(next.currentBalance, summary, next, savedCents(balances)));
+
+            const newsCard = availableNewsCard(balances.length, () => {
+                newsCard.remove();
+                const title = view.querySelector('h1');
+                title?.setAttribute('tabindex', '-1');
+                title?.focus();
+            });
+            if (newsCard) newsCard.classList.add('span-full');
 
             view.replaceChildren(
                 head(),
                 el('div', { class: 'dash' }, [
+                    newsCard,
                     heroSlot,
                     el('div', { class: 'kpis' }, [
                         statTile('Receitas do mês', fmtMoney(summary.totalIncome), 'pos'),

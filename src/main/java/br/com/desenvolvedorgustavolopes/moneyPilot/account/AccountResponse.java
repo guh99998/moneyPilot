@@ -10,6 +10,7 @@ public record AccountResponse(
         @Schema(description = "Nome da conta", example = "Carteira") String name,
         @Schema(description = "Tipo da conta", enumAsRef = true) AccountType type,
         @Schema(description = "Saldo inicial. Valor em reais, número com 2 casas decimais e ponto decimal.", example = "1500.00") BigDecimal initialBalance,
+        @Schema(description = "Se a conta conta no saldo disponível. O valor das contas fora dele aparece como guardado.", example = "true") boolean countsAsAvailable,
         @Schema(description = "Criado em (UTC)", example = "2026-10-28T12:00:00Z") Instant createdAt,
         @Schema(description = "Atualizado em (UTC)", example = "2026-10-28T12:00:00Z") Instant updatedAt
 ) {
@@ -20,6 +21,7 @@ public record AccountResponse(
                 account.getName(),
                 account.getType(),
                 account.getInitialBalance(),
+                account.isCountsAsAvailable(),
                 account.getCreatedAt(),
                 account.getUpdatedAt()
         );

@@ -10,7 +10,11 @@ import java.math.BigDecimal;
 public record AccountRequest(
         @Schema(description = "Nome da conta", example = "Carteira") @NotBlank String name,
         @Schema(description = "Tipo da conta", enumAsRef = true) @NotNull AccountType accountType,
-        @Schema(description = "Saldo inicial. Valor em reais, número com 2 casas decimais e ponto decimal.", example = "1500.00") @NotNull @Digits(integer = 17, fraction = 2) BigDecimal initialBalance
+        @Schema(description = "Saldo inicial. Valor em reais, número com 2 casas decimais e ponto decimal.", example = "1500.00") @NotNull @Digits(integer = 17, fraction = 2) BigDecimal initialBalance,
+        @Schema(description = "Se a conta conta no saldo disponível. Opcional: na criação, omitido usa o padrão do tipo (investimento fica de fora); na edição, omitido mantém o valor atual, ou usa o padrão do novo tipo se o tipo mudou.", example = "true", nullable = true) Boolean countsAsAvailable
 ) {
+    public AccountRequest(String name, AccountType accountType, BigDecimal initialBalance) {
+        this(name, accountType, initialBalance, null);
+    }
 
 }
