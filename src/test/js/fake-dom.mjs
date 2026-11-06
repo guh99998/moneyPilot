@@ -89,8 +89,8 @@ class FakeElement {
     }
 
     /** Fires the listeners and waits for async ones, like the browser would let the page run. */
-    async dispatch(type) {
-        const event = { type, target: this, preventDefault() {} };
+    async dispatch(type, init = {}) {
+        const event = { type, target: this, preventDefault() { this.defaultPrevented = true; }, ...init };
         await Promise.all((this.listeners.get(type) || []).map((listener) => listener(event)));
     }
 

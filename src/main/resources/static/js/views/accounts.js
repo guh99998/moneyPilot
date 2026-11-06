@@ -3,7 +3,7 @@ import {
     el, fmtMoney, toast, reportError, pageHead, emptyState, formDialog, confirmDialog, stackable, sortHeader, sortSelect
 } from '../ui.js';
 
-const TYPE_LABEL = {
+export const TYPE_LABEL = {
     CHECKING: 'Conta corrente',
     SAVING: 'Poupança',
     CREDIT_CARD: 'Cartão de crédito',
