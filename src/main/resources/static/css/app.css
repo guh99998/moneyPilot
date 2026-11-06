@@ -1034,5 +1034,7 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
     .invoice-purchase-date { grid-column: 1 / -1; font-size: .78rem; }
     .invoice-item-amounts { align-items: flex-start; margin-left: 0; }
 }
-.invoice-row .actions { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: flex-end; }
+.invoice-row .actions { text-align: right; }
+.invoice-row .actions .btn-sm { margin-left: .35rem; }
 .invoice-row a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+.invoice-row td.desc, .invoice-row td.desc .desc-main, .invoice-row .cell-tag { white-space: normal; overflow: visible; text-overflow: clip; }

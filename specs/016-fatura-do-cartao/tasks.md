@@ -27,7 +27,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T18** - `bills.js`: linhas de fatura no topo da primeira página, filtros e botões "Ver itens da fatura" e "Pagar fatura" (CA13, CA14)
 - [x] **T19** - Próximos vencimentos da Visão geral com as faturas, `mergeUpcoming` (CA18)
 - [x] **T19b** - Ajuda, aviso em Novidades e README (CA11)
-- [ ] **T20** - Verificação manual (desktop e mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4 (CA17)
+- [x] **T20** - Verificação manual (desktop e mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4 (CA17)
 
 ## Notas de implementação
 
@@ -44,3 +44,12 @@ Descobertas durante a implementação que afetaram a spec ou o plano.
 - `accessibility-compliance`: `details/summary`, `ul`, `select` com `label` e foco visível herdado; campos condicionais ocultos ficam desabilitados (saem da ordem de tabulação); situação da fatura em texto, não só cor; o nome acessível do botão "Pagar fatura" contém o rótulo visível e acrescenta o vencimento.
 - `responsive-design`: conferido a 375px no navegador (sem rolagem horizontal, compras empilham data e valor); botões da tela com 44px de altura mínima.
 - `api-design-principles`: `GET /accounts/{id}/invoices` (recurso sob a conta), `POST /transactions/installments` e `DELETE /transactions/installments/{groupId}`; `201`/`204`/`400`/`404`/`409` coerentes com o resto da API; `409` para conta sem dias; OpenAPI completo (`OpenApiContractIntegrationTest` verde); `PUT` da conta continua sem os dias mantendo os atuais.
+
+### Revisão da mudança "fatura em A pagar e receber" (2026-11-06)
+
+- `web-design-guidelines`: a ação "Ver itens da fatura" é um link (`<a href="#/invoices">`), "Pagar fatura" é botão; ambos com `aria-label` que inclui cartão e vencimento. Aviso de falha ao carregar as faturas em `role="status"`, sem derrubar a lista.
+- `accessibility-compliance`: a linha de fatura não tem caixa de seleção; a situação é dita em texto ("Aberta", "A vencer", "Vencida"), não só por cor; o valor que cresce na fatura aberta vem explicado ("fecha em dd/mm, ainda recebe compras").
+- `responsive-design`: conferido a 375px (a linha empilha no formato de cartão, sem rolagem horizontal, texto longo quebra em vez de cortar).
+- `api-design-principles`: `GET /invoices/payable` (recurso novo, `200`/`401`), fora de `/bills` porque a lista de títulos é paginada e filtrada no servidor; `OpenApiContractIntegrationTest` verde.
+- Verificação manual no navegador: linha de fatura em A pagar e receber, pagamento parcial a partir da linha (a linha passa a mostrar "falta R$ 50,00"), "Ver itens da fatura" abre a tela Faturas no cartão, quadro "A pagar" (R$ 220 = fatura 150 + título 70), "Próximos vencimentos" e previsão (R$ 2.780 em 30 dias, sem contar a fatura duas vezes).
+- Corrigido na verificação: o `display:flex` na célula de ações desalinhava a linha da tabela; o nome da fatura em "Próximos vencimentos" quebrava junto do status.

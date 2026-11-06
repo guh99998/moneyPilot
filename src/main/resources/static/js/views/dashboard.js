@@ -225,11 +225,11 @@ function upcomingItem(entry, today) {
         return el('li', { class: late ? 'is-overdue' : '' }, [
             dayBox,
             el('div', { class: 'what' }, [
-                el('a', {
+                el('strong', {}, el('a', {
                     href: '#/invoices',
                     text: `Fatura do ${invoice.accountName}`,
                     onClick: () => selectInvoiceCard(invoice.accountId)
-                }),
+                })),
                 el('span', { class: late ? 'late' : '', text: status })
             ]),
             el('span', { class: 'amt out', text: `− ${fmtMoney(invoice.total)}` })

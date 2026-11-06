@@ -1,6 +1,6 @@
 # 016 — Fatura do cartão de crédito
 
-**Status:** mudança de escopo aprovada (2026-11-06): a fatura entra em "A pagar e receber"; plano em aprovação
+**Status:** em revisão (implementada, incluindo a fatura em A pagar e receber; falta o ok do Gustavo antes do merge)
 **Branch:** feature/016-fatura-do-cartao
 **Depende de:** 015 (campo `countsAsAvailable`). Ordem de merge: 027, 015, 016 (migrations V18, V19, V20).
 
