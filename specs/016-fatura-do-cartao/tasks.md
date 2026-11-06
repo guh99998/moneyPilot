@@ -21,7 +21,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 ### Mudança: fatura em A pagar e receber (spec, regras 17 a 23)
 
 - [x] **T14** - `InvoiceService.payableInvoices` e `GET /invoices/payable`, com OpenAPI (CA12)
-- [ ] **T15** - Quadro "A pagar" da Visão geral soma as faturas (CA15)
+- [x] **T15** - Quadro "A pagar" da Visão geral soma as faturas (CA15)
 - [ ] **T16** - Alertas de a pagar incluem fatura fechada ou vencida (CA16)
 - [ ] **T17** - `invoices.js`: `selectInvoiceCard` e `openPayInvoiceDialog` extraído (CA14)
 - [ ] **T18** - `bills.js`: linhas de fatura no topo da primeira página, filtros e botões "Ver itens da fatura" e "Pagar fatura" (CA13, CA14)

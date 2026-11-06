@@ -1,6 +1,8 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.report;
 
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.InvoiceService;
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.InvoiceStatus;
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.PayableInvoiceResponse;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidForecastPeriodException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRecurrence;
@@ -258,8 +260,29 @@ public class ReportService {
         LocalDate monthStart = today.withDayOfMonth(1);
 
         // "Baixado no mês" segue a data do pagamento (a do lançamento gerado), não a do clique.
-        return new BillsSummaryResponse(
+        BillsSummaryResponse bills = new BillsSummaryResponse(
                 reportRepository.findBillsSummary(userId, today, monthStart, monthStart.plusMonths(1))
         );
+
+        return new BillsSummaryResponse(this.withInvoices(bills.payable(), userId, today), bills.receivable(), bills.settledThisMonth());
+    }
+
+    /** Spec 016, regra 21: o que falta das faturas aberta, fechada e vencida soma no a pagar; a vencida também no vencido. */
+    private BillTypeSummaryResponse withInvoices(BillTypeSummaryResponse payable, Long userId, LocalDate today) {
+        long count = payable.count();
+        BigDecimal total = payable.total();
+        long overdueCount = payable.overdueCount();
+        BigDecimal overdueTotal = payable.overdueTotal();
+
+        for (PayableInvoiceResponse invoice : invoiceService.payableOf(userId, today)) {
+            count++;
+            total = total.add(invoice.remaining());
+            if (invoice.status() == InvoiceStatus.OVERDUE) {
+                overdueCount++;
+                overdueTotal = overdueTotal.add(invoice.remaining());
+            }
+        }
+
+        return new BillTypeSummaryResponse(count, total, overdueCount, overdueTotal);
     }
 }
