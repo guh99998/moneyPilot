@@ -506,6 +506,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
+    @ExceptionHandler(AccountWithoutInvoicesException.class)
+    public ResponseEntity<ErrorResponse> handleAccountWithoutInvoices(AccountWithoutInvoicesException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     @ExceptionHandler(InvalidInvoiceDaysException.class)
     public ResponseEntity<ErrorResponse> handleInvalidInvoiceDays(InvalidInvoiceDaysException ex) {
         ErrorResponse body = new ErrorResponse(

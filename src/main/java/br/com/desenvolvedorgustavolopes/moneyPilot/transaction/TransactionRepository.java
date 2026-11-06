@@ -30,6 +30,19 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     Long countAllByAccountId(Long accountId);
 
+    /** Fatura do cartão (spec 016): totais por dia desde uma data, uma linha por dia com lançamento. */
+    @Query("""
+    SELECT t.date AS date,
+        COALESCE(SUM(CASE WHEN t.transferGroupId IS NULL AND t.type = 'EXPENSE' THEN t.amount ELSE 0 END), 0) AS expense,
+        COALESCE(SUM(CASE WHEN t.transferGroupId IS NULL AND t.type = 'INCOME' THEN t.amount ELSE 0 END), 0) AS income,
+        COALESCE(SUM(CASE WHEN t.transferGroupId IS NOT NULL AND t.type = 'INCOME' THEN t.amount ELSE 0 END), 0) AS transferIn
+    FROM Transaction t
+    WHERE t.accountId = :accountId AND t.date >= :from
+    GROUP BY t.date
+    ORDER BY t.date
+    """)
+    List<AccountDayTotals> findDayTotalsSince(@Param("accountId") Long accountId, @Param("from") LocalDate from);
+
     /** Boas-vindas (spec 013): a pessoa já tem algum lançamento, em qualquer conta? */
     @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.accountId IN (SELECT a.id FROM Account a WHERE a.userId = :userId)")
     boolean existsAnyByUserId(@Param("userId") Long userId);
