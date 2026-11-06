@@ -21,7 +21,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 
 Descobertas durante a implementação que afetaram a spec ou o plano.
 
-- **Abas do Perfil:** a aba aberta fica em memória, não em `location.hash`, porque o hash é o roteador do app. Os painéis ficam todos no DOM (inativos `hidden`); as contas só são buscadas quando a aba "Saldo disponível" abre.
+- **Abas do Perfil:** a aba aberta fica em memória, não em `location.hash`, porque o hash é o roteador do app. Os painéis ficam todos no DOM (inativos `hidden`); as contas só são buscadas quando a aba "Preferências" abre.
 - **Aviso em Novidades (T9):** como o mecanismo de Novidades ainda não existe (027), entrou um cartão dispensável na Visão geral, com o passo a passo. Aparece só para quem já tem conta. A dispensa fica no aparelho (`localStorage`); a 027 generaliza e passa a guardá-la no servidor.
 - **Teste da migration:** o banco de teste já nasce migrado, então o teste reaplica o `UPDATE` do arquivo V19 sobre linhas que valem o DEFAULT.
 - **V19 × V18:** a 027 precisa entrar na `develop` antes desta branch.

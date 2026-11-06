@@ -108,7 +108,7 @@ async function load(view, focusKey) {
             },
             items: [
                 { id: 'data', label: 'Dados', content: [dataCard(profile, reload, focus)] },
-                { id: 'available', label: 'Saldo disponível', content: [availabilitySlot] },
+                { id: 'available', label: 'Preferências', content: [availabilitySlot] },
                 {
                     id: 'security',
                     label: 'Acesso e segurança',

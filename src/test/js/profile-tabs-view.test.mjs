@@ -50,7 +50,7 @@ test('the profile has three tabs wired to their panels, and only the first panel
     const view = await renderProfile();
 
     const tabs = tabsOf(view);
-    assert.deepEqual(tabs.map((tab) => tab.textContent), ['Dados', 'Saldo disponível', 'Acesso e segurança']);
+    assert.deepEqual(tabs.map((tab) => tab.textContent), ['Dados', 'Preferências', 'Acesso e segurança']);
     assert.equal(findAll(view, (node) => node.getAttribute('role') === 'tablist')[0].getAttribute('aria-label'), 'Seções do perfil');
     panelsOf(view).forEach((panel, index) => {
         assert.equal(tabs[index].getAttribute('aria-controls'), panel.getAttribute('id'));
@@ -67,7 +67,7 @@ test('arrow keys, Home and End move the selection and the focus, wrapping around
     const tabs = tabsOf(view);
 
     await tabs[0].dispatch('keydown', { key: 'ArrowRight' });
-    assert.deepEqual(selected(view), ['Saldo disponível']);
+    assert.deepEqual(selected(view), ['Preferências']);
     assert.equal(globalThis.document.activeElement, tabs[1]);
 
     await tabs[1].dispatch('keydown', { key: 'End' });
@@ -84,7 +84,7 @@ test('arrow keys, Home and End move the selection and the focus, wrapping around
     assert.deepEqual(panelsOf(view).map((panel) => panel.hidden), [false, true, true]);
 });
 
-test('the accounts are only fetched when the "Saldo disponível" tab opens', async () => {
+test('the accounts are only fetched when the "Preferências" tab opens', async () => {
     startServer();
     const view = await renderProfile();
     assert.equal(requests.some((request) => request.path === '/api/v1/accounts'), false);
@@ -130,4 +130,26 @@ test('when saving fails the checkbox goes back to the real state and the error i
     assert.equal(alert.length, 1);
     assert.match(alert[0].textContent, /Falhou no servidor/);
     assert.ok(toasts.children.length > 0);
+});
+
+test('each account says what its checkbox does, and the line follows the choice', async () => {
+    startServer();
+    const view = await renderProfile();
+    await tabsOf(view)[1].dispatch('click');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const status = (id) => findAll(view, (node) => node.getAttribute('id') === `availability-${id}-status`)[0];
+    assert.match(status(1).textContent, /^Conta no saldo disponível/);
+    assert.match(status(2).textContent, /^Guardado: fora do saldo disponível/);
+    assert.equal(checkboxes(view)[1].getAttribute('aria-describedby'), 'availability-2-status');
+
+    const box = checkboxes(view)[1];
+    box.checked = true;
+    await box.dispatch('change');
+    assert.match(status(2).textContent, /^Conta no saldo disponível/);
+
+    putStatus = 500;
+    box.checked = false;
+    await box.dispatch('change');
+    assert.match(status(2).textContent, /^Conta no saldo disponível/);
 });

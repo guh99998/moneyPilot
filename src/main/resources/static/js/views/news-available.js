@@ -45,7 +45,7 @@ export function availableNewsCard(accountCount, onDismiss) {
                 + 'e o valor delas aparece como "Guardado". Por isso o seu saldo pode ter mudado.'
         }),
         el('ol', { class: 'news-steps' }, [
-            el('li', {}, ['Abra o ', el('a', { href: '#/profile', text: 'Perfil' }), ' e vá para a aba "Saldo disponível".']),
+            el('li', {}, ['Abra o ', el('a', { href: '#/profile', text: 'Perfil' }), ' e vá para a aba "Preferências".']),
             el('li', { text: 'Marque as contas que contam no saldo disponível e desmarque as que guardam dinheiro.' }),
             el('li', { text: 'Volte à Visão geral: o saldo disponível e o valor guardado já estão atualizados.' })
         ]),
