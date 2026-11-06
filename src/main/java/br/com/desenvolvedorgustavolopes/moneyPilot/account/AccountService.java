@@ -34,7 +34,7 @@ public class AccountService {
         account.setCountsAsAvailable(request.countsAsAvailable() != null
                 ? request.countsAsAvailable()
                 : request.accountType().countsAsAvailableByDefault());
-        this.validateInvoiceDays(request);
+        this.validateInvoiceDays(request, null);
         if (request.closingDay() != null) {
             this.applyInvoiceDays(account, request);
         }
@@ -74,12 +74,12 @@ public class AccountService {
         } else if (previousType != request.accountType()) {
             account.setCountsAsAvailable(request.accountType().countsAsAvailableByDefault());
         }
-        this.validateInvoiceDays(request);
+        this.validateInvoiceDays(request, account.getClosingDay());
         if (request.accountType() != AccountType.CREDIT_CARD) {
             account.setClosingDay(null);
             account.setDueDay(null);
             account.setInvoicesFrom(null);
-        } else if (request.closingDay() != null) {
+        } else if (request.closingDay() != null || request.invoicesFrom() != null) {
             this.applyInvoiceDays(account, request);
         }
         account.setUpdatedAt(Instant.now());
@@ -87,32 +87,52 @@ public class AccountService {
         return new AccountResponse(repository.save(account));
     }
 
-    /** Spec 016, regras 1 e 2: os dois dias juntos, só em cartão; a primeira vez tira o cartão do disponível e marca o início das faturas. */
+    /**
+     * Spec 016, regras 1, 2 e 25: os dois dias juntos, só em cartão. A primeira vez tira o cartão do disponível e
+     * marca o início das faturas (o ciclo de hoje, ou o ciclo da data pedida em `invoicesFrom`). Sem os dias no pedido,
+     * valem os que o cartão já tem.
+     */
     private void applyInvoiceDays(Account account, AccountRequest request) {
         boolean firstTime = account.getClosingDay() == null;
 
-        account.setClosingDay(request.closingDay());
-        account.setDueDay(request.dueDay());
-        if (firstTime) {
-            account.setInvoicesFrom(new InvoiceCycle(request.closingDay(), request.dueDay()).cycleOf(LocalDate.now(clock)).start());
-            if (request.countsAsAvailable() == null) {
-                account.setCountsAsAvailable(false);
-            }
+        Integer closingDay = request.closingDay() != null ? request.closingDay() : account.getClosingDay();
+        Integer dueDay = request.dueDay() != null ? request.dueDay() : account.getDueDay();
+        account.setClosingDay(closingDay);
+        account.setDueDay(dueDay);
+
+        InvoiceCycle cycles = new InvoiceCycle(closingDay, dueDay);
+        if (request.invoicesFrom() != null) {
+            account.setInvoicesFrom(cycles.cycleOf(request.invoicesFrom()).start());
+        } else if (firstTime) {
+            account.setInvoicesFrom(cycles.cycleOf(LocalDate.now(clock)).start());
+        }
+        if (firstTime && request.countsAsAvailable() == null) {
+            account.setCountsAsAvailable(false);
         }
     }
 
-    private void validateInvoiceDays(AccountRequest request) {
-        if (request.closingDay() == null && request.dueDay() == null) {
+    private void validateInvoiceDays(AccountRequest request, Integer existingClosingDay) {
+        boolean sendsDays = request.closingDay() != null || request.dueDay() != null;
+        if (!sendsDays && request.invoicesFrom() == null) {
             return;
         }
         if (request.accountType() != AccountType.CREDIT_CARD) {
-            throw new InvalidInvoiceDaysException("closingDay", "Fechamento e vencimento só valem para cartão de crédito");
+            throw new InvalidInvoiceDaysException(sendsDays ? "closingDay" : "invoicesFrom",
+                    "Fechamento, vencimento e início das faturas só valem para cartão de crédito");
         }
-        if (request.closingDay() == null) {
+        if (sendsDays && request.closingDay() == null) {
             throw new InvalidInvoiceDaysException("closingDay", "Informe o dia de fechamento junto com o de vencimento");
         }
-        if (request.dueDay() == null) {
+        if (sendsDays && request.dueDay() == null) {
             throw new InvalidInvoiceDaysException("dueDay", "Informe o dia de vencimento junto com o de fechamento");
+        }
+        if (request.invoicesFrom() != null) {
+            if (!sendsDays && existingClosingDay == null) {
+                throw new InvalidInvoiceDaysException("invoicesFrom", "Informe o fechamento e o vencimento do cartão para escolher desde quando contar as faturas");
+            }
+            if (request.invoicesFrom().isAfter(LocalDate.now(clock))) {
+                throw new InvalidInvoiceDaysException("invoicesFrom", "A data de início das faturas não pode ser futura");
+            }
         }
     }
 

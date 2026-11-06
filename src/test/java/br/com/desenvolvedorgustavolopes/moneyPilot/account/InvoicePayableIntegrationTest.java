@@ -109,6 +109,39 @@ class InvoicePayableIntegrationTest extends CreditCardTestSupport {
     }
 
     @Test
+    void anEarlierInvoicesFrom_bringsTheOldInvoiceBackAsOverdue_andMovingItForwardHidesItAgain() throws Exception {
+        String token = registerAndLogin();
+        Long card = createAccountWith(token, AccountType.CREDIT_CARD, "0.00", ",\"closingDay\":10,\"dueDay\":17,\"invoicesFrom\":\"2026-01-20\"");
+        purchase(token, card, "1200.00", LocalDate.of(2026, 1, 25)); // fatura de 10/01 a 09/02, venceu em 17/02
+
+        String json = payableJson(token);
+
+        assertEquals(1, JsonPath.<List<Object>>read(json, "$").size());
+        assertEquals("OVERDUE", JsonPath.read(json, "$[0].status"));
+        assertEquals(0, new BigDecimal("1200.00").compareTo(money(JsonPath.read(json, "$[0].remaining"))));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/accounts/{id}", card)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Cartão\",\"accountType\":\"CREDIT_CARD\",\"initialBalance\":0.00,\"invoicesFrom\":\"2026-03-12\"}"))
+                .andExpect(status().isOk());
+
+        assertEquals(0, JsonPath.<List<Object>>read(payableJson(token), "$").size());
+    }
+
+    @Test
+    void anOldOverdueInvoice_isClearedByAPaymentWithTheOldDate() throws Exception {
+        String token = registerAndLogin();
+        Long card = createAccountWith(token, AccountType.CREDIT_CARD, "0.00", ",\"closingDay\":10,\"dueDay\":17,\"invoicesFrom\":\"2026-01-20\"");
+        purchase(token, card, "1200.00", LocalDate.of(2026, 1, 25));
+        Long checking = createAccount(token, AccountType.CHECKING, "5000.00");
+
+        transfer(token, checking, card, "1200.00", LocalDate.of(2026, 2, 17));
+
+        assertEquals(0, JsonPath.<List<Object>>read(payableJson(token), "$").size());
+    }
+
+    @Test
     void payable_neverShowsAnotherUsersInvoices() throws Exception {
         String owner = registerAndLogin();
         String other = registerAndLogin();

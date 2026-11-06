@@ -196,6 +196,117 @@ class AccountInvoiceConfigIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.dueDay").value(5));
     }
 
+    // ---- invoicesFrom (spec 016, regra 25) ----
+
+    @Test
+    void create_withInvoicesFrom_startsAtTheCycleThatContainsTheDate() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+
+        mockMvc.perform(post("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("CREDIT_CARD", ",\"closingDay\":10,\"dueDay\":17,\"invoicesFrom\":\"2026-01-20\"")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.invoicesFrom").value("2026-01-10"));
+    }
+
+    @Test
+    void create_withInvoicesFromInTheFuture_is400OnTheField() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+
+        mockMvc.perform(post("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("CREDIT_CARD", ",\"closingDay\":10,\"dueDay\":17,\"invoicesFrom\":\"2026-03-16\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.invoicesFrom").exists());
+    }
+
+    @Test
+    void create_withInvoicesFromButNoDays_is400OnTheField() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+
+        mockMvc.perform(post("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("CREDIT_CARD", ",\"invoicesFrom\":\"2026-01-20\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.invoicesFrom").exists());
+    }
+
+    @Test
+    void create_withInvoicesFromOnAnotherAccountType_is400() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+
+        mockMvc.perform(post("/api/v1/accounts").header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("CHECKING", ",\"invoicesFrom\":\"2026-01-20\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.invoicesFrom").exists());
+    }
+
+    @Test
+    void update_withInvoicesFromOnly_usesTheDaysTheCardAlreadyHas() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+        Long id = createCard(token, ",\"closingDay\":10,\"dueDay\":17"); // invoicesFrom = 2026-03-10
+
+        mockMvc.perform(put("/api/v1/accounts/{id}", id).header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("CREDIT_CARD", ",\"invoicesFrom\":\"2026-01-05\"")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.closingDay").value(10))
+                .andExpect(jsonPath("$.invoicesFrom").value("2025-12-10"));
+    }
+
+    @Test
+    void update_withInvoicesFromAndNewDays_usesTheNewDaysToFindTheCycle() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+        Long id = createCard(token, ",\"closingDay\":10,\"dueDay\":17");
+
+        mockMvc.perform(put("/api/v1/accounts/{id}", id).header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("CREDIT_CARD", ",\"closingDay\":20,\"dueDay\":27,\"invoicesFrom\":\"2026-01-25\"")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.invoicesFrom").value("2026-01-20"));
+    }
+
+    @Test
+    void update_movingInvoicesFromForward_isAllowed() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+        Long id = createCard(token, ",\"closingDay\":10,\"dueDay\":17,\"invoicesFrom\":\"2026-01-20\"");
+
+        mockMvc.perform(put("/api/v1/accounts/{id}", id).header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("CREDIT_CARD", ",\"invoicesFrom\":\"2026-03-12\"")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.invoicesFrom").value("2026-03-10"));
+    }
+
+    @Test
+    void update_withInvoicesFromOnACardWithoutDays_is400() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+        Long id = createCard(token, "");
+
+        mockMvc.perform(put("/api/v1/accounts/{id}", id).header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("CREDIT_CARD", ",\"invoicesFrom\":\"2026-01-20\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.invoicesFrom").exists());
+    }
+
+    @Test
+    void update_withoutInvoicesFrom_keepsTheCurrentOne() throws Exception {
+        fixToday();
+        String token = registerAndLogin();
+        Long id = createCard(token, ",\"closingDay\":10,\"dueDay\":17,\"invoicesFrom\":\"2026-01-20\"");
+
+        mockMvc.perform(put("/api/v1/accounts/{id}", id).header(HttpHeaders.AUTHORIZATION, bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON).content(body("CREDIT_CARD", ",\"countsAsAvailable\":true")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.invoicesFrom").value("2026-01-10"));
+    }
+
     // ---- helpers ----
 
     private void fixToday() {
