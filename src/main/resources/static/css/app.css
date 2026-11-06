@@ -423,6 +423,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 }
 
 .field { display: flex; flex-direction: column; gap: .3rem; margin-bottom: .85rem; }
+.field[hidden] { display: none; }
 .field label { font-size: .8rem; font-weight: 700; color: var(--text-secondary); }
 .field .error { font-size: .78rem; color: var(--critical); }
 .form-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 .85rem; }

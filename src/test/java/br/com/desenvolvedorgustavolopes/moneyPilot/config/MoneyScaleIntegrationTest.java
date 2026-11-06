@@ -58,6 +58,8 @@ class MoneyScaleIntegrationTest extends AbstractIntegrationTest {
                         "{\"accountId\":1,\"categoryId\":1,\"amount\":%s,\"type\":\"EXPENSE\",\"date\":\"2026-10-28\"}"),
                 Arguments.of("/api/v1/transactions/transfers", "amount",
                         "{\"fromAccountId\":1,\"toAccountId\":2,\"amount\":%s,\"date\":\"2026-10-28\"}"),
+                Arguments.of("/api/v1/transactions/installments", "totalAmount",
+                        "{\"accountId\":1,\"categoryId\":1,\"totalAmount\":%s,\"installments\":3,\"date\":\"2026-10-28\"}"),
                 Arguments.of("/api/v1/bills", "amount",
                         "{\"categoryId\":1,\"amount\":%s,\"dueDate\":\"2026-11-10\",\"type\":\"PAYABLE\"}"),
                 Arguments.of("/api/v1/bill-recurrences", "amount",
