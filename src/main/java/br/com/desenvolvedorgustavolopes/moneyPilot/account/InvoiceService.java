@@ -88,6 +88,29 @@ public class InvoiceService {
         return invoices;
     }
 
+    /**
+     * Spec 016, regra 10: faturas a pagar dos cartões fora do disponível, até a data limite. Cartão
+     * marcado no disponível não projeta, porque a compra já reduziu o saldo.
+     */
+    public List<InvoiceDue> payableInvoices(Long userId, LocalDate to) {
+        LocalDate today = LocalDate.now(clock);
+        List<InvoiceDue> due = new ArrayList<>();
+
+        for (Account card : accountRepository.findAllByUserIdAndClosingDayIsNotNullAndCountsAsAvailableFalse(userId)) {
+            for (InvoiceResponse invoice : this.invoicesOf(card, today)) {
+                if (invoice.remaining().signum() > 0 && !invoice.dueDate().isAfter(to)) {
+                    due.add(new InvoiceDue(invoice.dueDate(), invoice.remaining()));
+                }
+            }
+        }
+
+        return due;
+    }
+
+    /** Uma fatura com valor a pagar e a data em que vence. */
+    public record InvoiceDue(LocalDate dueDate, BigDecimal amount) {
+    }
+
     private InvoiceStatus statusOf(InvoiceCycle.Cycle cycle, BigDecimal remaining, LocalDate today) {
         if (today.isBefore(cycle.start())) {
             return InvoiceStatus.FUTURE;

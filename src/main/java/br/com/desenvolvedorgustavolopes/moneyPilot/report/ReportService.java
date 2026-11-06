@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.report;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.InvoiceService;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.InvalidForecastPeriodException;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRecurrence;
@@ -25,6 +26,7 @@ public class ReportService {
     private final AuthenticatedUserProvider userProvider;
     private final ReportRepository reportRepository;
     private final BillRecurrenceRepository billRecurrenceRepository;
+    private final InvoiceService invoiceService;
     private final Clock clock;
 
     private static final Set<Integer> FORECAST_PERIODS = Set.of(30, 60, 90);
@@ -71,6 +73,15 @@ public class ReportService {
                 .toList();
     }
 
+    /** Títulos em aberto mais as faturas dos cartões fora do disponível (spec 016), tudo como saída no vencimento. */
+    private List<BillDueTotals> dueTotals(Long userId, LocalDate to) {
+        List<BillDueTotals> totals = new ArrayList<>(reportRepository.findOpenBillTotalsByDueDate(userId, to));
+        for (InvoiceService.InvoiceDue invoice : invoiceService.payableInvoices(userId, to)) {
+            totals.add(new InvoiceDueTotals(invoice.dueDate(), invoice.amount()));
+        }
+        return totals;
+    }
+
     public CashFlowForecastResponse getCashFlowForecast(Integer days) {
         if (!FORECAST_PERIODS.contains(days)) {
             throw new InvalidForecastPeriodException(days);
@@ -82,7 +93,7 @@ public class ReportService {
         LocalDate to = from.plusDays(days - 1);
 
         BigDecimal currentBalance = reportRepository.getAvailableBalance(userId);
-        List<BillDueTotals> dueTotals = reportRepository.findOpenBillTotalsByDueDate(userId, to);
+        List<BillDueTotals> dueTotals = this.dueTotals(userId, to);
 
         int bucketCount = (days + BUCKET_DAYS - 1) / BUCKET_DAYS;
         BigDecimal[] payable = new BigDecimal[bucketCount];
@@ -170,7 +181,7 @@ public class ReportService {
         BigDecimal overduePayable = BigDecimal.ZERO;
         BigDecimal overdueReceivable = BigDecimal.ZERO;
 
-        for (BillDueTotals totals : reportRepository.findOpenBillTotalsByDueDate(userId, to)) {
+        for (BillDueTotals totals : this.dueTotals(userId, to)) {
             int index = 0;
             if (totals.getDueDate().isBefore(today)) {
                 overdueCount += totals.getBillCount();
