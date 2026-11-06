@@ -7,12 +7,6 @@ import { presetBillFilters } from './bills.js';
 
 const filters = { accountId: '', categoryId: '', type: '', from: '', to: '' };
 let page = 0;
-
-/** Usado pela tela de Faturas: abre Lançamentos já filtrado (o router não tem parâmetros). */
-export function presetTransactionFilters(preset) {
-    Object.assign(filters, { accountId: '', categoryId: '', type: '', from: '', to: '' }, preset);
-    page = 0;
-}
 let sort = { key: 'date', dir: 'desc' };
 
 const SORT_OPTIONS = [
