@@ -1,7 +1,7 @@
 # 015 — Plano técnico
 
 **Spec:** [spec.md](spec.md)
-**Status:** proposto
+**Status:** aprovado (2026-11-06)
 
 ## Abordagem
 

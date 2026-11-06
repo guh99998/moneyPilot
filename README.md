@@ -66,6 +66,7 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 - **Regras de estado vivem em CHECKs do Postgres**, e o Hibernate não os valida. Violação chega como `DataIntegrityViolationException`; o código checa antes para devolver um erro que explique o problema.
 - **Dinheiro é `BigDecimal` com escala 2**, moeda única (BRL).
 - **Saldo é calculado em leitura**, nunca persistido: `initial_balance` da conta somado às receitas menos as despesas dos lançamentos.
+- **Saldo disponível e guardado** (spec 015): cada conta tem `counts_as_available` (`countsAsAvailable` na API). O saldo em destaque e o `currentBalance` das duas previsões somam só as contas marcadas; as desmarcadas formam o "Guardado". Padrão por tipo: `INVESTMENT` desmarcada, as demais marcadas (o cartão de crédito segue marcado até a spec 016). Campo opcional: na criação, omitido usa o padrão do tipo; na edição, omitido mantém o valor, ou usa o padrão do novo tipo se o tipo mudou. `/accounts/{id}/balance`, extrato, transferências, relatórios e orçamento não mudam.
 - **Transferência é um par de lançamentos** ligados por `transfer_group_id` — uma saída e uma entrada, sem categoria. Não é um tipo especial de lançamento. Transferência não pode ser editada, e apagar uma perna apaga o par.
 - **Categorias são flat** (sem hierarquia) e podem ser globais (`user_id` nulo, criadas por migration) ou do usuário. Categoria global é visível para todos e não pode ser editada nem apagada.
 - **Todo acesso é escopado ao usuário autenticado.** Recurso de outro usuário responde `404`, nunca `403`: a API não confirma a existência do que não é seu.
@@ -120,7 +121,7 @@ br.com.desenvolvedorgustavolopes.moneyPilot
 
 ### Modelo
 
-`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `onboarding` · `email_change_tokens` · `email_verification_tokens` · `password_reset_tokens` — migrations `V1` a `V17` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas; `V14` torna `password_hash` opcional e acrescenta as colunas do Google e da foto em `users`.
+`users` · `accounts` · `categories` · `transactions` · `budgets` · `bill_recurrences` · `bills` · `refresh_tokens` · `dismissed_alerts` · `onboarding` · `email_change_tokens` · `email_verification_tokens` · `password_reset_tokens` — migrations `V1` a `V19` em `src/main/resources/db/migration`. `V6` adiciona os índices das tabelas originais; `V12` marca as contas existentes como verificadas e converte os e-mails para minúsculas; `V14` torna `password_hash` opcional e acrescenta as colunas do Google e da foto em `users`; `V19` acrescenta `counts_as_available` em `accounts` e desmarca as contas de investimento existentes.
 
 ## API
 
@@ -192,7 +193,7 @@ Listagens aceitam `page`, `size` e `sort` (por exemplo `sort=date,asc`).
 - `/transactions` filtra por `accountId`, `categoryId`, `type`, `from` e `to`.
 - `/bills` filtra por `type`, `status` (incluindo `OVERDUE`), `categoryId`, `accountId`, `dueDateFrom` e `dueDateTo`.
 
-A previsão de fluxo de caixa parte do mesmo saldo que `/accounts/{id}/balance` mostra, soma os títulos em aberto bloco a bloco e joga os vencidos inteiros no primeiro bloco — dívida vencida não some da projeção por ser antiga. O último bloco pode ter menos de 7 dias (30 dias = quatro de 7 e um de 2).
+**Mudança para clientes da API:** `currentBalance` das duas previsões é o saldo disponível (contas marcadas), não mais a soma de todas as contas. A previsão de fluxo de caixa parte da soma dos saldos de `/accounts/{id}/balance` das contas marcadas, soma os títulos em aberto bloco a bloco e joga os vencidos inteiros no primeiro bloco — dívida vencida não some da projeção por ser antiga. O último bloco pode ter menos de 7 dias (30 dias = quatro de 7 e um de 2).
 
 A previsão mensal segue a mesma base, agrupada por mês a partir do mês corrente, e vai além: **projeta as recorrências ativas que ainda não viraram título**, sem persistir nada. Uma ocorrência só entra se vence a partir de hoje, está dentro da vigência da recorrência e ainda não foi materializada naquele vencimento — assim um título já gerado nunca conta duas vezes. Os vencidos também caem inteiros no primeiro mês e vêm somados à parte em `overdue`.
 
@@ -218,7 +219,7 @@ Servido pela própria aplicação, a partir de `src/main/resources/static`: o **
 - **Mobile-first**, com breakpoints em 600, 900, 1200 e 1440px. No celular a navegação vira uma barra no topo, tabelas viram cartões compactos e os filtros ficam recolhidos.
 - **Tema claro único** nas cores da marca (azul-marinho e verde da logo).
 - **Previsão mensal** com colunas de a pagar e a receber por mês, linha do saldo projetado e tabela mês a mês.
-- **Visão geral** com saldo em contas, projeção, títulos a pagar e a receber, próximos vencimentos e gráficos de previsão e de receitas × despesas — desenhados em SVG por `js/charts.js`, com tooltip e versão em tabela.
+- **Visão geral** com saldo disponível (e o valor guardado), projeção, títulos a pagar e a receber, próximos vencimentos e gráficos de previsão e de receitas × despesas — desenhados em SVG por `js/charts.js`, com tooltip e versão em tabela.
 - **A pagar e receber** com seleção em lote e prévia ao vivo da divisão das parcelas, calculada em centavos com a mesma regra do backend.
 - **Campo de senha** (`js/password.js`): botão de olho dentro do campo (login, cadastro, reset e perfil) e, nas senhas novas, medidor de força (fraca, razoável, forte) com dica, que avisa senha vazada enquanto a pessoa digita. O medidor só informa, não bloqueia o envio: quem recusa é o servidor.
 - **Login com Google** (`js/google.js`): carrega o script oficial só quando vai desenhar o botão, que aparece no login e no cadastro (e no cartão Google do perfil). Sem client ID ou com o script bloqueado, o botão simplesmente não aparece. O perfil mostra a foto do Google (ou as iniciais, também no rodapé do menu), vincula e desvincula o Google e oferece "Criar senha" a quem não tem uma.

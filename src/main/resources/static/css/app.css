@@ -968,19 +968,22 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 }
 
 /* ---------- abas do Perfil e saldo disponível (spec 015) ---------- */
-.tablist { display: flex; gap: .25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.tablist { display: flex; gap: .25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
 .tab {
+    flex: 1 1 auto;
     min-height: 44px;
-    padding: .5rem 1rem;
+    padding: .5rem .5rem;
     border: 0;
     border-bottom: 3px solid transparent;
     background: none;
     color: var(--text-secondary);
     font: inherit;
     font-weight: 600;
-    white-space: nowrap;
+    line-height: 1.2;
+    text-align: center;
     cursor: pointer;
 }
+.tab:hover { color: var(--navy); background: var(--accent-soft); }
 .tab[aria-selected="true"] { color: var(--navy); border-bottom-color: var(--navy); }
 .tab:focus-visible, .tab-panel:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 .tab-panel[hidden] { display: none; }

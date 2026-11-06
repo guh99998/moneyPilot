@@ -37,7 +37,7 @@ function card(body) {
 
 function row(account, errorBox) {
     const id = `availability-${account.id}`;
-    const input = el('input', { type: 'checkbox', id });
+    const input = el('input', { type: 'checkbox', id, name: `countsAsAvailable-${account.id}`, autocomplete: 'off' });
     input.checked = account.countsAsAvailable;
 
     input.addEventListener('change', async () => {

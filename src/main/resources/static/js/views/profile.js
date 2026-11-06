@@ -89,7 +89,7 @@ async function load(view, focusKey) {
     };
 
     // As contas só são buscadas quando a aba "Saldo disponível" abre.
-    const availabilitySlot = el('div');
+    const availabilitySlot = el('div', {}, el('p', { class: 'muted', text: 'Carregando…' }));
     let availabilityLoaded = false;
     const loadAvailability = async () => {
         if (availabilityLoaded) return;
