@@ -1,6 +1,7 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.auth;
 
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.AccountRepository;
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.RecurringPurchaseRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRecurrenceRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.bill.BillRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.budget.BudgetRepository;
@@ -40,6 +41,7 @@ public class AccountDeletionService {
 
     private final BillRepository billRepository;
     private final BillRecurrenceRepository recurrenceRepository;
+    private final RecurringPurchaseRepository recurringPurchaseRepository;
     private final TransactionRepository transactionRepository;
     private final BudgetRepository budgetRepository;
     private final DismissedAlertRepository dismissedAlertRepository;
@@ -117,6 +119,7 @@ public class AccountDeletionService {
     private void deleteEverything(Long userId) {
         billRepository.deleteAllByUserId(userId);
         recurrenceRepository.deleteAllByUserId(userId);
+        recurringPurchaseRepository.deleteAllByUserId(userId);
         transactionRepository.deleteAllByUserId(userId);
         budgetRepository.deleteAllByUserId(userId);
         dismissedAlertRepository.deleteAllByUserId(userId);

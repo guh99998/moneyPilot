@@ -493,6 +493,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
+    @ExceptionHandler(RecurringPurchaseNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRecurringPurchaseNotFound(RecurringPurchaseNotFoundException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
     @ExceptionHandler(BillRecurrenceHasBillsException.class)
     public ResponseEntity<ErrorResponse> handleBillRecurrenceHasBills(BillRecurrenceHasBillsException ex) {
         ErrorResponse body = new ErrorResponse(
