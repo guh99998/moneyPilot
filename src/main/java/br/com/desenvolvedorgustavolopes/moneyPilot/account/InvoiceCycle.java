@@ -1,5 +1,7 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.account;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.common.MonthDays;
+
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -33,15 +35,15 @@ public record InvoiceCycle(int closingDay, int dueDay) {
     }
 
     private LocalDate closingIn(YearMonth month) {
-        return month.atDay(Math.min(closingDay, month.lengthOfMonth()));
+        return MonthDays.clamp(month, closingDay);
     }
 
     private LocalDate dueAfter(LocalDate closing) {
         YearMonth month = YearMonth.from(closing);
-        LocalDate due = month.atDay(Math.min(dueDay, month.lengthOfMonth()));
+        LocalDate due = MonthDays.clamp(month, dueDay);
         if (!due.isAfter(closing)) {
             YearMonth following = month.plusMonths(1);
-            due = following.atDay(Math.min(dueDay, following.lengthOfMonth()));
+            due = MonthDays.clamp(following, dueDay);
         }
         return due;
     }

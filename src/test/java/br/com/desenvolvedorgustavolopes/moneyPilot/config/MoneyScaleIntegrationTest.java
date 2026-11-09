@@ -64,6 +64,8 @@ class MoneyScaleIntegrationTest extends AbstractIntegrationTest {
                         "{\"categoryId\":1,\"amount\":%s,\"dueDate\":\"2026-11-10\",\"type\":\"PAYABLE\"}"),
                 Arguments.of("/api/v1/bill-recurrences", "amount",
                         "{\"categoryId\":1,\"amount\":%s,\"type\":\"PAYABLE\",\"dayOfMonth\":10,\"startDate\":\"2026-11-01\"}"),
+                Arguments.of("/api/v1/recurring-purchases", "amount",
+                        "{\"accountId\":1,\"categoryId\":1,\"amount\":%s,\"dayOfMonth\":20,\"startDate\":\"2026-11-01\"}"),
                 Arguments.of("/api/v1/bills/1/settle", "amount",
                         "{\"accountId\":1,\"amount\":%s}"),
                 Arguments.of("/api/v1/budgets", "amountLimit",
