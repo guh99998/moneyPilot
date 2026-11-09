@@ -41,13 +41,13 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 
 ### Mudança: compra recorrente no cartão (spec, regras 31 a 38)
 
-- [ ] **T28** - Migration V21, entidade, repositório e CRUD de `/recurring-purchases` com OpenAPI e `MoneyScaleIntegrationTest` (CA23, CA28)
-- [ ] **T29** - Geração idempotente com `generatedUntil` e `POST /recurring-purchases/materialize` (CA24, CA25)
-- [ ] **T30** - Projeção na fatura (`projectedTotal`) e nas duas previsões (CA26)
-- [ ] **T31** - Editar, desativar e apagar (CA27)
-- [ ] **T32** - Bloqueio de título e recorrência de título em cartão com dias (CA28)
-- [ ] **T33** - Cliente: Faturas (diálogo, lista, selo "Prevista"), `materialize` na sessão, formulários de título, "Recorrente" em Lançamentos (CA23 a CA28)
-- [ ] **T34** - Ajuda, Novidade, README e quadro nº 4
+- [x] **T28** - Migration V21, entidade, repositório e CRUD de `/recurring-purchases` com OpenAPI e `MoneyScaleIntegrationTest` (CA23, CA28)
+- [x] **T29** - Geração idempotente com `generatedUntil` e `POST /recurring-purchases/materialize` (CA24, CA25)
+- [x] **T30** - Projeção na fatura (`projectedTotal`) e nas duas previsões (CA26)
+- [x] **T31** - Editar, desativar e apagar (CA27)
+- [x] **T32** - Bloqueio de título e recorrência de título em cartão com dias (CA28)
+- [x] **T33** - Cliente: Faturas (diálogo, lista, selo "Prevista"), `materialize` na sessão, formulários de título, "Recorrente" em Lançamentos (CA23 a CA28)
+- [x] **T34** - Ajuda, Novidade, README e quadro nº 4
 - [ ] **T35** - Verificação manual, skills do projeto, `./mvnw verify` e `node --test`
 
 ## Notas de implementação
@@ -58,6 +58,15 @@ Descobertas durante a implementação que afetaram a spec ou o plano.
 - **Parcelas (T4):** o limite de parcelas é 2 a 60 (o plano citava "como no plano de títulos", mas o de títulos aceita até 360; 60 basta para cartão). Reaproveitei `InstallmentGroupNotFoundException` (404), que já existe para os títulos.
 - **Formulário (T7):** o `formDialog` não aceitava campo condicional; ganhou `showWhen` (campo oculto fica desabilitado e vai `null`), mais a regra `.field[hidden]` no CSS.
 - **Isolamento (T6):** os `404` das rotas novas estão nos testes de cada rota (`InvoiceIntegrationTest`, `InstallmentPurchaseIntegrationTest`); `CrossUserIsolationIntegrationTest` não foi alterado.
+
+### Notas da mudança "compra recorrente no cartão" (2026-11-09)
+
+- **A 016 já estava na `main`** quando a emenda começou; ela foi feita na `feature/016-fatura-do-cartao` atualizada a partir da `develop`, em vez de "antes do merge".
+- **Marca d'água em meses:** como há uma cobrança por mês, `generatedUntil` vale pelo mês (`RecurringPurchaseSchedule`). Assim, trocar o dia depois de gerar não cobra o mesmo mês duas vezes. A spec dizia só "até que data já gerou".
+- **Projeção inclui cobrança vencida ainda não gerada:** entre a data da cobrança e o próximo `materialize` (feito ao abrir o app), ela aparece como prevista, para nunca sumir da fatura.
+- **Cartão marcado no disponível** continua sem projeção nas previsões (regra 10 da 016); a cobrança só reduz o disponível quando é gerada.
+- **Concorrência:** `UPDATE` condicional em duas consultas (marca nula e preenchida), porque o Postgres não tipa o parâmetro nulo.
+- **Verificação manual:** feita no desktop com um Postgres descartável (tela Faturas, diálogo, lista, "Inclui R$ x previsto"). **Pendente:** conferência a 375px, "Ver compras" com o selo "Prevista" e as skills do projeto (`web-design-guidelines`, `accessibility-compliance`, `responsive-design`, `api-design-principles`).
 
 ## Revisão com as skills (2026-11-06)
 

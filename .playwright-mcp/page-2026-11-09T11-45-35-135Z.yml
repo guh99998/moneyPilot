@@ -1,0 +1,203 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e28]:
+    - complementary [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: moneyPilot
+        - button "Alertas" [ref=e35] [cursor=pointer]
+      - generic [ref=e40]:
+        - navigation [ref=e41]:
+          - link "Visão geral" [ref=e42] [cursor=pointer]:
+            - /url: "#/dashboard"
+          - link "Lançamentos" [ref=e50] [cursor=pointer]:
+            - /url: "#/transactions"
+          - link "A pagar e receber" [ref=e56] [cursor=pointer]:
+            - /url: "#/bills"
+          - link "Previsão mensal" [ref=e62] [cursor=pointer]:
+            - /url: "#/forecast"
+          - link "Contas" [ref=e68] [cursor=pointer]:
+            - /url: "#/accounts"
+          - link "Faturas" [ref=e74] [cursor=pointer]:
+            - /url: "#/invoices"
+          - link "Categorias" [ref=e80] [cursor=pointer]:
+            - /url: "#/categories"
+          - link "Orçamentos" [ref=e86] [cursor=pointer]:
+            - /url: "#/budgets"
+        - generic [ref=e92]:
+          - link "Usando com IA" [ref=e93] [cursor=pointer]:
+            - /url: "#/usando-com-ia"
+          - link "Falar com o suporte" [ref=e99] [cursor=pointer]:
+            - /url: "#/suporte"
+          - link "Meu perfil" [ref=e105] [cursor=pointer]:
+            - /url: "#/profile"
+            - generic [aria-hidden] [ref=e107]: PT
+            - generic [ref=e108]: Pessoa Teste
+          - button "Sair" [ref=e109] [cursor=pointer]
+    - main [ref=e110]:
+      - generic [ref=e111]:
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - heading "Visão geral" [level=1] [ref=e115]
+              - link "Ajuda sobre esta tela (abre em nova aba)" [ref=e116] [cursor=pointer]:
+                - /url: /ajuda/visao-geral.html
+                - generic [aria-hidden] [ref=e117]: "?"
+            - paragraph [ref=e118]: Novembro de 2026
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - generic [ref=e122]: Mês
+              - combobox [ref=e123]:
+                - option "Janeiro"
+                - option "Fevereiro"
+                - option "Março"
+                - option "Abril"
+                - option "Maio"
+                - option "Junho"
+                - option "Julho"
+                - option "Agosto"
+                - option "Setembro"
+                - option "Outubro"
+                - option "Novembro" [selected]
+                - option "Dezembro"
+            - generic [ref=e124]:
+              - generic [ref=e125]: Ano
+              - spinbutton [ref=e126]: "2026"
+        - generic [ref=e127]:
+          - region [ref=e128]:
+            - 'heading "Novidade: saldo disponível" [level=2] [ref=e130]'
+            - paragraph [ref=e131]: O saldo em destaque agora mostra só o dinheiro disponível. Contas de investimento ficam de fora, e o valor delas aparece como "Guardado". Por isso o seu saldo pode ter mudado.
+            - list [ref=e132]:
+              - listitem [ref=e133]:
+                - text: Abra o
+                - link "Perfil" [ref=e134] [cursor=pointer]:
+                  - /url: "#/profile"
+                - text: e vá para a aba "Preferências".
+              - listitem [ref=e135]: Marque as contas que contam no saldo disponível e desmarque as que guardam dinheiro.
+              - listitem [ref=e136]: "Volte à Visão geral: o saldo disponível e o valor guardado já estão atualizados."
+            - button "Entendi" [ref=e137] [cursor=pointer]
+          - region [ref=e138]:
+            - 'heading "Novidade: fatura do cartão" [level=2] [ref=e140]'
+            - paragraph [ref=e141]: Agora o moneyPilot calcula a fatura do cartão de crédito, mostra quando ela vence e leva o vencimento para a previsão. O seu cartão só muda quando você informar o fechamento e o vencimento.
+            - list [ref=e142]:
+              - listitem [ref=e143]:
+                - text: Abra
+                - link "Contas" [ref=e144] [cursor=pointer]:
+                  - /url: "#/accounts"
+                - text: ", edite o cartão e informe o dia do fechamento e o do vencimento."
+              - listitem [ref=e145]:
+                - text: Veja a fatura em
+                - link "Faturas" [ref=e146] [cursor=pointer]:
+                  - /url: "#/invoices"
+                - text: . O cartão sai do saldo disponível, e a fatura aparece também em A pagar e receber, na Visão geral e na previsão. Compras de antes de você informar os dias não entram.
+              - listitem [ref=e147]: "Pague pela própria tela de Faturas: o pagamento é uma transferência para o cartão, não uma nova despesa."
+            - paragraph [ref=e148]: "Assinatura no cartão (streaming, academia)? Use Compra recorrente em Faturas: a cobrança vira despesa sozinha na data, e a próxima já aparece como prevista na fatura e na previsão."
+            - button "Entendi" [ref=e149] [cursor=pointer]
+          - generic [ref=e151]:
+            - generic [ref=e152]: Saldo disponível
+            - generic [ref=e153]: R$ 5.000,00
+            - generic [ref=e154]:
+              - generic [ref=e155]: "Em 30 dias: R$ 4.840,10 (− R$ 159,90)"
+              - generic [ref=e156]: "Resultado de novembro: − R$ 120,00"
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - generic [ref=e159]: Receitas do mês
+              - generic [ref=e160]: R$ 0,00
+            - generic [ref=e161]:
+              - generic [ref=e162]: Despesas do mês
+              - generic [ref=e163]: R$ 120,00
+            - link "A pagar R$ 159,90 1 título · nenhum vencido" [ref=e164] [cursor=pointer]:
+              - /url: "#/bills"
+              - generic [ref=e165]: A pagar
+              - generic [ref=e166]: R$ 159,90
+              - generic [ref=e167]: 1 título · nenhum vencido
+            - link "A receber R$ 0,00 0 títulos · nenhum vencido" [ref=e168] [cursor=pointer]:
+              - /url: "#/bills"
+              - generic [ref=e169]: A receber
+              - generic [ref=e170]: R$ 0,00
+              - generic [ref=e171]: 0 títulos · nenhum vencido
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - heading "Fluxo de caixa projetado" [level=2] [ref=e174]
+              - group "Período da previsão" [ref=e175]:
+                - button "30 dias" [pressed] [ref=e176] [cursor=pointer]
+                - button "60 dias" [ref=e177] [cursor=pointer]
+                - button "90 dias" [ref=e178] [cursor=pointer]
+            - paragraph [ref=e179]: Saldo de hoje mais os títulos em aberto até 08/12, semana a semana.
+            - img "Saldo projetado para os próximos 30 dias" [ref=e180]:
+              - img [aria-hidden] [ref=e181]:
+                - generic [ref=e182]: R$ 0
+                - generic [ref=e183]: R$ 2 mil
+                - generic [ref=e184]: R$ 4 mil
+                - generic [ref=e185]: R$ 6 mil
+                - generic [ref=e186]: hoje
+                - generic [ref=e187]: 15/11
+                - generic [ref=e188]: 22/11
+                - generic [ref=e189]: 29/11
+                - generic [ref=e190]: 06/12
+                - generic [ref=e191]: 08/12
+                - generic [ref=e200]: R$ 4.840,10
+            - group [ref=e207]:
+              - generic "Ver em tabela" [ref=e208] [cursor=pointer]
+          - generic [ref=e209]:
+            - generic [ref=e210]:
+              - heading "Próximos vencimentos" [level=2] [ref=e211]
+              - link "Ver todos" [ref=e212] [cursor=pointer]:
+                - /url: "#/bills"
+            - list [ref=e213]:
+              - listitem [ref=e214]:
+                - generic [ref=e215]:
+                  - generic [ref=e216]: "17"
+                  - generic [ref=e217]: nov
+                - generic [ref=e218]:
+                  - strong [ref=e219]:
+                    - link "Fatura do Cartao Roxo" [ref=e220] [cursor=pointer]:
+                      - /url: "#/invoices"
+                  - text: Aberta · fecha em 10/11/2026
+                - generic [ref=e221]: − R$ 159,90
+          - generic [ref=e222]:
+            - generic [ref=e223]:
+              - heading "Receitas e despesas" [level=2] [ref=e224]
+              - generic [ref=e225]: últimos 6 meses
+            - generic [ref=e226]:
+              - generic [ref=e227]: Receitas
+              - generic [ref=e230]: Despesas
+            - img "Receitas e despesas por mês" [ref=e233]:
+              - img [aria-hidden] [ref=e234]:
+                - generic [ref=e235]: R$ 0
+                - generic [ref=e236]: R$ 50
+                - generic [ref=e237]: R$ 100
+                - generic [ref=e238]: R$ 150
+                - generic [ref=e239]: jun
+                - generic [ref=e241]: jul
+                - generic [ref=e244]: ago
+                - generic [ref=e247]: set
+                - generic [ref=e250]: out
+                - generic [ref=e253]: nov
+            - group [ref=e255]:
+              - generic "Ver em tabela" [ref=e256] [cursor=pointer]
+          - generic [ref=e257]:
+            - generic [ref=e258]:
+              - heading "Gastos por categoria" [level=2] [ref=e259]
+              - generic [ref=e260]: novembro
+            - 'generic "Alimentação: R$ 120,00 — 100% das despesas do mês" [ref=e262]':
+              - generic [ref=e263]: Alimentação
+              - generic [ref=e264]: R$ 120,00 · 100%
+          - generic [ref=e267]:
+            - generic [ref=e268]:
+              - heading "Orçado x realizado" [level=2] [ref=e269]
+              - generic [ref=e270]: novembro
+            - generic [ref=e271]: Nenhum orçamento definido para este mês.
+          - generic [ref=e272]:
+            - heading "Saldo por conta" [level=2] [ref=e274]
+            - table [ref=e276]:
+              - rowgroup [ref=e277]:
+                - row [ref=e278]:
+                  - columnheader "Conta" [ref=e279]
+                  - columnheader "Saldo atual" [ref=e280]
+              - rowgroup [ref=e281]:
+                - row [ref=e282]:
+                  - cell "Corrente" [ref=e283]
+                  - cell "R$ 5.000,00" [ref=e284]
+                - row [ref=e285]:
+                  - cell "Cartao Roxo (a fatura entra na previsão)" [ref=e286]
+                  - cell "-R$ 239,70" [ref=e287]
+  - status

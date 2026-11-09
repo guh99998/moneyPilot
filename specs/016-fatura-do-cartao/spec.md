@@ -1,6 +1,6 @@
 # 016 — Fatura do cartão de crédito
 
-**Status:** em implementação (emenda de 2026-11-09: compra recorrente no cartão; o restante já está na `main`)
+**Status:** em revisão (emenda de 2026-11-09: compra recorrente no cartão implementada; faltam a checagem em 375px e as skills do projeto; o restante já está na `main`)
 **Branch:** feature/016-fatura-do-cartao
 **Depende de:** 015 (campo `countsAsAvailable`). Ordem de merge: 027, 015, 016 (migrations V18, V19, V20).
 
