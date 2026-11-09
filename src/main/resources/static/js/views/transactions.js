@@ -297,6 +297,7 @@ export async function renderTransactions() {
                                 text: (transaction.description || '—')
                                     + (transaction.installmentNumber ? ` (${transaction.installmentNumber}/${transaction.installmentTotal})` : '')
                             }),
+                            transaction.recurringPurchaseId ? el('span', { class: 'meter-foot', text: 'Recorrente' }) : null,
                             fromBill ? el('a', {
                                 class: 'cell-tag bill-link',
                                 href: '#/bills',

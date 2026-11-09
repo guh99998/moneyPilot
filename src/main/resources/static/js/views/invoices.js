@@ -4,6 +4,7 @@ import {
     collapsibleFilters, isCommittedDate, sortHeader, sortSelect, stackable
 } from '../ui.js';
 import { EMPTY_FILTERS, SORT_OPTIONS, buildRows, filterInvoices, sortInvoices, summarize } from './invoices-list.js';
+import { openRecurringPurchaseDialog, projectedCharges, recurringPurchasesSection } from './invoices-recurring.js';
 
 export const INVOICE_STATUS = {
     OPEN: { label: 'Aberta', kind: 'open' },
@@ -117,9 +118,10 @@ function purchaseLine(transaction) {
     const installment = transaction.installmentNumber
         ? ` (${transaction.installmentNumber}/${transaction.installmentTotal})`
         : '';
+    const recurring = transaction.recurringPurchaseId ? ' · recorrente' : '';
     return el('li', { class: 'invoice-purchase' }, [
         el('span', { class: 'invoice-purchase-date', text: fmtDate(transaction.date) }),
-        el('span', { class: 'invoice-purchase-desc', text: label + installment }),
+        el('span', { class: 'invoice-purchase-desc', text: label + installment + recurring }),
         el('span', {
             class: 'invoice-purchase-amount',
             style: `color: var(--${income ? 'income' : 'expense'})`,
@@ -128,8 +130,20 @@ function purchaseLine(transaction) {
     ]);
 }
 
-/** Compras do ciclo, carregadas só quando a pessoa abre a lista. */
-function purchasesDetails(card, invoice) {
+/** Cobrança de compra recorrente que ainda não virou despesa: aparece na fatura, mas não está gravada. */
+function projectedLine(charge) {
+    return el('li', { class: 'invoice-purchase is-projected' }, [
+        el('span', { class: 'invoice-purchase-date', text: fmtDate(charge.date) }),
+        el('span', { class: 'invoice-purchase-desc' }, [
+            `${charge.description} · recorrente `,
+            badge('canceled', 'Prevista')
+        ]),
+        el('span', { class: 'invoice-purchase-amount', style: 'color: var(--expense)', text: `− ${fmtMoney(charge.amount)}` })
+    ]);
+}
+
+/** Compras do ciclo, carregadas só quando a pessoa abre a lista; `projected` são as cobranças previstas. */
+function purchasesDetails(card, invoice, projected = []) {
     const body = el('div', { class: 'invoice-purchases-body', 'aria-live': 'polite' });
     let loaded = false;
 
@@ -144,8 +158,9 @@ function purchasesDetails(card, invoice) {
                 size: 100,
                 sort: ['date,asc', 'id,asc']
             }));
-            body.replaceChildren(result.content.length
-                ? el('ul', { class: 'invoice-purchase-list' }, result.content.map(purchaseLine))
+            const lines = [...result.content.map(purchaseLine), ...projected.map(projectedLine)];
+            body.replaceChildren(lines.length
+                ? el('ul', { class: 'invoice-purchase-list' }, lines)
                 : el('p', { class: 'meter-foot', text: 'Nenhum lançamento neste ciclo.' }));
         } catch (error) {
             loaded = false;
@@ -186,6 +201,7 @@ export async function renderInvoices() {
     let cards = [];
     let byCard = new Map();
     let allRows = [];
+    let recurring = [];
 
     function head() {
         return pageHead('Faturas', 'Quanto está a fatura de cada cartão e quando ela vence');
@@ -225,6 +241,16 @@ export async function renderInvoices() {
                 load();
             }
         });
+    }
+
+    async function recurringDialog(card) {
+        const categories = await expenseCategories();
+        if (!categories) return;
+        openRecurringPurchaseDialog({ card, categories, onSaved: load });
+    }
+
+    function projectedOf(card, invoice) {
+        return projectedCharges(recurring.filter((purchase) => purchase.accountId === card.id), invoice, card.invoicesFrom);
     }
 
     async function installmentDialog(card) {
@@ -290,6 +316,7 @@ export async function renderInvoices() {
             el('span', { text: `Vence em ${fmtDate(invoice.dueDate)}` })
         ];
         if (Number(invoice.paid) > 0) facts.push(el('span', { text: `Já pago: ${fmtMoney(invoice.paid)}` }));
+        if (Number(invoice.projectedTotal) > 0) facts.push(el('span', { text: `Previsto: ${fmtMoney(invoice.projectedTotal)} em compras recorrentes` }));
         const titleId = `invoice-current-${card.id}`;
 
         return el('section', { class: 'card invoice-current', 'aria-labelledby': titleId }, [
@@ -306,7 +333,8 @@ export async function renderInvoices() {
             el('div', { class: 'invoice-actions' }, [
                 payButton(row),
                 el('button', { type: 'button', class: 'btn-sm', text: 'Nova compra', onClick: () => purchaseDialog(card) }),
-                el('button', { type: 'button', class: 'btn-sm', text: 'Compra parcelada', onClick: () => installmentDialog(card) })
+                el('button', { type: 'button', class: 'btn-sm', text: 'Compra parcelada', onClick: () => installmentDialog(card) }),
+                el('button', { type: 'button', class: 'btn-sm', text: 'Compra recorrente', onClick: () => recurringDialog(card) })
             ])
         ]);
     }
@@ -377,10 +405,15 @@ export async function renderInvoices() {
                     el('td', { class: 'due', text: fmtDate(row.invoice.dueDate) }),
                     el('td', { class: 'desc' }, [
                         el('span', { class: 'desc-main', text: row.card.name }),
-                        purchasesDetails(row.card, row.invoice)
+                        purchasesDetails(row.card, row.invoice, projectedOf(row.card, row.invoice))
                     ]),
                     el('td', { class: 'status' }, statusBadge(row.invoice.status)),
-                    el('td', { class: 'num', text: fmtMoney(row.invoice.total) }),
+                    el('td', { class: 'num' }, [
+                        fmtMoney(row.invoice.total),
+                        Number(row.invoice.projectedTotal) > 0
+                            ? el('span', { class: 'meter-foot', text: `Inclui ${fmtMoney(row.invoice.projectedTotal)} previsto` })
+                            : null
+                    ]),
                     el('td', { class: 'num', text: Number(row.invoice.remaining) > 0 ? fmtMoney(row.invoice.remaining) : '—' }),
                     el('td', { class: 'actions' }, payButton(row))
                 ])))
@@ -394,6 +427,7 @@ export async function renderInvoices() {
             head(),
             summaryCard(),
             ...cards.map(currentCard).filter(Boolean),
+            recurringPurchasesSection({ purchases: recurring, loadCategories: expenseCategories, cards, onChanged: load }),
             filterBar(),
             el('div', { class: 'sort-only' }, sortSelect({ options: SORT_OPTIONS, sort, onSort: changeSort })),
             el('div', { class: 'card' }, [rows.length ? table(rows) : emptyState('Nenhuma fatura com esses filtros.')])
@@ -418,6 +452,7 @@ export async function renderInvoices() {
             }
 
             const lists = await Promise.all(cards.map((card) => api.accounts.invoices(card.id)));
+            recurring = await fetchAll(api.recurringPurchases.list).catch((error) => { reportError(error); return []; });
             byCard = new Map(cards.map((card, index) => [card.id, lists[index]]));
             allRows = buildRows(cards, byCard);
             render();

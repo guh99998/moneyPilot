@@ -288,6 +288,15 @@ export const api = {
         payable: () => request('/invoices/payable')
     },
 
+    recurringPurchases: {
+        list: (query) => request('/recurring-purchases', { query }),
+        create: (body) => request('/recurring-purchases', { method: 'POST', body }),
+        update: (id, body) => request(`/recurring-purchases/${id}`, { method: 'PUT', body }),
+        remove: (id) => request(`/recurring-purchases/${id}`, { method: 'DELETE' }),
+        deactivate: (id) => request(`/recurring-purchases/${id}/deactivate`, { method: 'POST' }),
+        materialize: () => request('/recurring-purchases/materialize', { method: 'POST' })
+    },
+
     categories: {
         list: (query) => request('/categories', { query }),
         create: (body) => request('/categories', { method: 'POST', body }),

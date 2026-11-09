@@ -1057,3 +1057,18 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .invoices-table td.actions { text-align: right; }
 .invoices-table td.desc .invoice-purchases { margin-top: .25rem; }
 .invoices-table tr.is-overdue td.due { color: var(--overdue); font-weight: 700; }
+
+/* Compra recorrente no cartão (spec 016, regras 31 a 38) */
+.recurring-list { list-style: none; margin: 0; padding: 0; }
+.recurring-item { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem .85rem; align-items: center; padding: .65rem 0; border-top: 1px solid var(--border); }
+.recurring-info { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.recurring-amount { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.recurring-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .5rem; }
+.recurring-actions .btn-sm { min-height: 44px; }
+.invoice-purchase.is-projected { color: var(--text-secondary); }
+.invoice-purchase.is-projected .invoice-purchase-desc { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.invoices-table td.num .meter-foot { display: block; }
+@media (max-width: 480px) {
+    .recurring-item { grid-template-columns: 1fr auto; }
+    .recurring-item .badge { grid-column: 1 / -1; justify-self: start; }
+}

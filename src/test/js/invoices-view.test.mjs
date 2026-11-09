@@ -30,7 +30,7 @@ const NUBANK = { id: 7, name: 'Nubank', type: 'CREDIT_CARD', closingDay: 10, due
 const INTER = { id: 9, name: 'Inter', type: 'CREDIT_CARD', closingDay: 5, dueDay: 12, invoicesFrom: '2026-02-05' };
 const NO_DAYS = { id: 8, name: 'Cartão sem dias', type: 'CREDIT_CARD' };
 
-function mockApi({ accounts, invoices = { 7: NUBANK_INVOICES, 9: INTER_INVOICES } }) {
+function mockApi({ accounts, invoices = { 7: NUBANK_INVOICES, 9: INTER_INVOICES }, recurring = [] }) {
     const calls = [];
     globalThis.fetch = async (url, options = {}) => {
         const path = new URL(url, 'http://localhost').pathname;
@@ -39,6 +39,7 @@ function mockApi({ accounts, invoices = { 7: NUBANK_INVOICES, 9: INTER_INVOICES 
         const match = path.match(/^\/api\/v1\/accounts\/(\d+)\/invoices$/);
         if (match) return Response.json(invoices[match[1]] || []);
         if (path === '/api/v1/transactions') return Response.json(page([]));
+        if (path === '/api/v1/recurring-purchases') return Response.json(page(recurring));
         if (path === '/api/v1/categories') return Response.json(page([]));
         return new Response(null, { status: 500 });
     };
@@ -260,4 +261,52 @@ test('no invoice matching the filters shows an empty message, not a broken table
 
     assert.equal(bodyRows(view).length, 0);
     assert.match(text(view), /Nenhuma fatura com esses filtros/);
+});
+
+const STREAMING = {
+    id: 3, accountId: 7, accountName: 'Nubank', categoryId: 3, categoryName: 'Lazer', description: 'Streaming', amount: '39.90',
+    dayOfMonth: 20, startDate: '2026-01-20', endDate: null, active: true, generatedUntil: '2026-02-20'
+};
+
+test('each card highlight offers a recurring purchase next to the installment one', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+
+    const view = await renderInvoices();
+
+    const labels = buttonsOf(view);
+    assert.equal(labels.filter((label) => label === 'Compra recorrente').length, 2);
+    assert.equal(labels.filter((label) => label === 'Compra parcelada').length, 2);
+});
+
+test('the recurring purchases of the cards are listed with edit, deactivate and delete', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], recurring: [STREAMING] });
+
+    const view = await renderInvoices();
+
+    const section = byClass(view, 'recurring-purchases')[0];
+    assert.match(text(section), /Streaming/);
+    assert.match(text(section), /Nubank · todo dia 20/);
+    assert.match(text(section), /R\$\s39,90/);
+    const labels = buttonsOf(section);
+    assert.ok(labels.includes('Editar') && labels.includes('Desativar') && labels.includes('Apagar'));
+});
+
+test('a deactivated recurring purchase has no deactivate button', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], recurring: [{ ...STREAMING, active: false }] });
+
+    const view = await renderInvoices();
+
+    const section = byClass(view, 'recurring-purchases')[0];
+    assert.match(text(section), /Desativada/);
+    assert.ok(!buttonsOf(section).includes('Desativar'));
+});
+
+test('the invoice shows how much of the total is projected', async () => {
+    const withProjection = [inv('2026-04-17', 'OPEN', '90.00', '0.00', { closingDate: '2026-04-10', projectedTotal: '39.90' })];
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: withProjection }, recurring: [STREAMING] });
+
+    const view = await renderInvoices();
+
+    assert.match(text(view), /Previsto: R\$\s39,90 em compras recorrentes/);
+    assert.match(text(bodyRows(view)[0]), /Inclui R\$\s39,90 previsto/);
 });

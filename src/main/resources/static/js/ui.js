@@ -107,8 +107,9 @@ export function badge(kind, label) {
  * Formulário em modal. `fields` são descritores:
  * { name, label, type, options:[{value,label}], required, step, min, max, hint }
  * `onSubmit(values)` pode lançar ApiError — erros de campo voltam inline.
+ * `preview(values)` (opcional) devolve um texto que acompanha o que a pessoa digita (aria-live).
  */
-export function formDialog({ title, fields, values = {}, submitLabel = 'Salvar', onSubmit }) {
+export function formDialog({ title, fields, values = {}, submitLabel = 'Salvar', onSubmit, preview }) {
     const dialog = el('dialog');
     const errorBox = el('p', { class: 'dialog-error', hidden: true });
     const inputs = new Map();
@@ -199,6 +200,18 @@ export function formDialog({ title, fields, values = {}, submitLabel = 'Salvar',
 
         body.append(group);
     });
+
+    if (preview) {
+        const previewNode = el('p', { class: 'preview-hint', 'aria-live': 'polite' });
+        const refreshPreview = () => {
+            const current = {};
+            fields.forEach((field) => { current[field.name] = inputs.get(field.name).value; });
+            previewNode.textContent = preview(current);
+        };
+        inputs.forEach((input) => input.addEventListener('input', refreshPreview));
+        refreshPreview();
+        body.append(previewNode);
+    }
 
     body.append(el('div', { class: 'dialog-actions' }, [
         el('button', { type: 'button', text: 'Cancelar', onClick: () => dialog.close() }),

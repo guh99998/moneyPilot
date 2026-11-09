@@ -100,6 +100,8 @@ export async function ensureRecurringBills({ force = false } = {}) {
     const nextMonth = installmentDueDate(`${currentMonth}-01`, 1).slice(0, 7);
     await api.bills.materialize(currentMonth);
     await api.bills.materialize(nextMonth);
+    // Compras recorrentes no cartão (spec 016, regra 32): as cobranças vencidas viram despesa.
+    await api.recurringPurchases.materialize();
     materializedKey = key;
 }
 
@@ -112,6 +114,10 @@ function splitInstallments(totalCents, count) {
 
 // ---- diálogos ----
 
+function hintNode(text) {
+    return el('span', { class: 'meter-foot', text });
+}
+
 function field(label, input, hint) {
     return el('div', { class: 'field' }, [
         el('label', { text: label }),
@@ -120,10 +126,19 @@ function field(label, input, hint) {
     ]);
 }
 
-function accountOptions(accounts, selectedId, { allowNone } = {}) {
+/** Spec 016, regra 38: cartão com fatura não recebe título; a assinatura no cartão é a Compra recorrente. */
+const isInvoiceCard = (account) => account.type === 'CREDIT_CARD' && Boolean(account.closingDay);
+
+export const INVOICE_CARD_HINT = 'Assinatura no cartão? Use Compra recorrente em Faturas.';
+
+function accountOptions(accounts, selectedId, { allowNone, withoutInvoiceCards } = {}) {
+    // O cartão já escolhido continua na lista, para a troca nunca acontecer em silêncio.
+    const listed = withoutInvoiceCards
+        ? accounts.filter((account) => !isInvoiceCard(account) || String(account.id) === String(selectedId ?? ''))
+        : accounts;
     return [
         allowNone ? el('option', { value: '', text: 'Sem conta definida', selected: !selectedId }) : null,
-        ...accounts.map((account) => el('option', {
+        ...listed.map((account) => el('option', {
             value: account.id,
             text: account.name,
             selected: String(account.id) === String(selectedId ?? '')
@@ -202,7 +217,7 @@ function billDialog({ bill, accounts, categories, onSaved }) {
     const { typeSelect, categorySelect } = typeAndCategory({ type: values.type, categoryId: values.categoryId, categories });
     const amountInput = el('input', { type: 'number', step: '0.01', min: '0.01', required: true, value: values.amount ?? '' });
     const dueInput = el('input', { type: 'date', required: true, value: values.dueDate ?? todayIso() });
-    const accountSelect = el('select', {}, accountOptions(accounts, values.accountId, { allowNone: true }));
+    const accountSelect = el('select', {}, accountOptions(accounts, values.accountId, { allowNone: true, withoutInvoiceCards: true }));
     const descriptionInput = el('input', { type: 'text', maxlength: '255', value: values.description ?? '' });
 
     openDialog({
@@ -212,7 +227,7 @@ function billDialog({ bill, accounts, categories, onSaved }) {
             field('Descrição', descriptionInput),
             el('div', { class: 'form-row' }, [field('Tipo', typeSelect), field('Valor', amountInput)]),
             field('Categoria', categorySelect),
-            el('div', { class: 'form-row' }, [field('Vencimento', dueInput), field('Conta prevista', accountSelect)])
+            el('div', { class: 'form-row' }, [field('Vencimento', dueInput), field('Conta prevista', accountSelect, hintNode(INVOICE_CARD_HINT))])
         ],
         onSubmit: async () => {
             const payload = {
@@ -236,7 +251,7 @@ function installmentPlanDialog({ accounts, categories, onSaved }) {
     const totalInput = el('input', { type: 'number', step: '0.01', min: '0.01', required: true });
     const countInput = el('input', { type: 'number', step: '1', min: '2', max: '360', required: true, value: '2' });
     const firstDueInput = el('input', { type: 'date', required: true, value: todayIso() });
-    const accountSelect = el('select', {}, accountOptions(accounts, null, { allowNone: true }));
+    const accountSelect = el('select', {}, accountOptions(accounts, null, { allowNone: true, withoutInvoiceCards: true }));
     const descriptionInput = el('input', { type: 'text', maxlength: '255' });
     const preview = el('div', { class: 'installment-preview', 'aria-live': 'polite' });
 
@@ -306,7 +321,7 @@ function installmentPlanDialog({ accounts, categories, onSaved }) {
             field('Descrição', descriptionInput),
             el('div', { class: 'form-row' }, [field('Tipo', typeSelect), field('Categoria', categorySelect)]),
             el('div', { class: 'form-row' }, [field('Valor total', totalInput), field('Parcelas', countInput)]),
-            el('div', { class: 'form-row' }, [field('Primeiro vencimento', firstDueInput), field('Conta prevista', accountSelect)]),
+            el('div', { class: 'form-row' }, [field('Primeiro vencimento', firstDueInput), field('Conta prevista', accountSelect, hintNode(INVOICE_CARD_HINT))]),
             preview
         ],
         onSubmit: async () => {
@@ -432,7 +447,7 @@ function recurrenceDialog({ recurrence, accounts, categories, onSaved }) {
     const descriptionInput = el('input', { type: 'text', maxlength: '255', required: true, placeholder: 'Ex.: Conta de telefone', value: values.description ?? '' });
     const amountInput = el('input', { type: 'number', step: '0.01', min: '0.01', required: true, value: values.amount ?? '' });
     const dayInput = el('input', { type: 'number', step: '1', min: '1', max: '31', required: true, value: values.dayOfMonth ?? '' });
-    const accountSelect = el('select', {}, accountOptions(accounts, values.accountId, { allowNone: true }));
+    const accountSelect = el('select', {}, accountOptions(accounts, values.accountId, { allowNone: true, withoutInvoiceCards: true }));
     const startInput = el('input', { type: 'date', required: true, value: values.startDate ?? todayIso() });
     const endInput = el('input', { type: 'date', value: values.endDate ?? '' });
     const preview = el('p', { class: 'preview-hint', 'aria-live': 'polite' });
@@ -462,7 +477,7 @@ function recurrenceDialog({ recurrence, accounts, categories, onSaved }) {
             el('div', { class: 'form-row' }, [field('Tipo', typeSelect), field('Valor', amountInput)]),
             el('div', { class: 'form-row' }, [field('Categoria', categorySelect), field('Vence todo dia', dayInput)]),
             el('div', { class: 'form-row' }, [field('Começa em', startInput), field('Termina em (opcional)', endInput)]),
-            field('Conta prevista', accountSelect),
+            field('Conta prevista', accountSelect, hintNode(INVOICE_CARD_HINT)),
             preview,
             el('p', {
                 class: 'preview-hint',
