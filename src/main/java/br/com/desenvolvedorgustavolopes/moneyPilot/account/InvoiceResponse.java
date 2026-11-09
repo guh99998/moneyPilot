@@ -13,6 +13,7 @@ public record InvoiceResponse(
         @Schema(description = "Despesas do ciclo menos receitas (estornos). Transferências não entram. Valor em reais com 2 casas decimais.", example = "320.00") BigDecimal total,
         @Schema(description = "Quanto dos pagamentos (transferências para o cartão) foi abatido desta fatura, da mais antiga para a mais nova", example = "100.00") BigDecimal paid,
         @Schema(description = "Quanto falta pagar: total menos o pago, nunca negativo", example = "220.00") BigDecimal remaining,
-        @Schema(description = "Situação da fatura", enumAsRef = true) InvoiceStatus status
+        @Schema(description = "Situação da fatura", enumAsRef = true) InvoiceStatus status,
+        @Schema(description = "Quanto do total é previsto: cobranças de compras recorrentes ainda não geradas, projetadas até o fim do ciclo seguinte ao atual. Já está somado ao total.", example = "39.90") BigDecimal projectedTotal
 ) {
 }

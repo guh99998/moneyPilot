@@ -242,7 +242,9 @@ class RecurringPurchaseIntegrationTest extends CreditCardTestSupport {
 
         String invoices = invoicesJson(token, card);
 
-        assertEquals(0, money("0.00").compareTo(money(JsonPath.read(invoices, "$[0].total"))));
+        // Jan e Fev, já gerados, ficam fora; o total do ciclo é só a cobrança de 20/03, ainda prevista.
+        assertEquals(0, money("39.90").compareTo(money(JsonPath.read(invoices, "$[0].total"))));
+        assertEquals(0, money("39.90").compareTo(money(JsonPath.read(invoices, "$[0].projectedTotal"))));
     }
 
     // ---- helpers ----

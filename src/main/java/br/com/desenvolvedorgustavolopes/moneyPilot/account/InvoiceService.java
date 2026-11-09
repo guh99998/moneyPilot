@@ -27,6 +27,7 @@ import java.util.Map;
 public class InvoiceService {
 
     private final AccountRepository accountRepository;
+    private final RecurringPurchaseRepository recurringPurchaseRepository;
     private final TransactionRepository transactionRepository;
     private final AuthenticatedUserProvider userProvider;
     private final Clock clock;
@@ -40,7 +41,11 @@ public class InvoiceService {
             throw new AccountWithoutInvoicesException(accountId);
         }
 
-        return this.invoicesOf(account, LocalDate.now(clock));
+        LocalDate today = LocalDate.now(clock);
+        InvoiceCycle cycles = new InvoiceCycle(account.getClosingDay(), account.getDueDay());
+
+        // Regra 35: a tela Faturas projeta as compras recorrentes até o fim do ciclo seguinte ao atual.
+        return this.invoicesOf(account, today, cycles.next(cycles.cycleOf(today)).end());
     }
 
     /** Spec 016, regra 17: faturas aberta, fechada e vencida com valor a pagar, de todos os cartões, por vencimento. */
@@ -67,8 +72,16 @@ public class InvoiceService {
         return payable;
     }
 
-    /** Faturas de um cartão com os dias informados, da mais antiga à mais nova. */
+    /** Faturas de um cartão com os dias informados, da mais antiga à mais nova, sem projeção. */
     public List<InvoiceResponse> invoicesOf(Account account, LocalDate today) {
+        return this.invoicesOf(account, today, null);
+    }
+
+    /**
+     * Como {@link #invoicesOf(Account, LocalDate)}, somando as cobranças de compras recorrentes ainda
+     * não geradas até {@code horizon} (inclusive). Horizonte nulo não projeta nada.
+     */
+    public List<InvoiceResponse> invoicesOf(Account account, LocalDate today, LocalDate horizon) {
         InvoiceCycle cycles = new InvoiceCycle(account.getClosingDay(), account.getDueDay());
 
         Map<LocalDate, BigDecimal> totalByCycle = new LinkedHashMap<>();
@@ -81,6 +94,24 @@ public class InvoiceService {
             payments = payments.add(day.getTransferIn());
             if (cycle.start().isAfter(last.start())) {
                 last = cycle;
+            }
+        }
+
+        // Regra 34: só entra o que ainda não foi gerado (depois de generatedUntil), então nunca conta duas vezes.
+        Map<LocalDate, BigDecimal> projectedByCycle = new LinkedHashMap<>();
+        if (horizon != null) {
+            for (RecurringPurchase purchase : recurringPurchaseRepository.findAllByAccountIdAndActiveTrue(account.getId())) {
+                for (LocalDate date : RecurringPurchaseSchedule.pendingDates(purchase, horizon)) {
+                    if (date.isBefore(account.getInvoicesFrom())) {
+                        continue;
+                    }
+                    InvoiceCycle.Cycle cycle = cycles.cycleOf(date);
+                    totalByCycle.merge(cycle.start(), purchase.getAmount(), BigDecimal::add);
+                    projectedByCycle.merge(cycle.start(), purchase.getAmount(), BigDecimal::add);
+                    if (cycle.start().isAfter(last.start())) {
+                        last = cycle;
+                    }
+                }
             }
         }
 
@@ -105,7 +136,8 @@ public class InvoiceService {
             if (total.signum() != 0 || current) {
                 invoices.add(new InvoiceResponse(
                         cycle.start(), cycle.end(), cycle.closingDate(), cycle.dueDate(),
-                        total, paid, remaining, this.statusOf(cycle, remaining, today)));
+                        total, paid, remaining, this.statusOf(cycle, remaining, today),
+                        projectedByCycle.getOrDefault(cycle.start(), BigDecimal.ZERO)));
             }
             cycle = cycles.next(cycle);
         }
@@ -122,7 +154,7 @@ public class InvoiceService {
         List<InvoiceDue> due = new ArrayList<>();
 
         for (Account card : accountRepository.findAllByUserIdAndClosingDayIsNotNullAndCountsAsAvailableFalse(userId)) {
-            for (InvoiceResponse invoice : this.invoicesOf(card, today)) {
+            for (InvoiceResponse invoice : this.invoicesOf(card, today, to)) {
                 if (invoice.remaining().signum() > 0 && !invoice.dueDate().isAfter(to)) {
                     due.add(new InvoiceDue(invoice.dueDate(), invoice.remaining()));
                 }
