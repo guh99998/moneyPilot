@@ -118,7 +118,7 @@ function purchaseLine(transaction) {
     const installment = transaction.installmentNumber
         ? ` (${transaction.installmentNumber}/${transaction.installmentTotal})`
         : '';
-    const recurring = transaction.recurringPurchaseId ? ' · recorrente' : '';
+    const recurring = transaction.recurringPurchaseId ? ' · assinatura' : '';
     return el('li', { class: 'invoice-purchase' }, [
         el('span', { class: 'invoice-purchase-date', text: fmtDate(transaction.date) }),
         el('span', { class: 'invoice-purchase-desc', text: label + installment + recurring }),
@@ -130,12 +130,12 @@ function purchaseLine(transaction) {
     ]);
 }
 
-/** Cobrança de compra recorrente que ainda não virou despesa: aparece na fatura, mas não está gravada. */
+/** Cobrança de assinatura mensal que ainda não virou despesa: aparece na fatura, mas não está gravada. */
 function projectedLine(charge) {
     return el('li', { class: 'invoice-purchase is-projected' }, [
         el('span', { class: 'invoice-purchase-date', text: fmtDate(charge.date) }),
         el('span', { class: 'invoice-purchase-desc' }, [
-            `${charge.description} · recorrente `,
+            `${charge.description} · assinatura `,
             badge('canceled', 'Prevista')
         ]),
         el('span', { class: 'invoice-purchase-amount', style: 'color: var(--expense)', text: `− ${fmtMoney(charge.amount)}` })
@@ -316,7 +316,7 @@ export async function renderInvoices() {
             el('span', { text: `Vence em ${fmtDate(invoice.dueDate)}` })
         ];
         if (Number(invoice.paid) > 0) facts.push(el('span', { text: `Já pago: ${fmtMoney(invoice.paid)}` }));
-        if (Number(invoice.projectedTotal) > 0) facts.push(el('span', { text: `Previsto: ${fmtMoney(invoice.projectedTotal)} em compras recorrentes` }));
+        if (Number(invoice.projectedTotal) > 0) facts.push(el('span', { text: `Previsto: ${fmtMoney(invoice.projectedTotal)} em assinaturas mensais` }));
         const titleId = `invoice-current-${card.id}`;
 
         return el('section', { class: 'card invoice-current', 'aria-labelledby': titleId }, [
@@ -334,7 +334,7 @@ export async function renderInvoices() {
                 payButton(row),
                 el('button', { type: 'button', class: 'btn-sm', text: 'Nova compra', onClick: () => purchaseDialog(card) }),
                 el('button', { type: 'button', class: 'btn-sm', text: 'Compra parcelada', onClick: () => installmentDialog(card) }),
-                el('button', { type: 'button', class: 'btn-sm', text: 'Compra recorrente', onClick: () => recurringDialog(card) })
+                el('button', { type: 'button', class: 'btn-sm', text: 'Assinatura mensal', onClick: () => recurringDialog(card) })
             ])
         ]);
     }

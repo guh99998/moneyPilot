@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { el, fmtMoney, fmtDate, badge, toast, reportError, formDialog, confirmDialog, emptyState, todayIso } from '../ui.js';
 
-// Compra recorrente no cartão (spec 016, regras 31 a 38). As funções puras espelham o backend
+// Assinatura mensal no cartão (spec 016, regras 31 a 38). As funções puras espelham o backend
 // (RecurringPurchaseSchedule): uma cobrança por mês, dia limitado ao fim do mês, e o que já foi gerado
 // se mede em meses, a partir de generatedUntil.
 
@@ -41,7 +41,7 @@ export function projectedCharges(purchases, invoice, invoicesFrom) {
             .filter((date) => date >= invoice.periodStart && (!invoicesFrom || date >= invoicesFrom))
             .forEach((date) => charges.push({
                 date,
-                description: purchase.description || purchase.categoryName || 'Compra recorrente',
+                description: purchase.description || purchase.categoryName || 'Assinatura mensal',
                 amount: purchase.amount,
                 purchaseId: purchase.id
             }));
@@ -89,7 +89,7 @@ export function previewText({ dayOfMonth, startDate, endDate }, today) {
 export function openRecurringPurchaseDialog({ card, purchase, categories, onSaved }) {
     const values = purchase || {};
     formDialog({
-        title: purchase ? 'Editar compra recorrente' : `Compra recorrente · ${card.name}`,
+        title: purchase ? 'Editar assinatura mensal' : `Assinatura mensal · ${card.name}`,
         fields: [
             {
                 name: 'categoryId', label: 'Categoria', type: 'select', required: true,
@@ -109,14 +109,14 @@ export function openRecurringPurchaseDialog({ card, purchase, categories, onSave
         ],
         values,
         preview: (current) => previewText(current, todayIso()),
-        submitLabel: purchase ? 'Salvar' : 'Criar compra recorrente',
+        submitLabel: purchase ? 'Salvar' : 'Criar assinatura mensal',
         onSubmit: async (submitted) => {
             const payload = recurringPurchasePayload(submitted, purchase ? purchase.accountId : card.id);
             if (purchase) await api.recurringPurchases.update(purchase.id, payload);
             else await api.recurringPurchases.create(payload);
             // Gera já as cobranças vencidas, para a fatura mostrar o que é real e o que é previsto.
             await api.recurringPurchases.materialize();
-            toast(purchase ? 'Compra recorrente atualizada.' : 'Compra recorrente criada.', 'success');
+            toast(purchase ? 'Assinatura mensal atualizada.' : 'Assinatura mensal criada.', 'success');
             onSaved();
         }
     });
@@ -128,7 +128,7 @@ function periodText(purchase) {
         : `desde ${fmtDate(purchase.startDate)}`;
 }
 
-/** Lista das compras recorrentes de todos os cartões, com editar, desativar e apagar. */
+/** Lista das assinaturas mensais de todos os cartões, com editar, desativar e apagar. */
 export function recurringPurchasesSection({ purchases, loadCategories, cards, onChanged }) {
     const titleId = 'recurring-purchases-title';
 
@@ -142,7 +142,7 @@ export function recurringPurchasesSection({ purchases, loadCategories, cards, on
     async function deactivate(purchase) {
         try {
             await api.recurringPurchases.deactivate(purchase.id);
-            toast('Compra recorrente desativada.', 'success');
+            toast('Assinatura mensal desativada.', 'success');
             onChanged();
         } catch (error) {
             reportError(error);
@@ -151,12 +151,12 @@ export function recurringPurchasesSection({ purchases, loadCategories, cards, on
 
     function remove(purchase) {
         confirmDialog({
-            title: 'Apagar compra recorrente',
+            title: 'Apagar assinatura mensal',
             message: `"${purchase.description || purchase.categoryName}" deixa de cobrar. As cobranças já lançadas continuam nas faturas.`,
             confirmLabel: 'Apagar',
             onConfirm: async () => {
                 await api.recurringPurchases.remove(purchase.id);
-                toast('Compra recorrente apagada.', 'success');
+                toast('Assinatura mensal apagada.', 'success');
                 onChanged();
             }
         });
@@ -182,9 +182,9 @@ export function recurringPurchasesSection({ purchases, loadCategories, cards, on
     }
 
     return el('section', { class: 'card recurring-purchases', 'aria-labelledby': titleId }, [
-        el('div', { class: 'card-head' }, [el('h2', { id: titleId, text: 'Compras recorrentes' })]),
+        el('div', { class: 'card-head' }, [el('h2', { id: titleId, text: 'Assinaturas mensais' })]),
         purchases.length
             ? el('ul', { class: 'recurring-list' }, purchases.map(item))
-            : emptyState('Nenhuma compra recorrente. Cadastre assinaturas como streaming e academia pelo botão do cartão.')
+            : emptyState('Nenhuma assinatura mensal. Cadastre assinaturas como streaming e academia pelo botão do cartão.')
     ]);
 }

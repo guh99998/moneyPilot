@@ -138,7 +138,7 @@ Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importa
 - A tela Faturas vira uma lista única de todos os cartões, com filtros e ordenação no navegador (decidido em 2026-11-06).
 - A fatura também aparece em "Próximos vencimentos" da Visão geral (decidido em 2026-11-06, depois da primeira versão desta mudança).
 - A fatura aparece em "A pagar e receber" como uma linha calculada, aberta, fechada ou vencida, com o valor total; entra no quadro "A pagar" da Visão geral e nos alertas (só fechada ou vencida). Decidido em 2026-11-06, em lugar de ficar fora, como a versão inicial da spec previa.
-- Compra recorrente no cartão (decidido em 2026-11-09): a cobrança vira despesa sozinha na data; as próximas são projetadas na fatura e na previsão; título e recorrência de título em cartão com dias passam a ser `400` (os existentes não mudam). A marca d'água `generatedUntil` (e não uma chave única) garante que cobrança apagada não volta.
+- Compra recorrente no cartão (decidido em 2026-11-09; na interface o nome é "Assinatura mensal", a API segue `/recurring-purchases`): a cobrança vira despesa sozinha na data; as próximas são projetadas na fatura e na previsão; título e recorrência de título em cartão com dias passam a ser `400` (os existentes não mudam). A marca d'água `generatedUntil` (e não uma chave única) garante que cobrança apagada não volta.
 
 ## Decisões a confirmar
 

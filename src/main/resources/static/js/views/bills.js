@@ -100,7 +100,7 @@ export async function ensureRecurringBills({ force = false } = {}) {
     const nextMonth = installmentDueDate(`${currentMonth}-01`, 1).slice(0, 7);
     await api.bills.materialize(currentMonth);
     await api.bills.materialize(nextMonth);
-    // Compras recorrentes no cartão (spec 016, regra 32): as cobranças vencidas viram despesa.
+    // Assinaturas mensais no cartão (spec 016, regra 32): as cobranças vencidas viram despesa.
     await api.recurringPurchases.materialize();
     materializedKey = key;
 }
@@ -126,10 +126,10 @@ function field(label, input, hint) {
     ]);
 }
 
-/** Spec 016, regra 38: cartão com fatura não recebe título; a assinatura no cartão é a Compra recorrente. */
+/** Spec 016, regra 38: cartão com fatura não recebe título; a assinatura no cartão é a Assinatura mensal. */
 const isInvoiceCard = (account) => account.type === 'CREDIT_CARD' && Boolean(account.closingDay);
 
-export const INVOICE_CARD_HINT = 'Assinatura no cartão? Use Compra recorrente em Faturas.';
+export const INVOICE_CARD_HINT = 'Cobrança mensal no cartão? Use Assinatura mensal em Faturas.';
 
 function accountOptions(accounts, selectedId, { allowNone, withoutInvoiceCards } = {}) {
     // O cartão já escolhido continua na lista, para a troca nunca acontecer em silêncio.

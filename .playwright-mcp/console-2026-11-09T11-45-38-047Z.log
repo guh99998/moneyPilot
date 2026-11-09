@@ -1,0 +1,2 @@
+[ 1610554ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8099/api/v1/categories?page=0&size=100:0
+[ 1639216ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8099/api/v1/categories?page=0&size=100:0

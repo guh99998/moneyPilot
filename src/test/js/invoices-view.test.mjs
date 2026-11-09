@@ -274,7 +274,7 @@ test('each card highlight offers a recurring purchase next to the installment on
     const view = await renderInvoices();
 
     const labels = buttonsOf(view);
-    assert.equal(labels.filter((label) => label === 'Compra recorrente').length, 2);
+    assert.equal(labels.filter((label) => label === 'Assinatura mensal').length, 2);
     assert.equal(labels.filter((label) => label === 'Compra parcelada').length, 2);
 });
 
@@ -307,6 +307,6 @@ test('the invoice shows how much of the total is projected', async () => {
 
     const view = await renderInvoices();
 
-    assert.match(text(view), /Previsto: R\$\s39,90 em compras recorrentes/);
+    assert.match(text(view), /Previsto: R\$\s39,90 em assinaturas mensais/);
     assert.match(text(bodyRows(view)[0]), /Inclui R\$\s39,90 previsto/);
 });

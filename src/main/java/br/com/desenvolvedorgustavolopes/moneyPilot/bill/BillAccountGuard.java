@@ -16,7 +16,7 @@ final class BillAccountGuard {
     static void rejectInvoiceCard(Account account) {
         if (account.getType() == AccountType.CREDIT_CARD && account.getClosingDay() != null) {
             throw new InvalidInvoiceDaysException("accountId",
-                    "Cartão com fatura não recebe títulos: para uma assinatura use Compra recorrente em Faturas");
+                    "Cartão com fatura não recebe títulos: para uma cobrança mensal use Assinatura mensal em Faturas");
         }
     }
 }
