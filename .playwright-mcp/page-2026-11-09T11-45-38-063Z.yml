@@ -1,0 +1,37 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e288]:
+    - complementary [ref=e289]:
+      - generic [ref=e290]:
+        - generic [ref=e291]: moneyPilot
+        - button "Alertas" [ref=e295] [cursor=pointer]
+      - generic [ref=e300]:
+        - navigation [ref=e301]:
+          - link "Visão geral" [ref=e302] [cursor=pointer]:
+            - /url: "#/dashboard"
+          - link "Lançamentos" [ref=e310] [cursor=pointer]:
+            - /url: "#/transactions"
+          - link "A pagar e receber" [ref=e316] [cursor=pointer]:
+            - /url: "#/bills"
+          - link "Previsão mensal" [ref=e322] [cursor=pointer]:
+            - /url: "#/forecast"
+          - link "Contas" [ref=e328] [cursor=pointer]:
+            - /url: "#/accounts"
+          - link "Faturas" [ref=e334] [cursor=pointer]:
+            - /url: "#/invoices"
+          - link "Categorias" [ref=e340] [cursor=pointer]:
+            - /url: "#/categories"
+          - link "Orçamentos" [ref=e346] [cursor=pointer]:
+            - /url: "#/budgets"
+        - generic [ref=e352]:
+          - link "Usando com IA" [ref=e353] [cursor=pointer]:
+            - /url: "#/usando-com-ia"
+          - link "Falar com o suporte" [ref=e359] [cursor=pointer]:
+            - /url: "#/suporte"
+          - link "Meu perfil" [ref=e365] [cursor=pointer]:
+            - /url: "#/profile"
+            - generic [aria-hidden] [ref=e367]: PT
+            - generic [ref=e368]: Pessoa Teste
+          - button "Sair" [ref=e369] [cursor=pointer]
+    - main [ref=e370]:
+      - generic [ref=e371]: Carregando…
+  - status

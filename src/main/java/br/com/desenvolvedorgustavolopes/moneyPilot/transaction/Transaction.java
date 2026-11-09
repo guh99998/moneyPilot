@@ -52,6 +52,9 @@ public class Transaction {
     @Column(name = "installment_total")
     private Integer installmentTotal;
 
+    @Column(name = "recurring_purchase_id")
+    private Long recurringPurchaseId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

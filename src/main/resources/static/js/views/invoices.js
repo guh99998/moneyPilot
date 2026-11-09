@@ -4,6 +4,7 @@ import {
     collapsibleFilters, isCommittedDate, sortHeader, sortSelect, stackable
 } from '../ui.js';
 import { EMPTY_FILTERS, SORT_OPTIONS, buildRows, filterInvoices, sortInvoices, summarize } from './invoices-list.js';
+import { openRecurringPurchaseDialog, projectedCharges, recurringPurchasesSection } from './invoices-recurring.js';
 
 export const INVOICE_STATUS = {
     OPEN: { label: 'Aberta', kind: 'open' },
@@ -40,15 +41,50 @@ export function payInvoicePayload(values, cardId) {
     };
 }
 
+/**
+ * Compra parcelada (regras 8 e 39 a 41): vai só o valor escolhido, o total ou o da parcela; a parcela
+ * atual só vale com o valor da parcela e, vazia, fica de fora (a compra começa na parcela 1).
+ */
 export function installmentPayload(values, cardId) {
-    return {
+    const payload = {
         accountId: cardId,
         categoryId: Number(values.categoryId),
-        description: values.description,
-        totalAmount: values.totalAmount,
-        installments: Number(values.installments),
-        date: values.date
+        description: values.description
     };
+    if (values.amountMode === 'installment') {
+        payload.installmentAmount = values.installmentAmount;
+    } else {
+        payload.totalAmount = values.totalAmount;
+    }
+    payload.installments = Number(values.installments);
+    if (values.amountMode === 'installment' && values.currentInstallment) {
+        payload.currentInstallment = Number(values.currentInstallment);
+    }
+    payload.date = values.date;
+    return payload;
+}
+
+const INSTALLMENT_PREVIEW_WAITING = 'Informe o valor, o número de parcelas e a data para ver as parcelas.';
+
+/** Prévia do diálogo da compra parcelada: quantas parcelas serão lançadas, de quanto e a partir de quando. */
+export function installmentPreview(values) {
+    const count = Number(values.installments);
+    const byInstallment = values.amountMode === 'installment';
+    const typed = byInstallment ? values.installmentAmount : values.totalAmount;
+    const cents = toCents(typed);
+    if (!Number.isInteger(count) || count < 2 || !values.date || !typed || !(cents > 0)) return INSTALLMENT_PREVIEW_WAITING;
+
+    if (byInstallment) {
+        const current = values.currentInstallment ? Number(values.currentInstallment) : 1;
+        if (!Number.isInteger(current) || current < 1 || current > count) return `A parcela atual vai de 1 a ${count}.`;
+        const launched = count - current + 1;
+        return `Lança ${launched} ${launched === 1 ? 'parcela' : 'parcelas'} de ${fmtMoney(cents / 100)}, de ${current}/${count} a ${count}/${count}, a partir de ${fmtDate(values.date)}.`;
+    }
+
+    const base = Math.floor(cents / count);
+    const leftover = cents - base * count;
+    const first = leftover > 0 ? `, a primeira de ${fmtMoney((base + leftover) / 100)}` : '';
+    return `${count} parcelas de ${fmtMoney(base / 100)}${first}, a partir de ${fmtDate(values.date)}.`;
 }
 
 export function purchasePayload(values, cardId) {
@@ -117,9 +153,10 @@ function purchaseLine(transaction) {
     const installment = transaction.installmentNumber
         ? ` (${transaction.installmentNumber}/${transaction.installmentTotal})`
         : '';
+    const recurring = transaction.recurringPurchaseId ? ' · assinatura' : '';
     return el('li', { class: 'invoice-purchase' }, [
         el('span', { class: 'invoice-purchase-date', text: fmtDate(transaction.date) }),
-        el('span', { class: 'invoice-purchase-desc', text: label + installment }),
+        el('span', { class: 'invoice-purchase-desc', text: label + installment + recurring }),
         el('span', {
             class: 'invoice-purchase-amount',
             style: `color: var(--${income ? 'income' : 'expense'})`,
@@ -128,8 +165,20 @@ function purchaseLine(transaction) {
     ]);
 }
 
-/** Compras do ciclo, carregadas só quando a pessoa abre a lista. */
-function purchasesDetails(card, invoice) {
+/** Cobrança de assinatura mensal que ainda não virou despesa: aparece na fatura, mas não está gravada. */
+function projectedLine(charge) {
+    return el('li', { class: 'invoice-purchase is-projected' }, [
+        el('span', { class: 'invoice-purchase-date', text: fmtDate(charge.date) }),
+        el('span', { class: 'invoice-purchase-desc' }, [
+            `${charge.description} · assinatura `,
+            badge('canceled', 'Prevista')
+        ]),
+        el('span', { class: 'invoice-purchase-amount', style: 'color: var(--expense)', text: `− ${fmtMoney(charge.amount)}` })
+    ]);
+}
+
+/** Compras do ciclo, carregadas só quando a pessoa abre a lista; `projected` são as cobranças previstas. */
+function purchasesDetails(card, invoice, projected = []) {
     const body = el('div', { class: 'invoice-purchases-body', 'aria-live': 'polite' });
     let loaded = false;
 
@@ -144,8 +193,9 @@ function purchasesDetails(card, invoice) {
                 size: 100,
                 sort: ['date,asc', 'id,asc']
             }));
-            body.replaceChildren(result.content.length
-                ? el('ul', { class: 'invoice-purchase-list' }, result.content.map(purchaseLine))
+            const lines = [...result.content.map(purchaseLine), ...projected.map(projectedLine)];
+            body.replaceChildren(lines.length
+                ? el('ul', { class: 'invoice-purchase-list' }, lines)
                 : el('p', { class: 'meter-foot', text: 'Nenhum lançamento neste ciclo.' }));
         } catch (error) {
             loaded = false;
@@ -186,6 +236,7 @@ export async function renderInvoices() {
     let cards = [];
     let byCard = new Map();
     let allRows = [];
+    let recurring = [];
 
     function head() {
         return pageHead('Faturas', 'Quanto está a fatura de cada cartão e quando ela vence');
@@ -227,6 +278,16 @@ export async function renderInvoices() {
         });
     }
 
+    async function recurringDialog(card) {
+        const categories = await expenseCategories();
+        if (!categories) return;
+        openRecurringPurchaseDialog({ card, categories, onSaved: load });
+    }
+
+    function projectedOf(card, invoice) {
+        return projectedCharges(recurring.filter((purchase) => purchase.accountId === card.id), invoice, card.invoicesFrom);
+    }
+
     async function installmentDialog(card) {
         const categories = await expenseCategories();
         if (!categories) return;
@@ -239,16 +300,35 @@ export async function renderInvoices() {
                 },
                 { name: 'description', label: 'Descrição', type: 'text', placeholder: 'Ex.: Notebook' },
                 {
+                    name: 'amountMode', label: 'Informar', type: 'select', required: true,
+                    options: [
+                        { value: 'total', label: 'O valor total da compra' },
+                        { value: 'installment', label: 'O valor de cada parcela' }
+                    ],
+                    hint: 'Pelo valor da parcela, as parcelas saem iguais ao que o banco mostra, sem fazer conta.'
+                },
+                {
                     name: 'totalAmount', label: 'Valor total', type: 'number', step: '0.01', min: '0.02', required: true,
+                    showWhen: { name: 'amountMode', value: 'total' },
                     hint: 'O centavo que sobrar da divisão fica na primeira parcela.'
+                },
+                {
+                    name: 'installmentAmount', label: 'Valor da parcela', type: 'number', step: '0.01', min: '0.01', required: true,
+                    showWhen: { name: 'amountMode', value: 'installment' }
                 },
                 { name: 'installments', label: 'Parcelas', type: 'number', step: '1', min: 2, max: 60, required: true },
                 {
-                    name: 'date', label: 'Data da compra', type: 'date', required: true,
-                    hint: 'As outras parcelas caem no mesmo dia dos meses seguintes. Compra em andamento: use a data original.'
+                    name: 'currentInstallment', label: 'Parcela atual (opcional)', type: 'number', step: '1', min: 1, max: 60,
+                    showWhen: { name: 'amountMode', value: 'installment' },
+                    hint: 'Compra em andamento? Informe em qual parcela está: só ela e as seguintes são lançadas.'
+                },
+                {
+                    name: 'date', label: 'Data da primeira parcela lançada', type: 'date', required: true,
+                    hint: 'Com a parcela atual, é a data dela. As outras caem no mesmo dia dos meses seguintes.'
                 }
             ],
-            values: { date: todayIso(), installments: 2 },
+            values: { amountMode: 'total', date: todayIso(), installments: 2 },
+            preview: installmentPreview,
             submitLabel: 'Lançar parcelas',
             onSubmit: async (values) => {
                 await api.transactions.createInstallments(installmentPayload(values, card.id));
@@ -290,6 +370,7 @@ export async function renderInvoices() {
             el('span', { text: `Vence em ${fmtDate(invoice.dueDate)}` })
         ];
         if (Number(invoice.paid) > 0) facts.push(el('span', { text: `Já pago: ${fmtMoney(invoice.paid)}` }));
+        if (Number(invoice.projectedTotal) > 0) facts.push(el('span', { text: `Previsto: ${fmtMoney(invoice.projectedTotal)} em assinaturas mensais` }));
         const titleId = `invoice-current-${card.id}`;
 
         return el('section', { class: 'card invoice-current', 'aria-labelledby': titleId }, [
@@ -306,7 +387,8 @@ export async function renderInvoices() {
             el('div', { class: 'invoice-actions' }, [
                 payButton(row),
                 el('button', { type: 'button', class: 'btn-sm', text: 'Nova compra', onClick: () => purchaseDialog(card) }),
-                el('button', { type: 'button', class: 'btn-sm', text: 'Compra parcelada', onClick: () => installmentDialog(card) })
+                el('button', { type: 'button', class: 'btn-sm', text: 'Compra parcelada', onClick: () => installmentDialog(card) }),
+                el('button', { type: 'button', class: 'btn-sm', text: 'Assinatura mensal', onClick: () => recurringDialog(card) })
             ])
         ]);
     }
@@ -377,10 +459,15 @@ export async function renderInvoices() {
                     el('td', { class: 'due', text: fmtDate(row.invoice.dueDate) }),
                     el('td', { class: 'desc' }, [
                         el('span', { class: 'desc-main', text: row.card.name }),
-                        purchasesDetails(row.card, row.invoice)
+                        purchasesDetails(row.card, row.invoice, projectedOf(row.card, row.invoice))
                     ]),
                     el('td', { class: 'status' }, statusBadge(row.invoice.status)),
-                    el('td', { class: 'num', text: fmtMoney(row.invoice.total) }),
+                    el('td', { class: 'num' }, [
+                        fmtMoney(row.invoice.total),
+                        Number(row.invoice.projectedTotal) > 0
+                            ? el('span', { class: 'meter-foot', text: `Inclui ${fmtMoney(row.invoice.projectedTotal)} previsto` })
+                            : null
+                    ]),
                     el('td', { class: 'num', text: Number(row.invoice.remaining) > 0 ? fmtMoney(row.invoice.remaining) : '—' }),
                     el('td', { class: 'actions' }, payButton(row))
                 ])))
@@ -394,6 +481,7 @@ export async function renderInvoices() {
             head(),
             summaryCard(),
             ...cards.map(currentCard).filter(Boolean),
+            recurringPurchasesSection({ purchases: recurring, loadCategories: expenseCategories, cards, onChanged: load }),
             filterBar(),
             el('div', { class: 'sort-only' }, sortSelect({ options: SORT_OPTIONS, sort, onSort: changeSort })),
             el('div', { class: 'card' }, [rows.length ? table(rows) : emptyState('Nenhuma fatura com esses filtros.')])
@@ -418,6 +506,7 @@ export async function renderInvoices() {
             }
 
             const lists = await Promise.all(cards.map((card) => api.accounts.invoices(card.id)));
+            recurring = await fetchAll(api.recurringPurchases.list).catch((error) => { reportError(error); return []; });
             byCard = new Map(cards.map((card, index) => [card.id, lists[index]]));
             allRows = buildRows(cards, byCard);
             render();

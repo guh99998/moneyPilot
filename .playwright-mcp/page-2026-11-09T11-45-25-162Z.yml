@@ -1,0 +1,27 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - img "moneyPilot" [ref=e5]
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: E-mail
+        - textbox "E-mail" [ref=e9]
+      - generic [ref=e10]:
+        - generic [ref=e11]: Senha
+        - generic [ref=e12]:
+          - textbox "Senha" [ref=e13]
+          - button "Mostrar senha" [ref=e14] [cursor=pointer]
+      - button "Entrar" [ref=e18] [cursor=pointer]
+    - paragraph [ref=e19]: Criou a conta com o Google? Use Entrar com Google.
+    - paragraph [ref=e20]:
+      - text: Ainda não tem conta?
+      - button "Criar agora" [ref=e21] [cursor=pointer]
+    - paragraph [ref=e22]:
+      - text: Esqueceu a senha?
+      - button "Redefinir" [ref=e23] [cursor=pointer]
+    - paragraph [ref=e24]:
+      - text: Não consegue entrar?
+      - button "Falar com o suporte" [ref=e25] [cursor=pointer]
+    - paragraph [ref=e26]:
+      - text: Quer automatizar?
+      - button "Usar com IA" [ref=e27] [cursor=pointer]
+  - status

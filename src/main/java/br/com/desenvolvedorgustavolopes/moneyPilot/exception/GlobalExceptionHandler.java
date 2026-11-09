@@ -493,6 +493,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
+    @ExceptionHandler(RecurringPurchaseNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRecurringPurchaseNotFound(RecurringPurchaseNotFoundException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                ex.getMessage(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
     @ExceptionHandler(BillRecurrenceHasBillsException.class)
     public ResponseEntity<ErrorResponse> handleBillRecurrenceHasBills(BillRecurrenceHasBillsException ex) {
         ErrorResponse body = new ErrorResponse(
@@ -543,6 +556,19 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(InvalidInstallmentRequestException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidInstallmentRequest(InvalidInstallmentRequestException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                Map.of(ex.getField(), ex.getMessage())
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(InvalidInvoiceDaysException.class)

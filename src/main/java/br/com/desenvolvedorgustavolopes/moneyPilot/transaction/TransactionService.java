@@ -228,25 +228,44 @@ public class TransactionService {
             throw new CategoryTypeMismatchException(request.categoryId(), TransactionType.EXPENSE);
 
         int count = request.installments();
-        if (request.totalAmount().compareTo(BigDecimal.valueOf(count, 2)) < 0)
-            throw new InstallmentAmountTooSmallException(BigDecimal.valueOf(count, 2), count);
+        boolean hasTotal = request.totalAmount() != null;
+        boolean hasInstallmentAmount = request.installmentAmount() != null;
 
-        BigDecimal base = request.totalAmount().divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
-        BigDecimal residue = request.totalAmount().subtract(base.multiply(BigDecimal.valueOf(count)));
+        // Spec 016, regras 39 a 41: um dos dois valores; parcela atual só com o valor da parcela.
+        if (hasTotal && hasInstallmentAmount)
+            throw new InvalidInstallmentRequestException("installmentAmount", "Informe o valor total ou o valor da parcela, não os dois");
+        if (!hasTotal && !hasInstallmentAmount)
+            throw new InvalidInstallmentRequestException("totalAmount", "Informe o valor total ou o valor da parcela");
+        if (request.currentInstallment() != null && hasTotal)
+            throw new InvalidInstallmentRequestException("currentInstallment", "A parcela atual só vale com o valor da parcela");
+
+        int first = request.currentInstallment() == null ? 1 : request.currentInstallment();
+        if (first > count)
+            throw new InvalidInstallmentRequestException("currentInstallment", "A parcela atual não pode passar do número de parcelas");
+
+        BigDecimal base = BigDecimal.ZERO;
+        BigDecimal residue = BigDecimal.ZERO;
+        if (hasTotal) {
+            if (request.totalAmount().compareTo(BigDecimal.valueOf(count, 2)) < 0)
+                throw new InstallmentAmountTooSmallException(BigDecimal.valueOf(count, 2), count);
+
+            base = request.totalAmount().divide(BigDecimal.valueOf(count), 2, RoundingMode.DOWN);
+            residue = request.totalAmount().subtract(base.multiply(BigDecimal.valueOf(count)));
+        }
 
         UUID groupId = UUID.randomUUID();
         Instant now = Instant.now();
         List<Transaction> installments = new ArrayList<>();
 
-        for (int i = 1; i <= count; i++) {
+        for (int i = first; i <= count; i++) {
             Transaction transaction = new Transaction();
 
             transaction.setAccountId(account.getId());
             transaction.setCategoryId(category.getId());
-            transaction.setAmount(i == 1 ? base.add(residue) : base);
+            transaction.setAmount(hasInstallmentAmount ? request.installmentAmount() : (i == 1 ? base.add(residue) : base));
             transaction.setType(TransactionType.EXPENSE);
             transaction.setDescription(request.description());
-            transaction.setDate(request.date().plusMonths(i - 1));
+            transaction.setDate(request.date().plusMonths(i - first));
             transaction.setInstallmentGroupId(groupId);
             transaction.setInstallmentNumber(i);
             transaction.setInstallmentTotal(count);

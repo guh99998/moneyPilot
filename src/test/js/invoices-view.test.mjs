@@ -7,7 +7,7 @@ installFakeDom();
 
 const {
     renderInvoices, payableThrough, payInvoicePayload, installmentPayload, purchasePayload,
-    selectInvoiceCard, openPayInvoiceDialog, INVOICE_STATUS
+    selectInvoiceCard, openPayInvoiceDialog, INVOICE_STATUS, installmentPreview
 } = await import('../../main/resources/static/js/views/invoices.js');
 
 const page = (content) => ({ content, page: { number: 0, totalPages: 1 }, totalPages: 1, number: 0 });
@@ -30,7 +30,7 @@ const NUBANK = { id: 7, name: 'Nubank', type: 'CREDIT_CARD', closingDay: 10, due
 const INTER = { id: 9, name: 'Inter', type: 'CREDIT_CARD', closingDay: 5, dueDay: 12, invoicesFrom: '2026-02-05' };
 const NO_DAYS = { id: 8, name: 'Cartão sem dias', type: 'CREDIT_CARD' };
 
-function mockApi({ accounts, invoices = { 7: NUBANK_INVOICES, 9: INTER_INVOICES } }) {
+function mockApi({ accounts, invoices = { 7: NUBANK_INVOICES, 9: INTER_INVOICES }, recurring = [] }) {
     const calls = [];
     globalThis.fetch = async (url, options = {}) => {
         const path = new URL(url, 'http://localhost').pathname;
@@ -39,6 +39,7 @@ function mockApi({ accounts, invoices = { 7: NUBANK_INVOICES, 9: INTER_INVOICES 
         const match = path.match(/^\/api\/v1\/accounts\/(\d+)\/invoices$/);
         if (match) return Response.json(invoices[match[1]] || []);
         if (path === '/api/v1/transactions') return Response.json(page([]));
+        if (path === '/api/v1/recurring-purchases') return Response.json(page(recurring));
         if (path === '/api/v1/categories') return Response.json(page([]));
         return new Response(null, { status: 500 });
     };
@@ -260,4 +261,102 @@ test('no invoice matching the filters shows an empty message, not a broken table
 
     assert.equal(bodyRows(view).length, 0);
     assert.match(text(view), /Nenhuma fatura com esses filtros/);
+});
+
+const STREAMING = {
+    id: 3, accountId: 7, accountName: 'Nubank', categoryId: 3, categoryName: 'Lazer', description: 'Streaming', amount: '39.90',
+    dayOfMonth: 20, startDate: '2026-01-20', endDate: null, active: true, generatedUntil: '2026-02-20'
+};
+
+test('each card highlight offers a recurring purchase next to the installment one', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+
+    const view = await renderInvoices();
+
+    const labels = buttonsOf(view);
+    assert.equal(labels.filter((label) => label === 'Assinatura mensal').length, 2);
+    assert.equal(labels.filter((label) => label === 'Compra parcelada').length, 2);
+});
+
+test('the recurring purchases of the cards are listed with edit, deactivate and delete', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], recurring: [STREAMING] });
+
+    const view = await renderInvoices();
+
+    const section = byClass(view, 'recurring-purchases')[0];
+    assert.match(text(section), /Streaming/);
+    assert.match(text(section), /Nubank · todo dia 20/);
+    assert.match(text(section), /R\$\s39,90/);
+    const labels = buttonsOf(section);
+    assert.ok(labels.includes('Editar') && labels.includes('Desativar') && labels.includes('Apagar'));
+});
+
+test('a deactivated recurring purchase has no deactivate button', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], recurring: [{ ...STREAMING, active: false }] });
+
+    const view = await renderInvoices();
+
+    const section = byClass(view, 'recurring-purchases')[0];
+    assert.match(text(section), /Desativada/);
+    assert.ok(!buttonsOf(section).includes('Desativar'));
+});
+
+test('the invoice shows how much of the total is projected', async () => {
+    const withProjection = [inv('2026-04-17', 'OPEN', '90.00', '0.00', { closingDate: '2026-04-10', projectedTotal: '39.90' })];
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: withProjection }, recurring: [STREAMING] });
+
+    const view = await renderInvoices();
+
+    assert.match(text(view), /Previsto: R\$\s39,90 em assinaturas mensais/);
+    assert.match(text(bodyRows(view)[0]), /Inclui R\$\s39,90 previsto/);
+});
+
+test('installmentPayload sends only the total when the person typed the total', () => {
+    const payload = installmentPayload({
+        amountMode: 'total', categoryId: '3', description: 'Notebook', totalAmount: '1200.00', installmentAmount: null,
+        installments: '6', currentInstallment: null, date: '2026-03-15'
+    }, 7);
+
+    assert.deepEqual(payload, {
+        accountId: 7, categoryId: 3, description: 'Notebook', totalAmount: '1200.00', installments: 6, date: '2026-03-15'
+    });
+});
+
+test('installmentPayload sends the installment amount and the current installment', () => {
+    const payload = installmentPayload({
+        amountMode: 'installment', categoryId: '3', description: 'TV', totalAmount: null, installmentAmount: '83.33',
+        installments: '10', currentInstallment: '4', date: '2026-03-17'
+    }, 7);
+
+    assert.deepEqual(payload, {
+        accountId: 7, categoryId: 3, description: 'TV', installmentAmount: '83.33', installments: 10, currentInstallment: 4, date: '2026-03-17'
+    });
+});
+
+test('installmentPayload leaves the current installment out when it is empty', () => {
+    const payload = installmentPayload({
+        amountMode: 'installment', categoryId: '3', description: 'TV', installmentAmount: '83.33',
+        installments: '10', currentInstallment: null, date: '2026-03-17'
+    }, 7);
+
+    assert.equal('currentInstallment' in payload, false);
+});
+
+test('installmentPreview says how many installments are launched, with the numbers and the start date', () => {
+    const text = installmentPreview({ amountMode: 'installment', installmentAmount: '83.33', installments: '10', currentInstallment: '4', date: '2026-03-17' });
+
+    assert.match(text, /7 parcelas de R\$\s83,33/);
+    assert.match(text, /4\/10 a 10\/10/);
+    assert.match(text, /17\/03\/2026/);
+});
+
+test('installmentPreview for the total shows the first installment carrying the leftover cent', () => {
+    const text = installmentPreview({ amountMode: 'total', totalAmount: '100.00', installments: '3', date: '2026-03-17' });
+
+    assert.match(text, /3 parcelas de R\$\s33,33/);
+    assert.match(text, /primeira de R\$\s33,34/);
+});
+
+test('installmentPreview waits for the values', () => {
+    assert.match(installmentPreview({ amountMode: 'installment', installmentAmount: '', installments: '10', date: '2026-03-17' }), /valor/i);
 });

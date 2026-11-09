@@ -52,6 +52,10 @@ export function invoiceNewsCard(cardCount, onDismiss) {
             ]),
             el('li', { text: 'Pague pela própria tela de Faturas: o pagamento é uma transferência para o cartão, não uma nova despesa.' })
         ]),
+        el('p', {
+            text: 'Streaming ou academia no cartão? Use Assinatura mensal em Faturas: a cobrança vira despesa sozinha '
+                + 'na data, e a próxima já aparece como prevista na fatura e na previsão.'
+        }),
         dismiss
     ]);
 }

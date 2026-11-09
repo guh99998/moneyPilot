@@ -4,6 +4,7 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.account.Account;
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.AccountRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.Category;
+import br.com.desenvolvedorgustavolopes.moneyPilot.common.MonthDays;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryService;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryType;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.*;
@@ -95,8 +96,10 @@ public class BillService {
         String accountName = null;
 
         if (request.accountId() != null) {
-            accountName = accountRepository.findByIdAndUserId(request.accountId(), userId)
-                    .orElseThrow(() -> new AccountNotFoundException(request.accountId())).getName();
+            Account account = accountRepository.findByIdAndUserId(request.accountId(), userId)
+                    .orElseThrow(() -> new AccountNotFoundException(request.accountId()));
+            BillAccountGuard.rejectInvoiceCard(account);
+            accountName = account.getName();
         }
 
         Category category = categoryService.findVisibleCategory(request.categoryId());
@@ -149,8 +152,10 @@ public class BillService {
         String accountName = null;
 
         if (request.accountId() != null) {
-            accountName = accountRepository.findByIdAndUserId(request.accountId(), userId)
-                    .orElseThrow(() -> new AccountNotFoundException(request.accountId())).getName();
+            Account account = accountRepository.findByIdAndUserId(request.accountId(), userId)
+                    .orElseThrow(() -> new AccountNotFoundException(request.accountId()));
+            BillAccountGuard.rejectInvoiceCard(account);
+            accountName = account.getName();
         }
 
         Category category = categoryService.findVisibleCategory(request.categoryId());
@@ -276,8 +281,10 @@ public class BillService {
         String accountName = null;
 
         if (request.accountId() != null) {
-            accountName = accountRepository.findByIdAndUserId(request.accountId(), userId)
-                    .orElseThrow(() -> new AccountNotFoundException(request.accountId())).getName();
+            Account account = accountRepository.findByIdAndUserId(request.accountId(), userId)
+                    .orElseThrow(() -> new AccountNotFoundException(request.accountId()));
+            BillAccountGuard.rejectInvoiceCard(account);
+            accountName = account.getName();
         }
 
         Category category = categoryService.findVisibleCategory(request.categoryId());
@@ -408,8 +415,6 @@ public class BillService {
     }
 
     private LocalDate dueDateFor(YearMonth yearMonth, Integer dayOfMonth) {
-        int days = yearMonth.lengthOfMonth();
-        int minDay = Math.min(days, dayOfMonth);
-        return yearMonth.atDay(minDay);
+        return MonthDays.clamp(yearMonth, dayOfMonth);
     }
 }

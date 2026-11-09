@@ -1,5 +1,6 @@
 package br.com.desenvolvedorgustavolopes.moneyPilot.bill;
 
+import br.com.desenvolvedorgustavolopes.moneyPilot.account.Account;
 import br.com.desenvolvedorgustavolopes.moneyPilot.account.AccountRepository;
 import br.com.desenvolvedorgustavolopes.moneyPilot.auth.AuthenticatedUserProvider;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.Category;
@@ -54,6 +55,15 @@ public class BillRecurrenceService {
         return accountRepository.findByIdAndUserId(accountId, userId).orElseThrow(() -> new AccountNotFoundException(accountId)).getName();
     }
 
+    private void verifyNotInvoiceCard(Long accountId) {
+        if (accountId == null)
+            return;
+
+        Account account = accountRepository.findByIdAndUserId(accountId, userProvider.getCurrentUserId())
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+        BillAccountGuard.rejectInvoiceCard(account);
+    }
+
     private BillRecurrenceResponse toResponse(BillRecurrence billRecurrence) {
         Category category = categoryService.findVisibleCategory(billRecurrence.getCategoryId());
         String accountName = this.getAccountName(billRecurrence.getAccountId());
@@ -66,6 +76,7 @@ public class BillRecurrenceService {
 
         this.verifyDateRange(request.endDate(), request.startDate());
         String accountName = this.getAccountName(request.accountId());
+        this.verifyNotInvoiceCard(request.accountId());
 
         Category category = categoryService.findVisibleCategory(request.categoryId());
         this.verifyCategoryBillType(category, request.type());
@@ -106,6 +117,7 @@ public class BillRecurrenceService {
         Category category = categoryService.findVisibleCategory(request.categoryId());
         this.verifyCategoryBillType(category, request.type());
         this.getAccountName(request.accountId());
+        this.verifyNotInvoiceCard(request.accountId());
 
         billRecurrence.setAccountId(request.accountId());
         billRecurrence.setCategoryId(request.categoryId());

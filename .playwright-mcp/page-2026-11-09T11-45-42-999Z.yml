@@ -1,0 +1,197 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic: moneyPilot
+          - generic:
+            - button
+        - generic:
+          - navigation:
+            - link:
+              - /url: "#/dashboard"
+              - generic: Visão geral
+            - link:
+              - /url: "#/transactions"
+              - generic: Lançamentos
+            - link:
+              - /url: "#/bills"
+              - generic: A pagar e receber
+            - link:
+              - /url: "#/forecast"
+              - generic: Previsão mensal
+            - link:
+              - /url: "#/accounts"
+              - generic: Contas
+            - link:
+              - /url: "#/invoices"
+              - generic: Faturas
+            - link:
+              - /url: "#/categories"
+              - generic: Categorias
+            - link:
+              - /url: "#/budgets"
+              - generic: Orçamentos
+          - generic:
+            - link:
+              - /url: "#/usando-com-ia"
+              - generic: Usando com IA
+            - link:
+              - /url: "#/suporte"
+              - generic: Falar com o suporte
+            - link:
+              - /url: "#/profile"
+              - generic:
+                - generic [aria-hidden]: PT
+              - generic: Pessoa Teste
+            - button: Sair
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Faturas
+                - link:
+                  - /url: /ajuda/faturas.html
+                  - generic [aria-hidden]: "?"
+              - paragraph: Quanto está a fatura de cada cartão e quando ela vence
+          - region:
+            - generic:
+              - generic: A pagar
+              - generic: R$ 159,90
+            - generic:
+              - generic: Vencido
+              - generic: R$ 0,00
+            - generic:
+              - generic: Faturas
+              - generic: 1 aberta
+          - region:
+            - generic:
+              - heading [level=2]: Fatura atual · Cartao Roxo
+              - generic: Aberta
+            - paragraph: R$ 159,90
+            - paragraph:
+              - generic: Fecha em 10/11/2026
+              - generic: Vence em 17/11/2026
+            - paragraph: Faturas contam desde 10/10/2026
+            - generic:
+              - button: Pagar fatura
+              - button: Nova compra
+              - button: Compra parcelada
+              - button: Compra recorrente
+          - region:
+            - generic:
+              - heading [level=2]: Compras recorrentes
+            - list:
+              - listitem:
+                - generic:
+                  - generic: Streaming de video
+                  - generic: Cartao Roxo · todo dia 12 · desde 12/08/2026
+                - generic: R$ 39,90
+                - generic: Ativa
+                - generic:
+                  - button: Editar
+                  - button: Desativar
+                  - button: Apagar
+          - group:
+            - text: ▴
+            - generic:
+              - generic:
+                - generic: Cartão
+                - combobox
+              - generic:
+                - generic: Situação
+                - combobox
+              - generic:
+                - generic: Vence de
+                - textbox
+              - generic:
+                - generic: até
+                - textbox
+              - button: Limpar
+          - generic:
+            - generic:
+              - table:
+                - rowgroup:
+                  - row:
+                    - columnheader:
+                      - button:
+                        - generic: Vencimento
+                        - generic [aria-hidden]: ↓
+                    - columnheader:
+                      - button:
+                        - generic: Cartão
+                        - generic [aria-hidden]: ↕
+                    - columnheader:
+                      - button:
+                        - generic: Situação
+                        - generic [aria-hidden]: ↕
+                    - columnheader:
+                      - button:
+                        - generic: Total
+                        - generic [aria-hidden]: ↕
+                    - columnheader:
+                      - button:
+                        - generic: Falta pagar
+                        - generic [aria-hidden]: ↕
+                    - columnheader
+                - rowgroup:
+                  - row:
+                    - cell: 17/12/2026
+                    - cell:
+                      - text: Cartao Roxo
+                      - group:
+                        - generic: ▸ Ver compras
+                    - cell:
+                      - generic: Futura
+                    - cell:
+                      - text: R$ 39,90
+                      - generic: Inclui R$ 39,90 previsto
+                    - cell: R$ 39,90
+                    - cell
+                  - row:
+                    - cell: 17/11/2026
+                    - cell:
+                      - text: Cartao Roxo
+                      - group:
+                        - generic: ▸ Ver compras
+                    - cell:
+                      - generic: Aberta
+                    - cell: R$ 159,90
+                    - cell: R$ 159,90
+                    - cell:
+                      - button: Pagar fatura
+  - dialog [ref=e372]:
+    - generic [ref=e373]:
+      - heading "Compra recorrente · Cartao Roxo" [level=2] [ref=e374]
+      - generic [ref=e375]:
+        - generic [ref=e376]: Categoria
+        - combobox "Categoria" [active] [ref=e377]:
+          - option "Alimentação" [selected]
+          - option "Transporte"
+          - option "Moradia"
+          - option "Saúde"
+          - option "Lazer"
+          - option "Outros"
+      - generic [ref=e378]:
+        - generic [ref=e379]: Descrição
+        - textbox "Descrição" [ref=e380]:
+          - /placeholder: "Ex.: Streaming de vídeo"
+      - generic [ref=e381]:
+        - generic [ref=e382]: Valor de cada cobrança
+        - spinbutton "Valor de cada cobrança" [ref=e383]
+      - generic [ref=e384]:
+        - generic [ref=e385]: Cobra todo dia
+        - spinbutton "Cobra todo dia" [ref=e386]
+        - generic [ref=e387]: Em mês mais curto vale o último dia.
+      - generic [ref=e388]:
+        - generic [ref=e389]: Começa em
+        - textbox "Começa em" [ref=e390]
+        - generic [ref=e391]: No passado, as cobranças desde essa data são lançadas agora.
+      - generic [ref=e392]:
+        - generic [ref=e393]: Termina em (opcional)
+        - textbox "Termina em (opcional)" [ref=e394]
+      - paragraph [ref=e395]: Escolha o dia do mês e o início para ver as cobranças. Em mês mais curto, o dia 31 cobra no último dia.
+      - generic [ref=e396]:
+        - button "Cancelar" [ref=e397] [cursor=pointer]
+        - button "Criar compra recorrente" [ref=e398] [cursor=pointer]

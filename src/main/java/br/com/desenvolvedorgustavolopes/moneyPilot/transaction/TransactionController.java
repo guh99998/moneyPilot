@@ -105,7 +105,7 @@ public class TransactionController {
         return service.createTransfer(request);
     }
 
-    @Operation(summary = "Lança uma compra parcelada no cartão", description = "Cria uma despesa por parcela no cartão de crédito, no mesmo dia dos meses seguintes (limitado ao último dia do mês). O centavo que sobra da divisão fica na primeira parcela. Parcela não é editada sozinha: apagar uma remove o grupo todo.")
+    @Operation(summary = "Lança uma compra parcelada no cartão", description = "Cria uma despesa por parcela no cartão de crédito, no mesmo dia dos meses seguintes (limitado ao último dia do mês). Informe o valor total (o centavo que sobra da divisão fica na primeira parcela) ou o valor da parcela (parcelas iguais); com o valor da parcela, currentInstallment lança só da parcela atual até a última, para compras em andamento. Os dois valores juntos, nenhum, ou parcela atual com o valor total são 400. Parcela não é editada sozinha: apagar uma remove o grupo todo.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "As parcelas criadas, da primeira à última"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada (conta que não é cartão, categoria de receita, valor pequeno demais para as parcelas)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
