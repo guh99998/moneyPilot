@@ -228,3 +228,26 @@ Contexto: a recorrência existe só em "A pagar e receber" (`BillRecurrence`). P
 - **Dupla contagem**: a projeção começa depois de `generatedUntil`; a geração avança a marca na mesma transação que grava as despesas.
 - **Concorrência**: o `UPDATE` condicional garante que dois pedidos simultâneos não gerem a mesma cobrança duas vezes.
 - **Produção**: a migration só adiciona; o bloqueio da regra 38 não toca títulos existentes.
+
+## Mudança: valor da parcela e parcela atual (2026-11-09)
+
+Regras 39 a 42. Sem schema novo: a parcela guarda `installment_number` e `installment_total`, então começar na parcela k é só numerar de k a N.
+
+### Backend
+
+- `InstallmentPurchaseRequest`: `totalAmount` passa a opcional, entra `installmentAmount` (opcional, `@Digits(17,2)`, `@Positive`) e `currentInstallment` (opcional, `@Min(1)`). `@Schema` nos campos novos.
+- `TransactionService.createInstallmentPurchase`: valida a combinação (exatamente um valor; parcela atual só com o valor da parcela; atual ≤ N) com erro no campo, via `InvalidInstallmentRequestException` em `exception/` e `GlobalExceptionHandler`. Valor da parcela: N parcelas iguais. Lança as parcelas da atual até a N, com `installmentNumber` = k..N, `installmentTotal` = N e data = informada + (i − k) meses.
+- `MoneyScaleIntegrationTest`: incluir `installmentAmount`.
+
+### Cliente web
+
+- Diálogo "Compra parcelada" (`invoices.js`): seletor "Informar o valor" (total ou da parcela); com o valor da parcela aparece "Parcela atual" e a prévia ("lança 7 parcelas de R$ 83,33, de 4/10 a 10/10, a partir de 17/11/2026"). `installmentPayload` envia só o campo escolhido.
+
+### Testes
+
+`InstallmentPurchaseIntegrationTest` ampliado (valor da parcela, parcela atual, as combinações inválidas, numeração e datas) e testes JS do payload e da prévia.
+
+### Riscos
+
+- Mudança de contrato: `totalAmount` deixa de ser obrigatório no OpenAPI; quem já envia só o total continua igual.
+- Parcela atual com data no passado só entra na fatura se for a partir de `invoicesFrom`, como qualquer compra.

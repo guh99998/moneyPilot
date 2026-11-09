@@ -71,6 +71,13 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 37. Recorrência com início no passado gera as cobranças desde o início (respeitando `invoicesFrom` na fatura, como qualquer compra).
 38. Título ou recorrência de título novo, ou editado, com conta = cartão com dias: `400` com erro no campo `accountId`, orientando usar a compra recorrente. Baixar um título **no** cartão continua permitido (pagar um boleto com o cartão é legítimo). Títulos existentes não mudam.
 
+**Compra parcelada: valor da parcela e parcela atual** (emenda de 2026-11-09, aguardando aprovação)
+
+39. A compra parcelada no cartão aceita **uma de duas formas** de informar o valor: o **valor total** (regra 8, com o centavo que sobra na primeira parcela) ou o **valor da parcela**. Informar as duas, ou nenhuma, é `400`.
+40. Com o valor da parcela, as N parcelas saem **iguais** e o total é valor × N, sem centavo sobrando: é o que a fatura do banco mostra.
+41. A **parcela atual** (opcional, de 1 a N, padrão 1) só vale com o valor da parcela. Lança apenas as parcelas da atual até a N, numeradas como na compra original (`4/10` a `10/10`): a primeira lançada cai na data informada e as outras nos meses seguintes. Serve para quem tem uma compra em andamento e não sabe a data original. Parcela atual com o valor total é `400` (o centavo que sobra fica na parcela 1, que não seria lançada).
+42. Apagar uma parcela lançada remove o grupo lançado, como na regra 9. O parcelamento de títulos (A pagar e receber) não muda.
+
 **Telas**
 
 13. Formulário de conta pede fechamento e vencimento quando o tipo é cartão.
@@ -108,6 +115,9 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 26. A cobrança futura aparece como prevista na fatura (até o fim do ciclo seguinte) e nas duas previsões, e some da projeção quando é gerada, sem contar duas vezes (regras 34 e 35).
 27. Editar vale só para as futuras; desativar para de gerar e de projetar; apagar mantém as cobranças geradas (regra 36).
 28. Título e recorrência de título em cartão com dias dão `400` no campo `accountId`; baixar um título no cartão continua funcionando; recurso de outro usuário dá `404`; OpenAPI e `MoneyScaleIntegrationTest` cobrem as rotas; as telas funcionam no mobile, com teclado e leitor de tela (regra 38).
+29. O valor total continua funcionando como antes; o valor da parcela cria N parcelas iguais; informar os dois valores, nenhum, ou parcela atual com o valor total é `400` no campo certo (regras 39 a 41).
+30. Com a parcela atual k, são lançadas N−k+1 parcelas, numeradas k a N, a primeira na data informada e as outras mensais; k fora de 1 a N é `400` (regra 41).
+31. O formulário "Compra parcelada" deixa escolher entre valor total e valor da parcela, mostra a prévia das parcelas e funciona no mobile, com teclado e leitor de tela.
 
 ## Casos de borda
 
@@ -139,6 +149,7 @@ Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importa
 - A fatura também aparece em "Próximos vencimentos" da Visão geral (decidido em 2026-11-06, depois da primeira versão desta mudança).
 - A fatura aparece em "A pagar e receber" como uma linha calculada, aberta, fechada ou vencida, com o valor total; entra no quadro "A pagar" da Visão geral e nos alertas (só fechada ou vencida). Decidido em 2026-11-06, em lugar de ficar fora, como a versão inicial da spec previa.
 - Compra recorrente no cartão (decidido em 2026-11-09; na interface o nome é "Assinatura mensal", a API segue `/recurring-purchases`): a cobrança vira despesa sozinha na data; as próximas são projetadas na fatura e na previsão; título e recorrência de título em cartão com dias passam a ser `400` (os existentes não mudam). A marca d'água `generatedUntil` (e não uma chave única) garante que cobrança apagada não volta.
+- Compra parcelada com valor da parcela e parcela atual (proposto em 2026-11-09): só no cartão; parcela atual só com o valor da parcela; o parcelamento de títulos fica fora.
 
 ## Decisões a confirmar
 

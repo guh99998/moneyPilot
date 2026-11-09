@@ -50,6 +50,12 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T34** - Ajuda, Novidade, README e quadro nº 4
 - [x] **T35** - Verificação manual, skills do projeto, `./mvnw verify` e `node --test`
 
+### Mudança: valor da parcela e parcela atual (spec, regras 39 a 42; aguardando aprovação)
+
+- [ ] **T36** - `InstallmentPurchaseRequest` e `createInstallmentPurchase`: valor da parcela, parcela atual e validações, com OpenAPI e `MoneyScaleIntegrationTest` (CA29, CA30)
+- [ ] **T37** - Diálogo "Compra parcelada": escolha do valor, parcela atual e prévia, `installmentPayload` (CA31)
+- [ ] **T38** - Ajuda, README, skills do projeto, `./mvnw verify` e `node --test`
+
 ## Notas de implementação
 
 Descobertas durante a implementação que afetaram a spec ou o plano.
