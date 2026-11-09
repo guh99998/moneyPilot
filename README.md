@@ -169,7 +169,7 @@ Base: `/api/v1`. Tudo exige `Authorization: Bearer <token>`, exceto registro, lo
 | `GET` `POST` | `/transactions` | Lista (com filtros e paginação) e cria |
 | `GET` `PUT` `DELETE` | `/transactions/{id}` | Detalha, altera e remove |
 | `POST` | `/transactions/transfers` | Cria a transferência entre duas contas (é também como se paga uma fatura: transferir para o cartão) |
-| `POST` | `/transactions/installments` | Compra parcelada no cartão (`accountId`, `categoryId`, `totalAmount`, `installments` de 2 a 60, `date`): devolve as parcelas; `400` em conta que não é cartão |
+| `POST` | `/transactions/installments` | Compra parcelada no cartão (`accountId`, `categoryId`, `installments` de 2 a 60, `date` e **um** de `totalAmount` ou `installmentAmount`; com o valor da parcela, `currentInstallment` lança só da parcela atual até a última): devolve as parcelas; `400` em conta que não é cartão, com os dois valores ou nenhum, ou com parcela atual junto do valor total |
 | `DELETE` | `/transactions/installments/{groupId}` | Apaga todas as parcelas da compra (`404` se não for sua) |
 | `GET` `POST` | `/budgets` | Lista e cria orçamentos |
 | `GET` `PUT` `DELETE` | `/budgets/{id}` | Detalha, altera e remove |

@@ -41,15 +41,50 @@ export function payInvoicePayload(values, cardId) {
     };
 }
 
+/**
+ * Compra parcelada (regras 8 e 39 a 41): vai só o valor escolhido, o total ou o da parcela; a parcela
+ * atual só vale com o valor da parcela e, vazia, fica de fora (a compra começa na parcela 1).
+ */
 export function installmentPayload(values, cardId) {
-    return {
+    const payload = {
         accountId: cardId,
         categoryId: Number(values.categoryId),
-        description: values.description,
-        totalAmount: values.totalAmount,
-        installments: Number(values.installments),
-        date: values.date
+        description: values.description
     };
+    if (values.amountMode === 'installment') {
+        payload.installmentAmount = values.installmentAmount;
+    } else {
+        payload.totalAmount = values.totalAmount;
+    }
+    payload.installments = Number(values.installments);
+    if (values.amountMode === 'installment' && values.currentInstallment) {
+        payload.currentInstallment = Number(values.currentInstallment);
+    }
+    payload.date = values.date;
+    return payload;
+}
+
+const INSTALLMENT_PREVIEW_WAITING = 'Informe o valor, o número de parcelas e a data para ver as parcelas.';
+
+/** Prévia do diálogo da compra parcelada: quantas parcelas serão lançadas, de quanto e a partir de quando. */
+export function installmentPreview(values) {
+    const count = Number(values.installments);
+    const byInstallment = values.amountMode === 'installment';
+    const typed = byInstallment ? values.installmentAmount : values.totalAmount;
+    const cents = toCents(typed);
+    if (!Number.isInteger(count) || count < 2 || !values.date || !typed || !(cents > 0)) return INSTALLMENT_PREVIEW_WAITING;
+
+    if (byInstallment) {
+        const current = values.currentInstallment ? Number(values.currentInstallment) : 1;
+        if (!Number.isInteger(current) || current < 1 || current > count) return `A parcela atual vai de 1 a ${count}.`;
+        const launched = count - current + 1;
+        return `Lança ${launched} ${launched === 1 ? 'parcela' : 'parcelas'} de ${fmtMoney(cents / 100)}, de ${current}/${count} a ${count}/${count}, a partir de ${fmtDate(values.date)}.`;
+    }
+
+    const base = Math.floor(cents / count);
+    const leftover = cents - base * count;
+    const first = leftover > 0 ? `, a primeira de ${fmtMoney((base + leftover) / 100)}` : '';
+    return `${count} parcelas de ${fmtMoney(base / 100)}${first}, a partir de ${fmtDate(values.date)}.`;
 }
 
 export function purchasePayload(values, cardId) {
@@ -265,16 +300,35 @@ export async function renderInvoices() {
                 },
                 { name: 'description', label: 'Descrição', type: 'text', placeholder: 'Ex.: Notebook' },
                 {
+                    name: 'amountMode', label: 'Informar', type: 'select', required: true,
+                    options: [
+                        { value: 'total', label: 'O valor total da compra' },
+                        { value: 'installment', label: 'O valor de cada parcela' }
+                    ],
+                    hint: 'Pelo valor da parcela, as parcelas saem iguais ao que o banco mostra, sem fazer conta.'
+                },
+                {
                     name: 'totalAmount', label: 'Valor total', type: 'number', step: '0.01', min: '0.02', required: true,
+                    showWhen: { name: 'amountMode', value: 'total' },
                     hint: 'O centavo que sobrar da divisão fica na primeira parcela.'
+                },
+                {
+                    name: 'installmentAmount', label: 'Valor da parcela', type: 'number', step: '0.01', min: '0.01', required: true,
+                    showWhen: { name: 'amountMode', value: 'installment' }
                 },
                 { name: 'installments', label: 'Parcelas', type: 'number', step: '1', min: 2, max: 60, required: true },
                 {
-                    name: 'date', label: 'Data da compra', type: 'date', required: true,
-                    hint: 'As outras parcelas caem no mesmo dia dos meses seguintes. Compra em andamento: use a data original.'
+                    name: 'currentInstallment', label: 'Parcela atual (opcional)', type: 'number', step: '1', min: 1, max: 60,
+                    showWhen: { name: 'amountMode', value: 'installment' },
+                    hint: 'Compra em andamento? Informe em qual parcela está: só ela e as seguintes são lançadas.'
+                },
+                {
+                    name: 'date', label: 'Data da primeira parcela lançada', type: 'date', required: true,
+                    hint: 'Com a parcela atual, é a data dela. As outras caem no mesmo dia dos meses seguintes.'
                 }
             ],
-            values: { date: todayIso(), installments: 2 },
+            values: { amountMode: 'total', date: todayIso(), installments: 2 },
+            preview: installmentPreview,
             submitLabel: 'Lançar parcelas',
             onSubmit: async (values) => {
                 await api.transactions.createInstallments(installmentPayload(values, card.id));

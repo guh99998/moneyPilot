@@ -7,7 +7,7 @@ installFakeDom();
 
 const {
     renderInvoices, payableThrough, payInvoicePayload, installmentPayload, purchasePayload,
-    selectInvoiceCard, openPayInvoiceDialog, INVOICE_STATUS
+    selectInvoiceCard, openPayInvoiceDialog, INVOICE_STATUS, installmentPreview
 } = await import('../../main/resources/static/js/views/invoices.js');
 
 const page = (content) => ({ content, page: { number: 0, totalPages: 1 }, totalPages: 1, number: 0 });
@@ -309,4 +309,54 @@ test('the invoice shows how much of the total is projected', async () => {
 
     assert.match(text(view), /Previsto: R\$\s39,90 em assinaturas mensais/);
     assert.match(text(bodyRows(view)[0]), /Inclui R\$\s39,90 previsto/);
+});
+
+test('installmentPayload sends only the total when the person typed the total', () => {
+    const payload = installmentPayload({
+        amountMode: 'total', categoryId: '3', description: 'Notebook', totalAmount: '1200.00', installmentAmount: null,
+        installments: '6', currentInstallment: null, date: '2026-03-15'
+    }, 7);
+
+    assert.deepEqual(payload, {
+        accountId: 7, categoryId: 3, description: 'Notebook', totalAmount: '1200.00', installments: 6, date: '2026-03-15'
+    });
+});
+
+test('installmentPayload sends the installment amount and the current installment', () => {
+    const payload = installmentPayload({
+        amountMode: 'installment', categoryId: '3', description: 'TV', totalAmount: null, installmentAmount: '83.33',
+        installments: '10', currentInstallment: '4', date: '2026-03-17'
+    }, 7);
+
+    assert.deepEqual(payload, {
+        accountId: 7, categoryId: 3, description: 'TV', installmentAmount: '83.33', installments: 10, currentInstallment: 4, date: '2026-03-17'
+    });
+});
+
+test('installmentPayload leaves the current installment out when it is empty', () => {
+    const payload = installmentPayload({
+        amountMode: 'installment', categoryId: '3', description: 'TV', installmentAmount: '83.33',
+        installments: '10', currentInstallment: null, date: '2026-03-17'
+    }, 7);
+
+    assert.equal('currentInstallment' in payload, false);
+});
+
+test('installmentPreview says how many installments are launched, with the numbers and the start date', () => {
+    const text = installmentPreview({ amountMode: 'installment', installmentAmount: '83.33', installments: '10', currentInstallment: '4', date: '2026-03-17' });
+
+    assert.match(text, /7 parcelas de R\$\s83,33/);
+    assert.match(text, /4\/10 a 10\/10/);
+    assert.match(text, /17\/03\/2026/);
+});
+
+test('installmentPreview for the total shows the first installment carrying the leftover cent', () => {
+    const text = installmentPreview({ amountMode: 'total', totalAmount: '100.00', installments: '3', date: '2026-03-17' });
+
+    assert.match(text, /3 parcelas de R\$\s33,33/);
+    assert.match(text, /primeira de R\$\s33,34/);
+});
+
+test('installmentPreview waits for the values', () => {
+    assert.match(installmentPreview({ amountMode: 'installment', installmentAmount: '', installments: '10', date: '2026-03-17' }), /valor/i);
 });

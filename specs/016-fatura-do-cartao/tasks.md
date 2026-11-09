@@ -50,11 +50,11 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T34** - Ajuda, Novidade, README e quadro nº 4
 - [x] **T35** - Verificação manual, skills do projeto, `./mvnw verify` e `node --test`
 
-### Mudança: valor da parcela e parcela atual (spec, regras 39 a 42; aguardando aprovação)
+### Mudança: valor da parcela e parcela atual (spec, regras 39 a 42)
 
-- [ ] **T36** - `InstallmentPurchaseRequest` e `createInstallmentPurchase`: valor da parcela, parcela atual e validações, com OpenAPI e `MoneyScaleIntegrationTest` (CA29, CA30)
-- [ ] **T37** - Diálogo "Compra parcelada": escolha do valor, parcela atual e prévia, `installmentPayload` (CA31)
-- [ ] **T38** - Ajuda, README, skills do projeto, `./mvnw verify` e `node --test`
+- [x] **T36** - `InstallmentPurchaseRequest` e `createInstallmentPurchase`: valor da parcela, parcela atual e validações, com OpenAPI e `MoneyScaleIntegrationTest` (CA29, CA30)
+- [x] **T37** - Diálogo "Compra parcelada": escolha do valor, parcela atual e prévia, `installmentPayload` (CA31)
+- [x] **T38** - Ajuda, README, skills do projeto, `./mvnw verify` e `node --test`
 
 ## Notas de implementação
 
@@ -107,3 +107,10 @@ Na interface o recurso se chama "Assinatura mensal"; API e código seguem `recur
 - `accessibility-compliance`: a situação (Ativa, Desativada, Prevista) é dita em texto, não só cor; botões com 44px de altura mínima; campos com `label` associado pelo `formDialog`; foco visível herdado.
 - `responsive-design`: regras a 480px para a lista (ações em linha própria, selo abaixo) e `overflow-wrap` no nome longo. Só revisado no código; falta olhar a 375px.
 - `api-design-principles`: recurso plural `/recurring-purchases`, `201`/`200`/`204`/`400`/`404`, lista paginada com `accountId` opcional; `/materialize` e `/deactivate` seguem o precedente de `/bills/materialize` e `/bill-recurrences/{id}/deactivate`. `OpenApiContractIntegrationTest` e `MoneyScaleIntegrationTest` verdes.
+
+### Revisão da mudança "valor da parcela e parcela atual" (2026-11-09)
+
+- `web-design-guidelines`: os campos novos têm `label` pelo `formDialog`; os que não valem para a forma escolhida ficam ocultos e desabilitados (`showWhen`); a prévia ("Lança 7 parcelas de R$ 83,33, de 4/10 a 10/10, a partir de 17/03/2026") está em `aria-live="polite"`; a dica diz o que a parcela atual muda.
+- `accessibility-compliance`: a escolha entre total e parcela é um `select` nativo, que funciona por teclado e leitor de tela; campos ocultos saem da ordem de tabulação.
+- `responsive-design`: o diálogo reaproveita o `formDialog` (uma coluna, sem largura fixa); sem CSS novo. Falta olhar a 375px.
+- `api-design-principles`: `POST /transactions/installments` segue o mesmo recurso e continua compatível com quem envia só `totalAmount` (agora opcional); combinações inválidas dão `400` no campo certo; OpenAPI atualizado e `OpenApiContractIntegrationTest` verde; `installmentAmount` entrou no `MoneyScaleIntegrationTest`.

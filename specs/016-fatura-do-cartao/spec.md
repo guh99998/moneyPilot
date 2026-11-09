@@ -71,7 +71,7 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 37. Recorrência com início no passado gera as cobranças desde o início (respeitando `invoicesFrom` na fatura, como qualquer compra).
 38. Título ou recorrência de título novo, ou editado, com conta = cartão com dias: `400` com erro no campo `accountId`, orientando usar a compra recorrente. Baixar um título **no** cartão continua permitido (pagar um boleto com o cartão é legítimo). Títulos existentes não mudam.
 
-**Compra parcelada: valor da parcela e parcela atual** (emenda de 2026-11-09, aguardando aprovação)
+**Compra parcelada: valor da parcela e parcela atual** (emenda de 2026-11-09, aprovada)
 
 39. A compra parcelada no cartão aceita **uma de duas formas** de informar o valor: o **valor total** (regra 8, com o centavo que sobra na primeira parcela) ou o **valor da parcela**. Informar as duas, ou nenhuma, é `400`.
 40. Com o valor da parcela, as N parcelas saem **iguais** e o total é valor × N, sem centavo sobrando: é o que a fatura do banco mostra.
@@ -149,7 +149,7 @@ Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importa
 - A fatura também aparece em "Próximos vencimentos" da Visão geral (decidido em 2026-11-06, depois da primeira versão desta mudança).
 - A fatura aparece em "A pagar e receber" como uma linha calculada, aberta, fechada ou vencida, com o valor total; entra no quadro "A pagar" da Visão geral e nos alertas (só fechada ou vencida). Decidido em 2026-11-06, em lugar de ficar fora, como a versão inicial da spec previa.
 - Compra recorrente no cartão (decidido em 2026-11-09; na interface o nome é "Assinatura mensal", a API segue `/recurring-purchases`): a cobrança vira despesa sozinha na data; as próximas são projetadas na fatura e na previsão; título e recorrência de título em cartão com dias passam a ser `400` (os existentes não mudam). A marca d'água `generatedUntil` (e não uma chave única) garante que cobrança apagada não volta.
-- Compra parcelada com valor da parcela e parcela atual (proposto em 2026-11-09): só no cartão; parcela atual só com o valor da parcela; o parcelamento de títulos fica fora.
+- Compra parcelada com valor da parcela e parcela atual (decidido em 2026-11-09): só no cartão; parcela atual só com o valor da parcela; o parcelamento de títulos fica fora.
 
 ## Decisões a confirmar
 
