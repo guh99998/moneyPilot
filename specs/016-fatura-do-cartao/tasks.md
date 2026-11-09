@@ -39,6 +39,17 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T26** - Ajuda e README
 - [x] **T27** - Verificação manual (dois cartões, fatura antiga, filtros, ordenação, mobile), skills do projeto, `./mvnw verify`, `node --test`, quadro nº 4
 
+### Mudança: compra recorrente no cartão (spec, regras 31 a 38)
+
+- [ ] **T28** - Migration V21, entidade, repositório e CRUD de `/recurring-purchases` com OpenAPI e `MoneyScaleIntegrationTest` (CA23, CA28)
+- [ ] **T29** - Geração idempotente com `generatedUntil` e `POST /recurring-purchases/materialize` (CA24, CA25)
+- [ ] **T30** - Projeção na fatura (`projectedTotal`) e nas duas previsões (CA26)
+- [ ] **T31** - Editar, desativar e apagar (CA27)
+- [ ] **T32** - Bloqueio de título e recorrência de título em cartão com dias (CA28)
+- [ ] **T33** - Cliente: Faturas (diálogo, lista, selo "Prevista"), `materialize` na sessão, formulários de título, "Recorrente" em Lançamentos (CA23 a CA28)
+- [ ] **T34** - Ajuda, Novidade, README e quadro nº 4
+- [ ] **T35** - Verificação manual, skills do projeto, `./mvnw verify` e `node --test`
+
 ## Notas de implementação
 
 Descobertas durante a implementação que afetaram a spec ou o plano.

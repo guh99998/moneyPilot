@@ -196,3 +196,35 @@ Mais: `OpenApiContractIntegrationTest`, `./mvnw verify`, `node --test`, verifica
 - **Muitos ciclos:** cada cartão pode ter dezenas de ciclos. Filtrar no navegador aguenta, e as compras só carregam quando a pessoa abre a linha.
 - **Número de requisições:** uma por cartão com dias; poucos cartões, então aceitável. Se pesar, vira uma rota única.
 - **Tela atual substituída:** o destaque e a lista por cartão de hoje desaparecem em favor da lista única; os testes de `invoices-view` serão reescritos junto.
+
+## Mudança: compra recorrente no cartão (2026-11-09)
+
+Contexto: a recorrência existe só em "A pagar e receber" (`BillRecurrence`). Para uma assinatura no cartão, o título teria de ser baixado à mão todo mês, a previsão o poria na data dele (não no vencimento da fatura) e a fatura não mostraria a cobrança que vem. Regras 31 a 38.
+
+### Backend
+
+- **Migration `V21__add_recurring_card_purchases.sql`** (só adiciona): tabela `recurring_purchases` (`id`, `user_id`, `account_id` NOT NULL com `ON DELETE CASCADE`, `category_id`, `description`, `amount NUMERIC(19,2)`, `day_of_month`, `start_date`, `end_date`, `active`, `generated_until`, timestamps) e coluna nula `transactions.recurring_purchase_id` (FK `ON DELETE SET NULL`).
+- **Pacote `account/`** (junto de `InvoiceService`): `RecurringPurchase`, repositório, `RecurringPurchaseRequest/Response`, `RecurringPurchaseService`, `RecurringPurchaseController`.
+- **Rotas**: `GET/POST /recurring-purchases`, `GET/PUT/DELETE /recurring-purchases/{id}`, `POST /recurring-purchases/{id}/deactivate`, `POST /recurring-purchases/materialize`. Tudo escopado ao usuário (`404`).
+- **Geração**: o clamp de dia vira utilitário comum (`MonthDays`), usado por `BillService.dueDateFor` e pela geração. `generatedUntil` avança com `UPDATE ... WHERE generated_until = :anterior`, seguro em chamadas simultâneas. "Hoje" vem do `Clock`.
+- **Fatura**: `InvoiceService.invoicesOf(account, today, horizon)` soma as ocorrências projetadas (depois de `generatedUntil`, até o horizonte) aos totais do ciclo e devolve `projectedTotal`. A previsão (`payableInvoices(userId, to)`) passa o `to`; a tela Faturas usa o fim do ciclo seguinte; A pagar e receber, Visão geral e alertas usam horizonte nulo (sem projeção).
+- **Bloqueio (regra 38)**: `BillService.createBill/updateBill/createInstallmentPlan` e `BillRecurrenceService` create/update com conta = cartão com dias levam a `400` no campo `accountId`. `settle` e `bulkSettle` não mudam.
+- **Exclusão de conta (spec 012)**: `AccountDeletionService` apaga as recorrências de compra antes das contas.
+
+### Cliente web
+
+- `views/invoices.js`: botão "Compra recorrente" no destaque do cartão, diálogo com prévia das datas, lista das recorrências do cartão (editar, desativar, apagar) e selo "Prevista" nas cobranças projetadas.
+- `ensureRecurringBills` também chama o `materialize` das compras recorrentes (mesmo cache por sessão).
+- `bills.js` `accountOptions`: tira cartões com dias dos formulários de título e recorrência, com a dica de usar Compra recorrente em Faturas.
+- `views/transactions.js`: cobrança gerada mostra "Recorrente".
+- Ajuda `ajuda/faturas.html` e Novidade `news-invoices.js`.
+
+### Testes
+
+`RecurringPurchaseIntegrationTest`, `RecurringPurchaseInvoiceIntegrationTest`, casos do bloqueio nos testes de título, rota em `MoneyScaleIntegrationTest`, `OpenApiContractIntegrationTest`, testes JS para payload e prévia.
+
+### Riscos
+
+- **Dupla contagem**: a projeção começa depois de `generatedUntil`; a geração avança a marca na mesma transação que grava as despesas.
+- **Concorrência**: o `UPDATE` condicional garante que dois pedidos simultâneos não gerem a mesma cobrança duas vezes.
+- **Produção**: a migration só adiciona; o bloqueio da regra 38 não toca títulos existentes.

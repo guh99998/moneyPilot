@@ -1,6 +1,6 @@
 # 016 — Fatura do cartão de crédito
 
-**Status:** em revisão (implementada, incluindo início das faturas e lista única; falta o ok do Gustavo antes do merge)
+**Status:** em implementação (emenda de 2026-11-09: compra recorrente no cartão; o restante já está na `main`)
 **Branch:** feature/016-fatura-do-cartao
 **Depende de:** 015 (campo `countsAsAvailable`). Ordem de merge: 027, 015, 016 (migrations V18, V19, V20).
 
@@ -60,6 +60,17 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 29. No topo, um resumo (quanto há a pagar, quanto está vencido, quantas faturas abertas) e, para cada cartão, a fatura atual em destaque, com "Nova compra", "Compra parcelada" e "Pagar fatura". A tela diz desde quando as faturas contam em cada cartão.
 30. "Ver itens da fatura" (em A pagar e receber e em Próximos vencimentos) abre a tela Faturas com o filtro de cartão naquele cartão.
 
+**Compra recorrente no cartão** (emenda de 2026-11-09)
+
+31. Cartão com fechamento e vencimento aceita **compra recorrente**: descrição, categoria de despesa, valor, dia do mês (1 a 31, último dia em mês curto), início e fim opcional. Cartão sem dias, ou conta de outro tipo: `400`.
+32. Em cada data de cobrança até hoje, a compra vira uma **despesa no cartão** com essa data, sem ação da pessoa. A geração é sob demanda e idempotente, como a recorrência de títulos: a recorrência guarda até que data já gerou (`generatedUntil`), então gerar duas vezes não duplica e **apagar uma cobrança gerada não a recria**.
+33. A cobrança gerada é um lançamento comum: pode ser editada (o valor mudou naquele mês) ou apagada.
+34. As cobranças ainda não geradas são **projetadas** (nada gravado): na fatura do ciclo em que caem e na previsão, pelo vencimento da fatura. Nunca contam duas vezes, porque a projeção só começa depois de `generatedUntil`.
+35. A tela Faturas projeta até o fim do ciclo seguinte ao atual; a previsão projeta até o seu horizonte. A fatura mostra quanto do total é previsto. "A pagar e receber", a Visão geral e os alertas não incluem o previsto.
+36. Editar a recorrência vale para as cobranças ainda não geradas. Desativar para de gerar e de projetar. Apagar remove a recorrência e mantém as cobranças já geradas.
+37. Recorrência com início no passado gera as cobranças desde o início (respeitando `invoicesFrom` na fatura, como qualquer compra).
+38. Título ou recorrência de título novo, ou editado, com conta = cartão com dias: `400` com erro no campo `accountId`, orientando usar a compra recorrente. Baixar um título **no** cartão continua permitido (pagar um boleto com o cartão é legítimo). Títulos existentes não mudam.
+
 **Telas**
 
 13. Formulário de conta pede fechamento e vencimento quando o tipo é cartão.
@@ -91,6 +102,12 @@ Exemplo: cartão com fechamento no dia 10 e vencimento no dia 17. Uma compra de 
 20. Com um início anterior, as compras desde esse ciclo entram nas faturas, e a fatura antiga não quitada aparece como vencida; mover o início para a frente esconde as anteriores.
 21. A tela Faturas lista as faturas de todos os cartões em uma só lista, com filtros de cartão, situação e vencimento e ordenação por vencimento, total, falta, cartão e situação.
 22. A tela mostra o resumo, a fatura atual de cada cartão em destaque e desde quando as faturas contam; "Ver itens da fatura" abre a tela já filtrada no cartão.
+23. Criar compra recorrente em cartão com dias funciona; em cartão sem dias ou em conta de outro tipo é `400` (regra 31).
+24. A cobrança vencida vira despesa no cartão na data certa, o dia 31 vale o último dia do mês, e gerar duas vezes não duplica (regras 32 e 37).
+25. A cobrança gerada pode ser editada e apagada, e apagada não volta (regras 32 e 33).
+26. A cobrança futura aparece como prevista na fatura (até o fim do ciclo seguinte) e nas duas previsões, e some da projeção quando é gerada, sem contar duas vezes (regras 34 e 35).
+27. Editar vale só para as futuras; desativar para de gerar e de projetar; apagar mantém as cobranças geradas (regra 36).
+28. Título e recorrência de título em cartão com dias dão `400` no campo `accountId`; baixar um título no cartão continua funcionando; recurso de outro usuário dá `404`; OpenAPI e `MoneyScaleIntegrationTest` cobrem as rotas; as telas funcionam no mobile, com teclado e leitor de tela (regra 38).
 
 ## Casos de borda
 
@@ -106,6 +123,8 @@ Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importa
 
 ## Migration
 
+`V21__add_recurring_card_purchases.sql` (emenda): só adiciona a tabela `recurring_purchases` e a coluna nula `transactions.recurring_purchase_id`; não altera dado existente.
+
 `V20__add_credit_card_invoices.sql` só adiciona colunas nulas em `accounts` (`closing_day`, `due_day`, `invoices_from`) e `transactions` (`installment_group_id`, `installment_number`, `installment_total`). Não altera dado existente; nenhum número muda no deploy.
 
 ## Decisões tomadas
@@ -119,6 +138,7 @@ Limite do cartão, juros e multa, parcelar a fatura, antecipar parcelas, importa
 - A tela Faturas vira uma lista única de todos os cartões, com filtros e ordenação no navegador (decidido em 2026-11-06).
 - A fatura também aparece em "Próximos vencimentos" da Visão geral (decidido em 2026-11-06, depois da primeira versão desta mudança).
 - A fatura aparece em "A pagar e receber" como uma linha calculada, aberta, fechada ou vencida, com o valor total; entra no quadro "A pagar" da Visão geral e nos alertas (só fechada ou vencida). Decidido em 2026-11-06, em lugar de ficar fora, como a versão inicial da spec previa.
+- Compra recorrente no cartão (decidido em 2026-11-09): a cobrança vira despesa sozinha na data; as próximas são projetadas na fatura e na previsão; título e recorrência de título em cartão com dias passam a ser `400` (os existentes não mudam). A marca d'água `generatedUntil` (e não uma chave única) garante que cobrança apagada não volta.
 
 ## Decisões a confirmar
 
