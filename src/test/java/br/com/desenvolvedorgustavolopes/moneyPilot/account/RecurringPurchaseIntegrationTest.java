@@ -64,6 +64,16 @@ class RecurringPurchaseIntegrationTest extends CreditCardTestSupport {
     }
 
     @Test
+    void create_withADescriptionLongerThanTheColumn_isBadRequestOnTheField() throws Exception {
+        String token = registerAndLogin();
+        Long card = createCard(token, 10, 17);
+
+        createRaw(token, body(card, "10.00", 5, "2026-01-05", null).replace("Streaming", "x".repeat(256)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.description").exists());
+    }
+
+    @Test
     void materialize_generatesTheChargesUpToToday_andTwiceDoesNotDuplicate() throws Exception {
         String token = registerAndLogin();
         Long card = createCard(token, 10, 17);

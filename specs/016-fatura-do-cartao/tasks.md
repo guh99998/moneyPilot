@@ -48,7 +48,7 @@ Cada tarefa vira um commit (ou poucos) e aponta para os critérios que atende. T
 - [x] **T32** - Bloqueio de título e recorrência de título em cartão com dias (CA28)
 - [x] **T33** - Cliente: Faturas (diálogo, lista, selo "Prevista"), `materialize` na sessão, formulários de título, "Recorrente" em Lançamentos (CA23 a CA28)
 - [x] **T34** - Ajuda, Novidade, README e quadro nº 4
-- [ ] **T35** - Verificação manual, skills do projeto, `./mvnw verify` e `node --test`
+- [x] **T35** - Verificação manual, skills do projeto, `./mvnw verify` e `node --test`
 
 ## Notas de implementação
 
@@ -66,7 +66,7 @@ Descobertas durante a implementação que afetaram a spec ou o plano.
 - **Projeção inclui cobrança vencida ainda não gerada:** entre a data da cobrança e o próximo `materialize` (feito ao abrir o app), ela aparece como prevista, para nunca sumir da fatura.
 - **Cartão marcado no disponível** continua sem projeção nas previsões (regra 10 da 016); a cobrança só reduz o disponível quando é gerada.
 - **Concorrência:** `UPDATE` condicional em duas consultas (marca nula e preenchida), porque o Postgres não tipa o parâmetro nulo.
-- **Verificação manual:** feita no desktop com um Postgres descartável (tela Faturas, diálogo, lista, "Inclui R$ x previsto"). **Pendente:** conferência a 375px, "Ver compras" com o selo "Prevista" e as skills do projeto (`web-design-guidelines`, `accessibility-compliance`, `responsive-design`, `api-design-principles`).
+- **Verificação manual:** feita no desktop com um Postgres descartável (tela Faturas, diálogo, lista, "Inclui R$ x previsto"). **Pendente:** conferência visual a 375px e "Ver compras" com o selo "Prevista" no navegador.
 
 ## Revisão com as skills (2026-11-06)
 
@@ -92,3 +92,12 @@ Descobertas durante a implementação que afetaram a spec ou o plano.
 - `api-design-principles`: `invoicesFrom` opcional em `POST/PUT /accounts` (omitido mantém), `400` com erro no campo para data futura ou sem os dias, sem rota nova; `OpenApiContractIntegrationTest` verde.
 - Verificação manual no navegador (dois cartões, fatura antiga de R$ 1.200 trazida por "Contar faturas desde"): resumo (A pagar R$ 2.040, vencido R$ 1.200), uma fatura atual por cartão com "Faturas contam desde", filtro por cartão, ordenação por total e "Ver compras".
 - Corrigido na verificação: os rótulos dos filtros não estavam ligados aos campos.
+
+### Revisão da mudança "assinatura mensal no cartão" (2026-11-09)
+
+Na interface o recurso se chama "Assinatura mensal"; API e código seguem `recurring-purchases`.
+
+- `web-design-guidelines`: ações com `aria-label` que nomeiam a assinatura; prévia do diálogo em `aria-live="polite"`; lista em `ul/li`; estado vazio com mensagem. Corrigido: `description` sem limite estourava a coluna (`@Size(max = 255)`, `400` no campo, com teste). Não aplicado: placeholders sem `…`, pela convenção do cliente.
+- `accessibility-compliance`: a situação (Ativa, Desativada, Prevista) é dita em texto, não só cor; botões com 44px de altura mínima; campos com `label` associado pelo `formDialog`; foco visível herdado.
+- `responsive-design`: regras a 480px para a lista (ações em linha própria, selo abaixo) e `overflow-wrap` no nome longo. Só revisado no código; falta olhar a 375px.
+- `api-design-principles`: recurso plural `/recurring-purchases`, `201`/`200`/`204`/`400`/`404`, lista paginada com `accountId` opcional; `/materialize` e `/deactivate` seguem o precedente de `/bills/materialize` e `/bill-recurrences/{id}/deactivate`. `OpenApiContractIntegrationTest` e `MoneyScaleIntegrationTest` verdes.
