@@ -558,6 +558,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
+    @ExceptionHandler(InvalidInstallmentRequestException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidInstallmentRequest(InvalidInstallmentRequestException ex) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                ex.getMessage(),
+                Map.of(ex.getField(), ex.getMessage())
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(InvalidInvoiceDaysException.class)
     public ResponseEntity<ErrorResponse> handleInvalidInvoiceDays(InvalidInvoiceDaysException ex) {
         ErrorResponse body = new ErrorResponse(
