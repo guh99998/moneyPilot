@@ -1,6 +1,6 @@
 # 028 — Ajuste dos itens da fatura
 
-**Status:** aprovada
+**Status:** em revisão (implementada, testes verdes; falta a checagem manual do Gustavo)
 **Branch:** feature/028-itens-da-fatura
 **Depende de:** 016 (fatura do cartão). Muda a regra 9 e a regra 28 da 016.
 
