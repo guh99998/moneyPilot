@@ -116,6 +116,18 @@ class TransactionEditInstallmentIntegrationTest extends CreditCardTestSupport {
     }
 
     @Test
+    void ca13_editAmountWithMoreThanTwoDecimalsOrComma_is400OnTheField() throws Exception {
+        String token = registerAndLogin();
+        Long card = createCard(token, 10, 17);
+        String[] ids = installmentIds(token, card);
+
+        edit(token, ids[0], card, FOOD_CATEGORY_ID, "10.555", "EXPENSE", "x", "2026-03-20", null)
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.amount").isNotEmpty());
+        edit(token, ids[0], card, FOOD_CATEGORY_ID, "\"10,50\"", "EXPENSE", "x", "2026-03-20", "THIS_AND_FOLLOWING")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.amount").isNotEmpty());
+    }
+
+    @Test
     void ca9_transferStill409() throws Exception {
         String token = registerAndLogin();
         Long card = createCard(token, 10, 17);

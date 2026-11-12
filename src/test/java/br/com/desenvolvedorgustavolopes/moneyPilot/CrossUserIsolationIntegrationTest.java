@@ -83,6 +83,27 @@ class CrossUserIsolationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void userCannotEditWithScopeOrRefundAnotherUsersTransaction() throws Exception {
+        String tokenA = registerAndLogin();
+        String tokenB = registerAndLogin();
+
+        Long accountId = createAccount(tokenA);
+        Long transactionId = createTransaction(tokenA, accountId);
+
+        mockMvc.perform(put("/api/v1/transactions/{id}", transactionId).param("scope", "THIS_AND_FOLLOWING")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenB))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accountId\":" + accountId + ",\"categoryId\":3,\"amount\":10.00,\"type\":\"EXPENSE\",\"date\":\"2026-03-15\"}"))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(post("/api/v1/transactions/{id}/refund", transactionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenB))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"date\":\"2026-03-15\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void userCannotReadOrDeleteAnotherUsersBudget() throws Exception {
         String tokenA = registerAndLogin();
         String tokenB = registerAndLogin();
