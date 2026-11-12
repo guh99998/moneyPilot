@@ -1,6 +1,6 @@
 # 028 — Ajuste dos itens da fatura
 
-**Status:** rascunho
+**Status:** aprovada
 **Branch:** feature/028-itens-da-fatura
 **Depende de:** 016 (fatura do cartão). Muda a regra 9 e a regra 28 da 016.
 
@@ -33,9 +33,10 @@ Exemplo: compra de 10 parcelas de R$ 83,33. A pessoa corrige a categoria da parc
 **Estornar um item da fatura**
 
 7. Estornar cria uma **receita no mesmo cartão** (regra 5 da 016: estorno é receita) ligada à compra, sem apagar a compra. A compra fica marcada como **estornada**.
-8. O estorno tem a **data** (padrão hoje) e a **categoria de receita** escolhida pela pessoa. O valor é o da compra, inteiro.
-9. Em compra parcelada, a pessoa escolhe: **só esta parcela**, **esta e as seguintes** (o estorno de cada parcela cai na data da própria parcela, para não adiantar estorno de parcela que ainda nem cobrou) ou **a compra inteira**. Parcela já estornada não é estornada de novo (`409`).
+8. O estorno tem a **data** (padrão hoje). A categoria é a **global "Estorno"** (receita, criada por migration); a pessoa não escolhe categoria. O valor é o da compra, inteiro.
+9. Em compra parcelada, a pessoa escolhe: **só esta parcela**, **esta e as seguintes** ou **a compra inteira**. A data do estorno de cada parcela é a **maior entre a data informada e a data da parcela**: o que já foi cobrado é estornado na data informada, e o futuro na data de cada parcela. Num alcance com parcelas já estornadas, estorna as que faltam; se não sobrar nenhuma, `409`.
 10. **Desfazer o estorno** apaga a receita criada e a compra volta ao normal. A receita do estorno não se edita por fora (`409`), como a da baixa de título.
+10a. **Compra ou parcela estornada não se edita** (`409`). Em "esta e as seguintes", se alguma parcela do alcance estiver estornada, a edição toda é recusada.
 11. Estornar não cria despesa nem some do relatório: despesa e receita do estorno aparecem no mês de cada data.
 
 **Apagar um item da fatura**
@@ -44,7 +45,7 @@ Exemplo: compra de 10 parcelas de R$ 83,33. A pessoa corrige a categoria da parc
 
 **Tela Faturas**
 
-13. A lista única de faturas passa a ordenar por **vencimento da mais antiga para a mais nova** como padrão (muda a regra 28 da 016). O cabeçalho continua ordenando por vencimento, total, falta pagar, cartão e situação, e o padrão de cada coluna é o da primeira vez que se clica.
+13. A lista única de faturas passa a ordenar por **vencimento da mais antiga para a mais nova** como padrão (muda a regra 28 da 016) e **abre filtrada em "Não pagas"** (todas menos as pagas; a aberta paga adiantada continua aparecendo). O cabeçalho continua ordenando por vencimento, total, falta pagar, cartão e situação, e o padrão de cada coluna é o da primeira vez que se clica.
 14. A **fatura atual em destaque** no topo e o resumo não mudam.
 
 **Pagamento adiantado**
@@ -87,15 +88,15 @@ Exemplo: compra de 10 parcelas de R$ 83,33. A pessoa corrige a categoria da parc
 
 - Controle de **limite** do cartão (limite, usado, disponível): o exemplo do adiantamento só pede que o pagamento parcial reduza a fatura.
 - Escolher qual fatura abater no pagamento: continua da mais antiga para a mais nova.
-- Estorno parcial (valor menor que o da compra).
+- Estorno parcial (valor menor que o da compra): quem precisar adianta a fatura no valor.
 - Apagar só uma parcela, ou "esta e as seguintes", sem apagar o grupo.
 - Parcelar a fatura, antecipar ou quitar parcelas futuras, juros e multa.
 - Importar fatura.
 - Mudar o cartão de uma compra já lançada.
 
-## Perguntas em aberto
+## Decisões
 
-1. **Categoria do estorno.** Pedir uma categoria de receita a cada estorno (como escrito na regra 8) ou criar uma categoria global "Estorno" por migration e usá-la por padrão? A migration só adicionaria uma linha, sem alterar dado existente.
-2. **Estorno inteiro ou parcial.** Escrevi só inteiro (regra 8). Um estorno parcial (a loja devolveu só parte) é comum; entra agora ou fica para depois?
-3. **Faturas pagas antigas no topo.** Com a ordem da mais antiga para a mais nova, as faturas pagas há meses ficam antes das em aberto. Mantenho assim, ou o filtro de situação já abre em "não pagas"?
-4. **Selo "Paga adiantada"** (regra 17) está bom como texto, ou prefere outro nome?
+1. **Categoria do estorno:** categoria global "Estorno" (receita), criada por migration; sem escolha.
+2. **Estorno:** só inteiro; o parcial fica para depois.
+3. **Faturas pagas antigas:** a lista abre filtrada em "Não pagas".
+4. **Selo:** "Paga adiantada".
