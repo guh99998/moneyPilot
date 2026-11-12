@@ -1068,6 +1068,10 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
 .invoice-purchase.is-projected { color: var(--text-secondary); }
 .invoice-purchase.is-projected .invoice-purchase-desc { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
 .invoices-table td.num .meter-foot { display: block; }
+.table-stack .invoices-table td.num { flex-wrap: wrap; }
+.table-stack .invoices-table td.num .meter-foot { flex: 1 0 100%; text-align: right; }
+.table-stack .invoices-table td.desc { flex-wrap: wrap; }
+.table-stack .invoices-table td.desc .invoice-purchases { flex: 1 0 100%; text-align: left; }
 @media (max-width: 480px) {
     .recurring-item { grid-template-columns: 1fr auto; }
     .recurring-item .badge { grid-column: 1 / -1; justify-self: start; }
