@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,13 +26,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findAllByInstallmentGroupId(UUID installmentGroupId);
 
     List<Transaction> findAllByInstallmentGroupIdAndInstallmentNumberGreaterThanEqual(UUID installmentGroupId, Integer installmentNumber);
-
-    /** Spec 028: estornos das compras informadas. */
-    List<Transaction> findAllByRefundOfTransactionIdIn(Collection<Long> transactionIds);
-
-    boolean existsByRefundOfTransactionId(Long transactionId);
-
-    boolean existsByRefundOfTransactionIdIn(Collection<Long> transactionIds);
 
     @Query("""
     SELECT COALESCE(SUM(CASE WHEN t.type = 'INCOME' THEN t.amount ELSE -t.amount END), 0) FROM Transaction t WHERE t.accountId = :accountId

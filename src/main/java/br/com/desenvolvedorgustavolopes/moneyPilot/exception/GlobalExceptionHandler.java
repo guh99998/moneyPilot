@@ -519,45 +519,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
-    @ExceptionHandler(TransactionIsRefundedException.class)
-    public ResponseEntity<ErrorResponse> handleTransactionIsRefunded(TransactionIsRefundedException ex) {
-        ErrorResponse body = new ErrorResponse(
-                Instant.now(),
-                HttpStatus.CONFLICT.value(),
-                "Conflict",
-                ex.getMessage(),
-                null
-        );
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
-    }
-
-    @ExceptionHandler(TransactionIsRefundException.class)
-    public ResponseEntity<ErrorResponse> handleTransactionIsRefund(TransactionIsRefundException ex) {
-        ErrorResponse body = new ErrorResponse(
-                Instant.now(),
-                HttpStatus.CONFLICT.value(),
-                "Conflict",
-                ex.getMessage(),
-                null
-        );
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
-    }
-
-    @ExceptionHandler(TransactionNotRefundableException.class)
-    public ResponseEntity<ErrorResponse> handleTransactionNotRefundable(TransactionNotRefundableException ex) {
-        ErrorResponse body = new ErrorResponse(
-                Instant.now(),
-                HttpStatus.CONFLICT.value(),
-                "Conflict",
-                ex.getMessage(),
-                null
-        );
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
-    }
-
     @ExceptionHandler(InstallmentRequiresCreditCardException.class)
     public ResponseEntity<ErrorResponse> handleInstallmentRequiresCreditCard(InstallmentRequiresCreditCardException ex) {
         ErrorResponse body = new ErrorResponse(

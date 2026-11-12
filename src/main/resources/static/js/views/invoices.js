@@ -6,7 +6,7 @@ import {
 import {
     EMPTY_FILTERS, SORT_OPTIONS, UNPAID, buildRows, filterInvoices, sortInvoices, summarize, isPaidInAdvance, paymentPreview
 } from './invoices-list.js';
-import { itemActionButtons, itemBadges } from './invoices-items.js';
+import { itemActionButtons } from './invoices-items.js';
 import { openRecurringPurchaseDialog, projectedCharges, recurringPurchasesSection } from './invoices-recurring.js';
 
 export const INVOICE_STATUS = {
@@ -166,11 +166,10 @@ function purchaseLine(transaction, onChanged) {
         ? ` (${transaction.installmentNumber}/${transaction.installmentTotal})`
         : '';
     const recurring = transaction.recurringPurchaseId ? ' · assinatura' : '';
-    const badges = itemBadges(transaction);
     const actions = itemActionButtons(transaction, { onChanged });
     return el('li', { class: 'invoice-purchase' }, [
         el('span', { class: 'invoice-purchase-date', text: fmtDate(transaction.date) }),
-        el('span', { class: 'invoice-purchase-desc' }, [label + installment + recurring, ...badges.flatMap((node) => [' ', node])]),
+        el('span', { class: 'invoice-purchase-desc', text: label + installment + recurring }),
         el('span', {
             class: 'invoice-purchase-amount',
             style: `color: var(--${income ? 'income' : 'expense'})`,

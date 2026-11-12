@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     @Query("""
@@ -17,9 +16,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
             OR c.userId IS NULL
     """)
     Page<Category> findVisibleToUser(@Param("userId") Long userId, Pageable pageable);
-
-    /** Spec 028: categoria global usada nos estornos. */
-    Optional<Category> findByNameAndTypeAndUserIdIsNull(String name, CategoryType type);
 
     /** Exclusão de conta (spec 012): apaga em lote, sem carregar entidades. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

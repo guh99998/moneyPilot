@@ -34,12 +34,6 @@ public class CategoryService {
         return new CategoryResponse(repository.save(category));
     }
 
-    /** Spec 028: a categoria global "Estorno" (receita), criada por migration. */
-    public Category findRefundCategory() {
-        return repository.findByNameAndTypeAndUserIdIsNull("Estorno", CategoryType.INCOME)
-                .orElseThrow(() -> new IllegalStateException("Global category 'Estorno' is missing"));
-    }
-
     public Category findVisibleCategory(Long categoryId) {
         Long userId = userProvider.getCurrentUserId();
 

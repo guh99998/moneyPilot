@@ -26,9 +26,7 @@ public record TransactionResponse(
         @Schema(description = "Grupo da compra parcelada, se o lançamento for uma parcela", example = "9d1c2a4e-6b3f-4c8d-8e55-0a7b1f2c3d4e", nullable = true) UUID installmentGroupId,
         @Schema(description = "Número desta parcela (a partir de 1), se for uma parcela", example = "2", nullable = true) Integer installmentNumber,
         @Schema(description = "Total de parcelas da compra, se for uma parcela", example = "6", nullable = true) Integer installmentTotal,
-        @Schema(description = "Compra recorrente que gerou este lançamento, se houver", example = "4", nullable = true) Long recurringPurchaseId,
-        @Schema(description = "Compra que este lançamento estorna, se for um estorno", example = "12", nullable = true) Long refundOfTransactionId,
-        @Schema(description = "Estorno criado para esta compra, se ela estiver estornada", example = "15", nullable = true) Long refundTransactionId
+        @Schema(description = "Compra recorrente que gerou este lançamento, se houver", example = "4", nullable = true) Long recurringPurchaseId
 ) {
         public TransactionResponse(Transaction transaction, String accountName, String categoryName) {
                 this(transaction, accountName, categoryName, null);
@@ -36,11 +34,6 @@ public record TransactionResponse(
 
         /** bill: o título cuja baixa gerou este lançamento, quando houver. */
         public TransactionResponse(Transaction transaction, String accountName, String categoryName, Bill bill) {
-                this(transaction, accountName, categoryName, bill, null);
-        }
-
-        /** refundTransactionId: o estorno desta compra, quando houver. */
-        public TransactionResponse(Transaction transaction, String accountName, String categoryName, Bill bill, Long refundTransactionId) {
                 this(
                         transaction.getId(),
                         transaction.getAccountId(),
@@ -59,9 +52,7 @@ public record TransactionResponse(
                         transaction.getInstallmentGroupId(),
                         transaction.getInstallmentNumber(),
                         transaction.getInstallmentTotal(),
-                        transaction.getRecurringPurchaseId(),
-                        transaction.getRefundOfTransactionId(),
-                        refundTransactionId
+                        transaction.getRecurringPurchaseId()
                 );
         }
 }
