@@ -384,7 +384,11 @@ export async function renderInvoices() {
             el('span', { text: `Fecha em ${fmtDate(invoice.closingDate)}` }),
             el('span', { text: `Vence em ${fmtDate(invoice.dueDate)}` })
         ];
-        if (Number(invoice.paid) > 0) facts.push(el('span', { text: `Já pago: ${fmtMoney(invoice.paid)}` }));
+        const partlyPaid = Number(invoice.paid) > 0;
+        if (partlyPaid) {
+            facts.push(el('span', { text: `Total da fatura: ${fmtMoney(invoice.total)}` }));
+            facts.push(el('span', { text: `Já pago: ${fmtMoney(invoice.paid)}` }));
+        }
         if (Number(invoice.projectedTotal) > 0) facts.push(el('span', { text: `Previsto: ${fmtMoney(invoice.projectedTotal)} em assinaturas mensais` }));
         const titleId = `invoice-current-${card.id}`;
 
@@ -393,7 +397,8 @@ export async function renderInvoices() {
                 el('h2', { id: titleId, text: `Fatura atual · ${card.name}` }),
                 invoiceStatus(invoice)
             ]),
-            el('p', { class: 'invoice-figure', text: fmtMoney(invoice.total) }),
+            partlyPaid ? el('p', { class: 'meter-foot', text: 'Falta pagar' }) : null,
+            el('p', { class: 'invoice-figure', text: fmtMoney(partlyPaid ? invoice.remaining : invoice.total) }),
             el('p', { class: 'invoice-facts' }, facts),
             card.invoicesFrom ? el('p', { class: 'meter-foot', text: `Faturas contam desde ${fmtDate(card.invoicesFrom)}` }) : null,
             earlierOwed > 0
