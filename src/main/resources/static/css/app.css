@@ -1072,3 +1072,4 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
     .recurring-item { grid-template-columns: 1fr auto; }
     .recurring-item .badge { grid-column: 1 / -1; justify-self: start; }
 }
+.invoice-status-badges { display: inline-flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: center; }
