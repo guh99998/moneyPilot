@@ -430,3 +430,25 @@ test('the pay dialog previews where the amount goes', async () => {
     const hint = findAll(globalThis.document.body, (node) => node.className === 'preview-hint')[0];
     assert.match(hint.textContent, /quita a fatura com vencimento em 17\/04\/2026/);
 });
+
+test('the current invoice highlights what is left to pay and keeps the total and what was paid in the facts', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: [inv('2026-04-17', 'OPEN', '500.00', '50.00')] } });
+
+    const view = await renderInvoices();
+
+    const current = byClass(view, 'invoice-current')[0];
+    assert.match(text(byClass(current, 'invoice-figure')[0]), /^R\$\s450,00$/);
+    assert.match(text(current), /Falta pagar/);
+    assert.match(text(current), /Total da fatura: R\$\s500,00/);
+    assert.match(text(current), /Já pago: R\$\s50,00/);
+});
+
+test('the current invoice with nothing paid shows the total as the figure', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: [inv('2026-04-17', 'OPEN', '500.00')] } });
+
+    const view = await renderInvoices();
+
+    const current = byClass(view, 'invoice-current')[0];
+    assert.match(text(byClass(current, 'invoice-figure')[0]), /^R\$\s500,00$/);
+    assert.doesNotMatch(text(current), /Total da fatura/);
+});
