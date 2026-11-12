@@ -6,6 +6,7 @@ import {
 import {
     EMPTY_FILTERS, SORT_OPTIONS, UNPAID, buildRows, filterInvoices, sortInvoices, summarize, isPaidInAdvance, paymentPreview
 } from './invoices-list.js';
+import { itemActionButtons, itemBadges } from './invoices-items.js';
 import { openRecurringPurchaseDialog, projectedCharges, recurringPurchasesSection } from './invoices-recurring.js';
 
 export const INVOICE_STATUS = {
@@ -157,7 +158,7 @@ function invoiceStatus(invoice) {
         : statusBadge(invoice.status);
 }
 
-function purchaseLine(transaction) {
+function purchaseLine(transaction, onChanged) {
     const isPayment = Boolean(transaction.transferGroupId);
     const income = transaction.type === 'INCOME';
     const label = isPayment ? 'Pagamento recebido' : (transaction.description || transaction.categoryName || '—');
@@ -165,14 +166,17 @@ function purchaseLine(transaction) {
         ? ` (${transaction.installmentNumber}/${transaction.installmentTotal})`
         : '';
     const recurring = transaction.recurringPurchaseId ? ' · assinatura' : '';
+    const badges = itemBadges(transaction);
+    const actions = itemActionButtons(transaction, { onChanged });
     return el('li', { class: 'invoice-purchase' }, [
         el('span', { class: 'invoice-purchase-date', text: fmtDate(transaction.date) }),
-        el('span', { class: 'invoice-purchase-desc', text: label + installment + recurring }),
+        el('span', { class: 'invoice-purchase-desc' }, [label + installment + recurring, ...badges.flatMap((node) => [' ', node])]),
         el('span', {
             class: 'invoice-purchase-amount',
             style: `color: var(--${income ? 'income' : 'expense'})`,
             text: `${income ? '+' : '−'} ${fmtMoney(transaction.amount)}`
-        })
+        }),
+        actions.length ? el('span', { class: 'invoice-purchase-actions' }, actions) : null
     ]);
 }
 
@@ -189,7 +193,7 @@ function projectedLine(charge) {
 }
 
 /** Compras do ciclo, carregadas só quando a pessoa abre a lista; `projected` são as cobranças previstas. */
-function purchasesDetails(card, invoice, projected = []) {
+function purchasesDetails(card, invoice, projected = [], onChanged) {
     const body = el('div', { class: 'invoice-purchases-body', 'aria-live': 'polite' });
     let loaded = false;
 
@@ -204,7 +208,7 @@ function purchasesDetails(card, invoice, projected = []) {
                 size: 100,
                 sort: ['date,asc', 'id,asc']
             }));
-            const lines = [...result.content.map(purchaseLine), ...projected.map(projectedLine)];
+            const lines = [...result.content.map((transaction) => purchaseLine(transaction, onChanged)), ...projected.map(projectedLine)];
             body.replaceChildren(lines.length
                 ? el('ul', { class: 'invoice-purchase-list' }, lines)
                 : el('p', { class: 'meter-foot', text: 'Nenhum lançamento neste ciclo.' }));
@@ -473,7 +477,7 @@ export async function renderInvoices() {
                     el('td', { class: 'due', text: fmtDate(row.invoice.dueDate) }),
                     el('td', { class: 'desc' }, [
                         el('span', { class: 'desc-main', text: row.card.name }),
-                        purchasesDetails(row.card, row.invoice, projectedOf(row.card, row.invoice))
+                        purchasesDetails(row.card, row.invoice, projectedOf(row.card, row.invoice), load)
                     ]),
                     el('td', { class: 'status' }, invoiceStatus(row.invoice)),
                     el('td', { class: 'num' }, [

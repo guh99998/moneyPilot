@@ -317,10 +317,13 @@ export async function renderTransactions() {
                         el('td', { class: 'actions' }, fromBill
                             ? [el('button', { class: 'btn-ghost btn-sm', text: 'Desfazer baixa', onClick: () => askUnsettle(transaction) })]
                             : [
-                                isTransfer || transaction.installmentGroupId
-                                    ? el('span', { class: 'meter-foot', text: 'não editável' })
+                                isTransfer || transaction.installmentGroupId || transaction.refundOfTransactionId || transaction.refundTransactionId
+                                    ? el('span', { class: 'meter-foot', text: transaction.refundTransactionId ? 'estornada' : 'não editável' })
                                     : el('button', { class: 'btn-ghost btn-sm', text: 'Editar', onClick: () => openTransactionDialog(transaction) }),
-                                el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(transaction) })
+                                // Compra estornada não se apaga (409): desfaz-se o estorno, na tela Faturas ou excluindo a receita.
+                                transaction.refundTransactionId
+                                    ? null
+                                    : el('button', { class: 'btn-ghost btn-sm btn-danger', text: 'Excluir', onClick: () => askDelete(transaction) })
                             ])
                     ]);
                 }))

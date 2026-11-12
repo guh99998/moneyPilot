@@ -1073,3 +1073,5 @@ dialog.dialog-wide { width: min(620px, calc(100vw - 24px)); }
     .recurring-item .badge { grid-column: 1 / -1; justify-self: start; }
 }
 .invoice-status-badges { display: inline-flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: center; }
+.invoice-purchase-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .25rem; }
+.invoice-purchase-actions .btn-sm { min-height: 44px; }
