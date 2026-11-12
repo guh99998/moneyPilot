@@ -10,6 +10,7 @@ import br.com.desenvolvedorgustavolopes.moneyPilot.category.Category;
 import br.com.desenvolvedorgustavolopes.moneyPilot.category.CategoryService;
 import br.com.desenvolvedorgustavolopes.moneyPilot.exception.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,8 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -71,6 +74,12 @@ public class TransactionService {
                 .stream()
                 .collect(Collectors.toMap(Bill::getTransactionId, Function.identity()));
 
+        // Uma consulta por página para saber quais compras foram estornadas (spec 028).
+        Map<Long, Long> refundsByPurchase = repository
+                .findAllByRefundOfTransactionIdIn(page.getContent().stream().map(Transaction::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(Transaction::getRefundOfTransactionId, Transaction::getId));
+
         return page.
                 map(
                         t -> {Account account = accountRepository.findById(t.getAccountId()).orElseThrow(() -> new AccountNotFoundException(t.getAccountId()));
@@ -81,7 +90,7 @@ public class TransactionService {
                             } else {
                                 categoryName = null;
                             }
-                            return new TransactionResponse(t, account.getName(), categoryName, billsByTransaction.get(t.getId()));
+                            return new TransactionResponse(t, account.getName(), categoryName, billsByTransaction.get(t.getId()), refundsByPurchase.get(t.getId()));
                         });
     }
 
@@ -122,22 +131,44 @@ public class TransactionService {
         Category category = categoryService.findVisibleCategory(transaction.getCategoryId());
         Bill bill = billRepository.findAllByTransactionIdIn(List.of(transaction.getId())).stream().findFirst().orElse(null);
 
-        return new TransactionResponse(transaction, account.getName(), category.getName(), bill);
+        Long refundId = repository.findAllByRefundOfTransactionIdIn(List.of(transaction.getId())).stream().findFirst().map(Transaction::getId).orElse(null);
+
+        return new TransactionResponse(transaction, account.getName(), category.getName(), bill, refundId);
     }
 
-    public TransactionResponse updateTransaction(Long id, TransactionRequest request) {
+    @Transactional
+    public TransactionResponse updateTransaction(Long id, TransactionRequest request, EditScope scope) {
         Transaction transaction = this.findOwnedTransaction(id);
         Long userId = userProvider.getCurrentUserId();
+        EditScope editScope = scope == null ? EditScope.ONLY_THIS : scope;
+        boolean installment = transaction.getInstallmentGroupId() != null;
 
         if (transaction.getTransferGroupId() != null)
             throw new TransactionIsTransferException(id);
 
-        if (transaction.getInstallmentGroupId() != null)
-            throw new TransactionIsInstallmentException(id);
+        if (transaction.getRefundOfTransactionId() != null)
+            throw new TransactionIsRefundException(id);
 
         if (billRepository.existsByTransactionId(id))
             throw new TransactionLinkedToBillException(id);
 
+        if (editScope == EditScope.THIS_AND_FOLLOWING && !installment)
+            throw new InvalidInstallmentRequestException("scope", "O alcance 'esta e as seguintes' só vale para parcela");
+
+        if (installment) {
+            // Spec 028, regra 2: a parcela continua no cartão e no tipo em que nasceu.
+            if (!transaction.getAccountId().equals(request.accountId()))
+                throw new InvalidInstallmentRequestException("accountId", "A conta de uma parcela não muda");
+            if (transaction.getType() != request.type())
+                throw new InvalidInstallmentRequestException("type", "O tipo de uma parcela não muda");
+        }
+
+        List<Transaction> range = editScope == EditScope.THIS_AND_FOLLOWING
+                ? repository.findAllByInstallmentGroupIdAndInstallmentNumberGreaterThanEqual(transaction.getInstallmentGroupId(), transaction.getInstallmentNumber())
+                : List.of(transaction);
+
+        if (repository.existsByRefundOfTransactionIdIn(range.stream().map(Transaction::getId).toList()))
+            throw new TransactionIsRefundedException(id);
 
         Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
 
@@ -146,16 +177,22 @@ public class TransactionService {
         if (!category.getType().name().equals(request.type().name()))
             throw new CategoryTypeMismatchException(request.categoryId(), request.type());
 
+        Instant now = Instant.now();
+
+        for (Transaction item : range) {
+            item.setCategoryId(request.categoryId());
+            item.setAmount(request.amount());
+            item.setDescription(request.description());
+            item.setUpdatedAt(now);
+        }
 
         transaction.setAccountId(request.accountId());
-        transaction.setCategoryId(request.categoryId());
-        transaction.setAmount(request.amount());
         transaction.setType(request.type());
-        transaction.setDescription(request.description());
         transaction.setDate(request.date());
-        transaction.setUpdatedAt(Instant.now());
 
-        return new TransactionResponse(repository.save(transaction), account.getName(), category.getName());
+        repository.saveAll(range);
+
+        return new TransactionResponse(transaction, account.getName(), category.getName());
     }
 
     public void deleteTransaction(Long id) {
@@ -163,6 +200,14 @@ public class TransactionService {
 
         if (billRepository.existsByTransactionId(id))
             throw new TransactionLinkedToBillException(id);
+
+        // Spec 028, regra 12: compra estornada não se apaga sem desfazer o estorno.
+        if (repository.existsByRefundOfTransactionId(id))
+            throw new TransactionIsRefundedException(id);
+
+        if (transaction.getInstallmentGroupId() != null
+                && repository.existsByRefundOfTransactionIdIn(repository.findAllByInstallmentGroupId(transaction.getInstallmentGroupId()).stream().map(Transaction::getId).toList()))
+            throw new TransactionIsRefundedException(id);
 
         if (transaction.getTransferGroupId() != null) {
             repository.deleteAll(repository.findAllByTransferGroupId(transaction.getTransferGroupId()));
@@ -289,6 +334,74 @@ public class TransactionService {
                 || accountRepository.findByIdAndUserId(installments.get(0).getAccountId(), userId).isEmpty())
             throw new InstallmentGroupNotFoundException(groupId);
 
+        if (repository.existsByRefundOfTransactionIdIn(installments.stream().map(Transaction::getId).toList()))
+            throw new TransactionIsRefundedException(installments.get(0).getId());
+
         repository.deleteAll(installments);
+    }
+
+    /** Spec 028, regras 7 a 10: cria uma receita de estorno por compra (ou parcela) do alcance, na data de cada uma. */
+    @Transactional
+    public List<TransactionResponse> refundTransaction(Long id, RefundRequest request) {
+        Transaction purchase = this.findOwnedTransaction(id);
+        Account account = accountRepository.findById(purchase.getAccountId()).orElseThrow(() -> new AccountNotFoundException(purchase.getAccountId()));
+        RefundScope scope = request.scope() == null ? RefundScope.ONLY_THIS : request.scope();
+        boolean installment = purchase.getInstallmentGroupId() != null;
+
+        if (account.getType() != AccountType.CREDIT_CARD
+                || purchase.getType() != TransactionType.EXPENSE
+                || purchase.getTransferGroupId() != null
+                || purchase.getRefundOfTransactionId() != null
+                || billRepository.existsByTransactionId(id))
+            throw new TransactionNotRefundableException(id);
+
+        if (scope != RefundScope.ONLY_THIS && !installment)
+            throw new InvalidInstallmentRequestException("scope", "O alcance de grupo só vale para compra parcelada");
+
+        List<Transaction> targets = switch (scope) {
+            case ONLY_THIS -> List.of(purchase);
+            case THIS_AND_FOLLOWING -> repository.findAllByInstallmentGroupIdAndInstallmentNumberGreaterThanEqual(purchase.getInstallmentGroupId(), purchase.getInstallmentNumber());
+            case WHOLE_PURCHASE -> repository.findAllByInstallmentGroupId(purchase.getInstallmentGroupId());
+        };
+
+        Set<Long> alreadyRefunded = repository.findAllByRefundOfTransactionIdIn(targets.stream().map(Transaction::getId).toList())
+                .stream().map(Transaction::getRefundOfTransactionId).collect(Collectors.toSet());
+
+        List<Transaction> pending = targets.stream()
+                .filter(t -> !alreadyRefunded.contains(t.getId()))
+                .sorted(Comparator.comparing(t -> t.getInstallmentNumber() == null ? 0 : t.getInstallmentNumber()))
+                .toList();
+
+        if (pending.isEmpty())
+            throw new TransactionIsRefundedException(id);
+
+        Category category = categoryService.findRefundCategory();
+        Instant now = Instant.now();
+        List<Transaction> refunds = new ArrayList<>();
+
+        for (Transaction item : pending) {
+            Transaction refund = new Transaction();
+
+            refund.setAccountId(item.getAccountId());
+            refund.setCategoryId(category.getId());
+            refund.setAmount(item.getAmount());
+            refund.setType(TransactionType.INCOME);
+            refund.setDescription("Estorno: " + (item.getDescription() == null ? "" : item.getDescription()));
+            refund.setDate(request.date().isAfter(item.getDate()) ? request.date() : item.getDate());
+            refund.setRefundOfTransactionId(item.getId());
+            refund.setCreatedAt(now);
+            refund.setUpdatedAt(now);
+
+            refunds.add(refund);
+        }
+
+        try {
+            return repository.saveAllAndFlush(refunds).stream()
+                    .map(t -> new TransactionResponse(t, account.getName(), category.getName()))
+                    .toList();
+        } catch (DataIntegrityViolationException ex) {
+            // Pedido simultâneo: o índice único garante um estorno por compra.
+            throw new TransactionIsRefundedException(id);
+        }
     }
 }

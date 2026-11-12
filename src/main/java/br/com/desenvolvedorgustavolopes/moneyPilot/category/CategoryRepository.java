@@ -18,6 +18,9 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     """)
     Page<Category> findVisibleToUser(@Param("userId") Long userId, Pageable pageable);
 
+    /** Spec 028: categoria global usada nos estornos. */
+    Optional<Category> findByNameAndTypeAndUserIdIsNull(String name, CategoryType type);
+
     /** Exclusão de conta (spec 012): apaga em lote, sem carregar entidades. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM Category c WHERE c.userId = :userId")

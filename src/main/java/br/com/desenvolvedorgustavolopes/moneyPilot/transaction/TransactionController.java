@@ -65,7 +65,7 @@ public class TransactionController {
         return service.getTransactionById(id);
     }
 
-    @Operation(summary = "Atualiza um lançamento", description = "Substitui os dados do lançamento. Falha com 409 se ele for parte de uma transferência.")
+    @Operation(summary = "Atualiza um lançamento", description = "Substitui os dados do lançamento. Em parcela de compra no cartão, scope escolhe só esta parcela (ONLY_THIS, padrão) ou esta e as seguintes (THIS_AND_FOLLOWING): descrição, categoria e valor valem para o alcance e a data só para a parcela editada; conta e tipo da parcela não mudam (400). Falha com 409 se ele for parte de uma transferência, baixa de título, estorno ou compra estornada.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lançamento atualizado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -75,11 +75,11 @@ public class TransactionController {
     })
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public TransactionResponse updateTransaction(@PathVariable Long id, @RequestBody @Valid TransactionRequest request) {
-        return service.updateTransaction(id, request);
+    public TransactionResponse updateTransaction(@PathVariable Long id, @RequestBody @Valid TransactionRequest request, @RequestParam(required = false) EditScope scope) {
+        return service.updateTransaction(id, request, scope);
     }
 
-    @Operation(summary = "Apaga um lançamento", description = "Apaga o lançamento. Falha com 409 se for parte de uma transferência ou estiver ligado a uma conta paga.")
+    @Operation(summary = "Apaga um lançamento", description = "Apaga o lançamento. Apagar um estorno desfaz o estorno (a compra volta ao normal). Falha com 409 se for parte de uma transferência, estiver ligado a uma conta paga ou for compra estornada (inclusive de um grupo de parcelas com estorno).")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Lançamento apagado"),
             @ApiResponse(responseCode = "401", description = "Sem sessão ou token de acesso inválido ou vencido", content = @Content),
@@ -90,6 +90,20 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteTransaction(@PathVariable Long id) {
         service.deleteTransaction(id);
+    }
+
+    @Operation(summary = "Estorna uma compra no cartão", description = "Cria uma receita no mesmo cartão, de mesmo valor, na categoria global Estorno e ligada à compra, que passa a vir com refundTransactionId. Só despesa de cartão de crédito que não seja transferência, baixa de título nem estorno. Em parcela, scope escolhe ONLY_THIS (padrão), THIS_AND_FOLLOWING ou WHOLE_PURCHASE; a data de cada estorno é a maior entre a informada e a da parcela. Parcelas já estornadas são puladas; sem nenhuma a estornar, 409. Para desfazer, apague o estorno.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Os estornos criados"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Sem sessão ou token de acesso inválido ou vencido", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Recurso não encontrado (ou de outra conta)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Lançamento não estornável ou já estornado", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/{id}/refund")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<TransactionResponse> refundTransaction(@PathVariable Long id, @RequestBody @Valid RefundRequest request) {
+        return service.refundTransaction(id, request);
     }
 
     @Operation(summary = "Transfere entre contas", description = "Cria a saída na conta de origem e a entrada na de destino. As contas devem ser diferentes.")
@@ -105,7 +119,7 @@ public class TransactionController {
         return service.createTransfer(request);
     }
 
-    @Operation(summary = "Lança uma compra parcelada no cartão", description = "Cria uma despesa por parcela no cartão de crédito, no mesmo dia dos meses seguintes (limitado ao último dia do mês). Informe o valor total (o centavo que sobra da divisão fica na primeira parcela) ou o valor da parcela (parcelas iguais); com o valor da parcela, currentInstallment lança só da parcela atual até a última, para compras em andamento. Os dois valores juntos, nenhum, ou parcela atual com o valor total são 400. Parcela não é editada sozinha: apagar uma remove o grupo todo.")
+    @Operation(summary = "Lança uma compra parcelada no cartão", description = "Cria uma despesa por parcela no cartão de crédito, no mesmo dia dos meses seguintes (limitado ao último dia do mês). Informe o valor total (o centavo que sobra da divisão fica na primeira parcela) ou o valor da parcela (parcelas iguais); com o valor da parcela, currentInstallment lança só da parcela atual até a última, para compras em andamento. Os dois valores juntos, nenhum, ou parcela atual com o valor total são 400. Apagar uma parcela remove o grupo todo.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "As parcelas criadas, da primeira à última"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada (conta que não é cartão, categoria de receita, valor pequeno demais para as parcelas)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -118,11 +132,12 @@ public class TransactionController {
         return service.createInstallmentPurchase(request);
     }
 
-    @Operation(summary = "Apaga uma compra parcelada", description = "Remove todas as parcelas do grupo.")
+    @Operation(summary = "Apaga uma compra parcelada", description = "Remove todas as parcelas do grupo. Falha com 409 se alguma estiver estornada.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Parcelas apagadas"),
             @ApiResponse(responseCode = "401", description = "Sem sessão ou token de acesso inválido ou vencido", content = @Content),
-            @ApiResponse(responseCode = "404", description = "Recurso não encontrado (ou de outra conta)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(responseCode = "404", description = "Recurso não encontrado (ou de outra conta)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Alguma parcela do grupo está estornada", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @DeleteMapping("/installments/{groupId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

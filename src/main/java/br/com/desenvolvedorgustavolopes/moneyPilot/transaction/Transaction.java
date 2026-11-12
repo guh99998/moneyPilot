@@ -55,6 +55,9 @@ public class Transaction {
     @Column(name = "recurring_purchase_id")
     private Long recurringPurchaseId;
 
+    @Column(name = "refund_of_transaction_id")
+    private Long refundOfTransactionId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
