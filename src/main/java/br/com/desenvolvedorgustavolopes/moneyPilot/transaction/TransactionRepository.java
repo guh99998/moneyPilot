@@ -25,6 +25,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findAllByInstallmentGroupId(UUID installmentGroupId);
 
+    List<Transaction> findAllByInstallmentGroupIdAndInstallmentNumberGreaterThanEqual(UUID installmentGroupId, Integer installmentNumber);
+
     @Query("""
     SELECT COALESCE(SUM(CASE WHEN t.type = 'INCOME' THEN t.amount ELSE -t.amount END), 0) FROM Transaction t WHERE t.accountId = :accountId
     """)

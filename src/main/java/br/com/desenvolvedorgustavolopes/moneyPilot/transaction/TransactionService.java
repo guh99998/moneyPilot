@@ -125,19 +125,33 @@ public class TransactionService {
         return new TransactionResponse(transaction, account.getName(), category.getName(), bill);
     }
 
-    public TransactionResponse updateTransaction(Long id, TransactionRequest request) {
+    @Transactional
+    public TransactionResponse updateTransaction(Long id, TransactionRequest request, EditScope scope) {
         Transaction transaction = this.findOwnedTransaction(id);
         Long userId = userProvider.getCurrentUserId();
+        EditScope editScope = scope == null ? EditScope.ONLY_THIS : scope;
+        boolean installment = transaction.getInstallmentGroupId() != null;
 
         if (transaction.getTransferGroupId() != null)
             throw new TransactionIsTransferException(id);
 
-        if (transaction.getInstallmentGroupId() != null)
-            throw new TransactionIsInstallmentException(id);
-
         if (billRepository.existsByTransactionId(id))
             throw new TransactionLinkedToBillException(id);
 
+        if (editScope == EditScope.THIS_AND_FOLLOWING && !installment)
+            throw new InvalidInstallmentRequestException("scope", "O alcance 'esta e as seguintes' só vale para parcela");
+
+        if (installment) {
+            // Spec 028, regra 2: a parcela continua no cartão e no tipo em que nasceu.
+            if (!transaction.getAccountId().equals(request.accountId()))
+                throw new InvalidInstallmentRequestException("accountId", "A conta de uma parcela não muda");
+            if (transaction.getType() != request.type())
+                throw new InvalidInstallmentRequestException("type", "O tipo de uma parcela não muda");
+        }
+
+        List<Transaction> range = editScope == EditScope.THIS_AND_FOLLOWING
+                ? repository.findAllByInstallmentGroupIdAndInstallmentNumberGreaterThanEqual(transaction.getInstallmentGroupId(), transaction.getInstallmentNumber())
+                : List.of(transaction);
 
         Account account = accountRepository.findByIdAndUserId(request.accountId(), userId).orElseThrow(() -> new AccountNotFoundException(request.accountId()));
 
@@ -146,16 +160,22 @@ public class TransactionService {
         if (!category.getType().name().equals(request.type().name()))
             throw new CategoryTypeMismatchException(request.categoryId(), request.type());
 
+        Instant now = Instant.now();
+
+        for (Transaction item : range) {
+            item.setCategoryId(request.categoryId());
+            item.setAmount(request.amount());
+            item.setDescription(request.description());
+            item.setUpdatedAt(now);
+        }
 
         transaction.setAccountId(request.accountId());
-        transaction.setCategoryId(request.categoryId());
-        transaction.setAmount(request.amount());
         transaction.setType(request.type());
-        transaction.setDescription(request.description());
         transaction.setDate(request.date());
-        transaction.setUpdatedAt(Instant.now());
 
-        return new TransactionResponse(repository.save(transaction), account.getName(), category.getName());
+        repository.saveAll(range);
+
+        return new TransactionResponse(transaction, account.getName(), category.getName());
     }
 
     public void deleteTransaction(Long id) {

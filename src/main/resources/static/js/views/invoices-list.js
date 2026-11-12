@@ -3,7 +3,11 @@
  * filtro, ordenação e resumo. Tudo roda no navegador, sobre as faturas que a API devolve por cartão.
  */
 
-export const EMPTY_FILTERS = { cardId: '', status: '', dueFrom: '', dueTo: '' };
+import { fmtMoney, fmtDate } from '../ui.js';
+
+/** A lista abre em "Não pagas" (spec 028, regra 13): `UNPAID` é tudo que não está `PAID`; `''` mostra todas. */
+export const UNPAID = 'UNPAID';
+export const EMPTY_FILTERS = { cardId: '', status: UNPAID, dueFrom: '', dueTo: '' };
 
 export const SORT_OPTIONS = [
     { key: 'dueDate', label: 'Vencimento', asc: 'mais antiga primeiro', desc: 'mais nova primeiro' },
@@ -37,7 +41,7 @@ export function buildRows(cards, invoicesByCard) {
 export function filterInvoices(rows, filters) {
     return rows.filter(({ card, invoice }) => {
         if (filters.cardId && String(card.id) !== String(filters.cardId)) return false;
-        if (filters.status && invoice.status !== filters.status) return false;
+        if (filters.status === UNPAID ? invoice.status === 'PAID' : filters.status && invoice.status !== filters.status) return false;
         if (filters.dueFrom && invoice.dueDate < filters.dueFrom) return false;
         if (filters.dueTo && invoice.dueDate > filters.dueTo) return false;
         return true;
@@ -81,4 +85,37 @@ export function summarize(rows) {
         if (invoice.status === 'OPEN') summary.openCount += 1;
     }
     return summary;
+}
+
+/** Fatura aberta toda paga (spec 028, regra 17): ainda recebe compras até fechar, mas hoje não falta nada. */
+export function isPaidInAdvance(invoice) {
+    return invoice.status === 'OPEN' && toCents(invoice.total) > 0 && toCents(invoice.remaining) <= 0;
+}
+
+/**
+ * Prévia do diálogo "Pagar fatura" (spec 028, regra 16): o valor abate da fatura mais antiga para a mais nova,
+ * como no servidor (paga e futura ficam de fora). `invoices` são as do cartão, em ordem de vencimento.
+ */
+export function paymentPreview(invoices, amountCents) {
+    if (!Number.isFinite(amountCents) || amountCents <= 0) return '';
+    let left = amountCents;
+    const steps = [];
+    let lastRemaining = 0;
+    for (const invoice of invoices) {
+        if (left <= 0) break;
+        if (invoice.status === 'FUTURE') continue;
+        const owed = toCents(invoice.remaining);
+        if (owed <= 0) continue;
+        const applied = Math.min(left, owed);
+        left -= applied;
+        lastRemaining = owed - applied;
+        steps.push({ due: fmtDate(invoice.dueDate), settles: applied === owed });
+    }
+    if (!steps.length) return '';
+
+    const parts = steps.map((step) => `${step.settles ? 'quita' : 'abate'} a fatura com vencimento em ${step.due}`);
+    let text = `Pagando, ${parts.join(' e ')}`;
+    if (left > 0) return `${text}; sobram ${fmtMoney(left / 100)} de crédito para as próximas faturas.`;
+    if (lastRemaining > 0) text += `, que vai ficar em ${fmtMoney(lastRemaining / 100)}`;
+    return `${text}.`;
 }

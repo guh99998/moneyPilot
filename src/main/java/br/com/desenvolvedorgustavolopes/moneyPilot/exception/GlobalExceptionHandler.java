@@ -519,19 +519,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
-    @ExceptionHandler(TransactionIsInstallmentException.class)
-    public ResponseEntity<ErrorResponse> handleTransactionIsInstallment(TransactionIsInstallmentException ex) {
-        ErrorResponse body = new ErrorResponse(
-                Instant.now(),
-                HttpStatus.CONFLICT.value(),
-                "Conflict",
-                ex.getMessage(),
-                null
-        );
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
-    }
-
     @ExceptionHandler(InstallmentRequiresCreditCardException.class)
     public ResponseEntity<ErrorResponse> handleInstallmentRequiresCreditCard(InstallmentRequiresCreditCardException ex) {
         ErrorResponse body = new ErrorResponse(

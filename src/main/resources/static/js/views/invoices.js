@@ -3,7 +3,10 @@ import {
     el, fmtMoney, fmtDate, badge, toast, reportError, pageHead, emptyState, formDialog, todayIso,
     collapsibleFilters, isCommittedDate, sortHeader, sortSelect, stackable
 } from '../ui.js';
-import { EMPTY_FILTERS, SORT_OPTIONS, buildRows, filterInvoices, sortInvoices, summarize } from './invoices-list.js';
+import {
+    EMPTY_FILTERS, SORT_OPTIONS, UNPAID, buildRows, filterInvoices, sortInvoices, summarize, isPaidInAdvance, paymentPreview
+} from './invoices-list.js';
+import { itemActionButtons } from './invoices-items.js';
 import { openRecurringPurchaseDialog, projectedCharges, recurringPurchasesSection } from './invoices-recurring.js';
 
 export const INVOICE_STATUS = {
@@ -17,7 +20,7 @@ export const INVOICE_STATUS = {
 const toCents = (value) => Math.round(Number(value) * 100);
 const fromCents = (cents) => (cents / 100).toFixed(2);
 
-const DEFAULT_SORT = { key: 'dueDate', dir: 'desc' };
+const DEFAULT_SORT = { key: 'dueDate', dir: 'asc' };
 let filters = { ...EMPTY_FILTERS };
 let sort = { ...DEFAULT_SORT };
 
@@ -109,9 +112,10 @@ export function selectInvoiceCard(id) {
 
 /**
  * Diálogo de pagar fatura: uma transferência de outra conta para o cartão, não uma nova despesa.
- * `accounts` são todas as contas da pessoa; `onDone` roda depois que o pagamento foi registrado.
+ * `accounts` são todas as contas da pessoa; `invoices` (opcional) são as faturas do cartão, para a prévia de
+ * onde o valor cai; `onDone` roda depois que o pagamento foi registrado.
  */
-export function openPayInvoiceDialog({ card, amount, accounts, onDone }) {
+export function openPayInvoiceDialog({ card, amount, accounts, invoices, onDone }) {
     const sources = accounts.filter((account) => account.type !== 'CREDIT_CARD' && account.id !== card.id);
     if (!sources.length) {
         toast('Cadastre uma conta (que não seja cartão) para pagar a fatura.', 'error');
@@ -132,6 +136,7 @@ export function openPayInvoiceDialog({ card, amount, accounts, onDone }) {
             { name: 'description', label: 'Descrição (opcional)', type: 'text', placeholder: 'Pagamento da fatura' }
         ],
         values: { amount, date: todayIso() },
+        preview: invoices ? (values) => paymentPreview(invoices, toCents(values.amount)) : undefined,
         submitLabel: 'Pagar',
         onSubmit: async (values) => {
             await api.transactions.transfer(payInvoicePayload(values, card.id));
@@ -146,7 +151,14 @@ function statusBadge(status) {
     return badge(info.kind, info.label);
 }
 
-function purchaseLine(transaction) {
+/** Situação da fatura; a aberta já paga por inteiro ganha o selo "Paga adiantada" ao lado. */
+function invoiceStatus(invoice) {
+    return isPaidInAdvance(invoice)
+        ? el('span', { class: 'invoice-status-badges' }, [statusBadge(invoice.status), badge('settled', 'Paga adiantada')])
+        : statusBadge(invoice.status);
+}
+
+function purchaseLine(transaction, onChanged) {
     const isPayment = Boolean(transaction.transferGroupId);
     const income = transaction.type === 'INCOME';
     const label = isPayment ? 'Pagamento recebido' : (transaction.description || transaction.categoryName || '—');
@@ -154,6 +166,7 @@ function purchaseLine(transaction) {
         ? ` (${transaction.installmentNumber}/${transaction.installmentTotal})`
         : '';
     const recurring = transaction.recurringPurchaseId ? ' · assinatura' : '';
+    const actions = itemActionButtons(transaction, { onChanged });
     return el('li', { class: 'invoice-purchase' }, [
         el('span', { class: 'invoice-purchase-date', text: fmtDate(transaction.date) }),
         el('span', { class: 'invoice-purchase-desc', text: label + installment + recurring }),
@@ -161,7 +174,8 @@ function purchaseLine(transaction) {
             class: 'invoice-purchase-amount',
             style: `color: var(--${income ? 'income' : 'expense'})`,
             text: `${income ? '+' : '−'} ${fmtMoney(transaction.amount)}`
-        })
+        }),
+        actions.length ? el('span', { class: 'invoice-purchase-actions' }, actions) : null
     ]);
 }
 
@@ -178,7 +192,7 @@ function projectedLine(charge) {
 }
 
 /** Compras do ciclo, carregadas só quando a pessoa abre a lista; `projected` são as cobranças previstas. */
-function purchasesDetails(card, invoice, projected = []) {
+function purchasesDetails(card, invoice, projected = [], onChanged) {
     const body = el('div', { class: 'invoice-purchases-body', 'aria-live': 'polite' });
     let loaded = false;
 
@@ -193,7 +207,7 @@ function purchasesDetails(card, invoice, projected = []) {
                 size: 100,
                 sort: ['date,asc', 'id,asc']
             }));
-            const lines = [...result.content.map(purchaseLine), ...projected.map(projectedLine)];
+            const lines = [...result.content.map((transaction) => purchaseLine(transaction, onChanged)), ...projected.map(projectedLine)];
             body.replaceChildren(lines.length
                 ? el('ul', { class: 'invoice-purchase-list' }, lines)
                 : el('p', { class: 'meter-foot', text: 'Nenhum lançamento neste ciclo.' }));
@@ -345,7 +359,7 @@ export async function renderInvoices() {
             class: 'btn-primary btn-sm',
             text: 'Pagar fatura',
             'aria-label': `Pagar fatura do ${card.name} com vencimento em ${fmtDate(invoice.dueDate)}`,
-            onClick: () => openPayInvoiceDialog({ card, amount: payAmount, accounts, onDone: load })
+            onClick: () => openPayInvoiceDialog({ card, amount: payAmount, accounts, invoices: byCard.get(card.id), onDone: load })
         });
     }
 
@@ -369,16 +383,21 @@ export async function renderInvoices() {
             el('span', { text: `Fecha em ${fmtDate(invoice.closingDate)}` }),
             el('span', { text: `Vence em ${fmtDate(invoice.dueDate)}` })
         ];
-        if (Number(invoice.paid) > 0) facts.push(el('span', { text: `Já pago: ${fmtMoney(invoice.paid)}` }));
+        const partlyPaid = Number(invoice.paid) > 0;
+        if (partlyPaid) {
+            facts.push(el('span', { text: `Total da fatura: ${fmtMoney(invoice.total)}` }));
+            facts.push(el('span', { text: `Já pago: ${fmtMoney(invoice.paid)}` }));
+        }
         if (Number(invoice.projectedTotal) > 0) facts.push(el('span', { text: `Previsto: ${fmtMoney(invoice.projectedTotal)} em assinaturas mensais` }));
         const titleId = `invoice-current-${card.id}`;
 
         return el('section', { class: 'card invoice-current', 'aria-labelledby': titleId }, [
             el('div', { class: 'card-head' }, [
                 el('h2', { id: titleId, text: `Fatura atual · ${card.name}` }),
-                statusBadge(invoice.status)
+                invoiceStatus(invoice)
             ]),
-            el('p', { class: 'invoice-figure', text: fmtMoney(invoice.total) }),
+            partlyPaid ? el('p', { class: 'meter-foot', text: 'Falta pagar' }) : null,
+            el('p', { class: 'invoice-figure', text: fmtMoney(partlyPaid ? invoice.remaining : invoice.total) }),
             el('p', { class: 'invoice-facts' }, facts),
             card.invoicesFrom ? el('p', { class: 'meter-foot', text: `Faturas contam desde ${fmtDate(card.invoicesFrom)}` }) : null,
             earlierOwed > 0
@@ -427,7 +446,10 @@ export async function renderInvoices() {
         const active = Object.entries(filters).filter(([name, value]) => value && value !== EMPTY_FILTERS[name]).length;
         return collapsibleFilters('invoices', el('div', { class: 'filters' }, [
             selectField('Cartão', 'cardId', cards.map((card) => ({ value: card.id, label: card.name })), 'Todos'),
-            selectField('Situação', 'status', Object.entries(INVOICE_STATUS).map(([value, info]) => ({ value, label: info.label })), 'Todas'),
+            selectField('Situação', 'status', [
+                { value: UNPAID, label: 'Não pagas' },
+                ...Object.entries(INVOICE_STATUS).map(([value, info]) => ({ value, label: info.label }))
+            ], 'Todas'),
             dateField('Vence de', 'dueFrom'),
             dateField('até', 'dueTo'),
             el('button', {
@@ -459,16 +481,21 @@ export async function renderInvoices() {
                     el('td', { class: 'due', text: fmtDate(row.invoice.dueDate) }),
                     el('td', { class: 'desc' }, [
                         el('span', { class: 'desc-main', text: row.card.name }),
-                        purchasesDetails(row.card, row.invoice, projectedOf(row.card, row.invoice))
+                        purchasesDetails(row.card, row.invoice, projectedOf(row.card, row.invoice), load)
                     ]),
-                    el('td', { class: 'status' }, statusBadge(row.invoice.status)),
+                    el('td', { class: 'status' }, invoiceStatus(row.invoice)),
                     el('td', { class: 'num' }, [
                         fmtMoney(row.invoice.total),
                         Number(row.invoice.projectedTotal) > 0
                             ? el('span', { class: 'meter-foot', text: `Inclui ${fmtMoney(row.invoice.projectedTotal)} previsto` })
                             : null
                     ]),
-                    el('td', { class: 'num', text: Number(row.invoice.remaining) > 0 ? fmtMoney(row.invoice.remaining) : '—' }),
+                    el('td', { class: 'num' }, [
+                        Number(row.invoice.remaining) > 0 ? fmtMoney(row.invoice.remaining) : '—',
+                        Number(row.invoice.paid) > 0 && Number(row.invoice.remaining) > 0
+                            ? el('span', { class: 'meter-foot', text: `pago ${fmtMoney(row.invoice.paid)}, falta ${fmtMoney(row.invoice.remaining)}` })
+                            : null
+                    ]),
                     el('td', { class: 'actions' }, payButton(row))
                 ])))
             ])

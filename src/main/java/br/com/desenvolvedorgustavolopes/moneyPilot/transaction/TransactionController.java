@@ -65,7 +65,7 @@ public class TransactionController {
         return service.getTransactionById(id);
     }
 
-    @Operation(summary = "Atualiza um lançamento", description = "Substitui os dados do lançamento. Falha com 409 se ele for parte de uma transferência.")
+    @Operation(summary = "Atualiza um lançamento", description = "Substitui os dados do lançamento. Em parcela de compra no cartão, scope escolhe só esta parcela (ONLY_THIS, padrão) ou esta e as seguintes (THIS_AND_FOLLOWING): descrição, categoria e valor valem para o alcance e a data só para a parcela editada; conta e tipo da parcela não mudam (400). Falha com 409 se ele for parte de uma transferência ou de uma baixa de título.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lançamento atualizado"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -75,8 +75,8 @@ public class TransactionController {
     })
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public TransactionResponse updateTransaction(@PathVariable Long id, @RequestBody @Valid TransactionRequest request) {
-        return service.updateTransaction(id, request);
+    public TransactionResponse updateTransaction(@PathVariable Long id, @RequestBody @Valid TransactionRequest request, @RequestParam(required = false) EditScope scope) {
+        return service.updateTransaction(id, request, scope);
     }
 
     @Operation(summary = "Apaga um lançamento", description = "Apaga o lançamento. Falha com 409 se for parte de uma transferência ou estiver ligado a uma conta paga.")
@@ -105,7 +105,7 @@ public class TransactionController {
         return service.createTransfer(request);
     }
 
-    @Operation(summary = "Lança uma compra parcelada no cartão", description = "Cria uma despesa por parcela no cartão de crédito, no mesmo dia dos meses seguintes (limitado ao último dia do mês). Informe o valor total (o centavo que sobra da divisão fica na primeira parcela) ou o valor da parcela (parcelas iguais); com o valor da parcela, currentInstallment lança só da parcela atual até a última, para compras em andamento. Os dois valores juntos, nenhum, ou parcela atual com o valor total são 400. Parcela não é editada sozinha: apagar uma remove o grupo todo.")
+    @Operation(summary = "Lança uma compra parcelada no cartão", description = "Cria uma despesa por parcela no cartão de crédito, no mesmo dia dos meses seguintes (limitado ao último dia do mês). Informe o valor total (o centavo que sobra da divisão fica na primeira parcela) ou o valor da parcela (parcelas iguais); com o valor da parcela, currentInstallment lança só da parcela atual até a última, para compras em andamento. Os dois valores juntos, nenhum, ou parcela atual com o valor total são 400. Apagar uma parcela remove o grupo todo.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "As parcelas criadas, da primeira à última"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos ou regra de negócio violada (conta que não é cartão, categoria de receita, valor pequeno demais para as parcelas)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),

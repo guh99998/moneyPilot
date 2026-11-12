@@ -78,7 +78,7 @@ class InstallmentPurchaseIntegrationTest extends CreditCardTestSupport {
     }
 
     @Test
-    void update_ofAnInstallment_is409() throws Exception {
+    void update_ofAnInstallment_isAllowedSinceSpec028() throws Exception {
         String token = registerAndLogin();
         Long card = createCard(token, 10, 17);
         String json = postInstallments(token, card, FOOD_CATEGORY_ID, "100.00", 2, TODAY)
@@ -89,7 +89,7 @@ class InstallmentPurchaseIntegrationTest extends CreditCardTestSupport {
                         .header(HttpHeaders.AUTHORIZATION, bearer(token))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"accountId\":" + card + ",\"categoryId\":3,\"amount\":10.00,\"type\":\"EXPENSE\",\"description\":\"x\",\"date\":\"2026-03-15\"}"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isOk());
     }
 
     @Test
