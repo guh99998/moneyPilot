@@ -98,13 +98,13 @@ test('openPayInvoiceDialog is exported for the payable list to reuse', () => {
     assert.equal(typeof openPayInvoiceDialog, 'function');
 });
 
-test('one list shows the invoices of every card, newest due date first', async () => {
+test('one list shows the invoices of every card that are not paid, oldest due date first', async () => {
     mockApi({ accounts: [CHECKING, NUBANK, INTER] });
 
     const view = await renderInvoices();
 
     assert.deepEqual(dueDates(view), [
-        '17/05/2026', '17/04/2026', '12/04/2026', '17/03/2026', '12/03/2026', '17/02/2026'
+        '17/02/2026', '17/03/2026', '12/04/2026', '17/04/2026', '17/05/2026'
     ]);
     const cards = bodyRows(view).map((row) => findByTag(row, 'td')[1].textContent);
     assert.ok(cards.some((cell) => cell.includes('Nubank')));
@@ -190,7 +190,7 @@ test('the card filter narrows the list to that card', async () => {
     select.value = '9';
     await select.dispatch('change');
 
-    assert.deepEqual(dueDates(view), ['12/04/2026', '12/03/2026']);
+    assert.deepEqual(dueDates(view), ['12/04/2026']);
 });
 
 test('the status filter keeps only that situation', async () => {
@@ -201,7 +201,7 @@ test('the status filter keeps only that situation', async () => {
     select.value = 'OPEN';
     await select.dispatch('change');
 
-    assert.deepEqual(dueDates(view), ['17/04/2026', '12/04/2026']);
+    assert.deepEqual(dueDates(view), ['12/04/2026', '17/04/2026']);
 });
 
 test('clicking a column header sorts by it, and again reverses', async () => {
@@ -224,7 +224,7 @@ test('selectInvoiceCard opens the screen filtered on that card', async () => {
 
     const view = await renderInvoices();
 
-    assert.deepEqual(dueDates(view), ['12/04/2026', '12/03/2026']);
+    assert.deepEqual(dueDates(view), ['12/04/2026']);
     const select = findByTag(view, 'select').find((node) => node.parent.textContent.includes('Cartão'));
     assert.equal(select.value, '9');
 });
@@ -359,4 +359,74 @@ test('installmentPreview for the total shows the first installment carrying the 
 
 test('installmentPreview waits for the values', () => {
     assert.match(installmentPreview({ amountMode: 'installment', installmentAmount: '', installments: '10', date: '2026-03-17' }), /valor/i);
+});
+
+const situationSelect = (view) => findByTag(view, 'select').find((node) => node.parent.textContent.includes('Situação'));
+
+test('the screen opens on "Não pagas" and "Todas" brings the paid invoices back', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+    const view = await renderInvoices();
+
+    assert.equal(situationSelect(view).value, 'UNPAID');
+    assert.ok(findByTag(situationSelect(view), 'option').some((option) => option.textContent === 'Não pagas'));
+    assert.ok(!dueDates(view).includes('12/03/2026'));
+
+    situationSelect(view).value = '';
+    await situationSelect(view).dispatch('change');
+
+    assert.ok(dueDates(view).includes('12/03/2026'));
+});
+
+test('Limpar goes back to the not paid, oldest first', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK, INTER] });
+    const view = await renderInvoices();
+    situationSelect(view).value = '';
+    await situationSelect(view).dispatch('change');
+
+    await findByTag(view, 'button').find((node) => node.textContent === 'Limpar').dispatch('click');
+
+    assert.equal(situationSelect(view).value, 'UNPAID');
+    assert.equal(dueDates(view)[0], '17/02/2026');
+});
+
+test('an open invoice paid in full shows "Paga adiantada"', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: [inv('2026-04-17', 'OPEN', '100.00', '100.00')] } });
+
+    const view = await renderInvoices();
+
+    assert.match(text(bodyRows(view)[0]), /Paga adiantada/);
+});
+
+test('an empty open invoice and a closed one paid in full do not show "Paga adiantada"', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: [inv('2026-04-17', 'OPEN', '0.00'), inv('2026-05-17', 'CLOSED', '100.00', '100.00')] } });
+
+    const view = await renderInvoices();
+
+    for (const row of bodyRows(view)) assert.doesNotMatch(text(row), /Paga adiantada/);
+});
+
+test('an invoice partly paid says how much was paid and how much is left', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: [inv('2026-04-17', 'OPEN', '500.00', '50.00')] } });
+
+    const view = await renderInvoices();
+
+    assert.match(text(bodyRows(view)[0]), /pago R\$\s50,00, falta R\$\s450,00/);
+});
+
+test('an invoice with nothing paid does not show the paid line', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: [inv('2026-04-17', 'OPEN', '500.00')] } });
+
+    const view = await renderInvoices();
+
+    assert.doesNotMatch(text(bodyRows(view)[0]), /pago R\$/);
+});
+
+test('the pay dialog previews where the amount goes', async () => {
+    mockApi({ accounts: [CHECKING, NUBANK], invoices: { 7: [inv('2026-04-17', 'OPEN', '500.00')] } });
+    const view = await renderInvoices();
+
+    await findByTag(bodyRows(view)[0], 'button').find((node) => node.textContent === 'Pagar fatura').dispatch('click');
+
+    const hint = findAll(globalThis.document.body, (node) => node.className === 'preview-hint')[0];
+    assert.match(hint.textContent, /quita a fatura com vencimento em 17\/04\/2026/);
 });
