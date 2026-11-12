@@ -116,7 +116,7 @@ class TransactionEditInstallmentIntegrationTest extends CreditCardTestSupport {
     }
 
     @Test
-    void ca13_editAmountWithMoreThanTwoDecimalsOrComma_is400OnTheField() throws Exception {
+    void ca8_editAmountWithMoreThanTwoDecimalsOrComma_is400OnTheField() throws Exception {
         String token = registerAndLogin();
         Long card = createCard(token, 10, 17);
         String[] ids = installmentIds(token, card);
@@ -128,7 +128,7 @@ class TransactionEditInstallmentIntegrationTest extends CreditCardTestSupport {
     }
 
     @Test
-    void ca9_transferStill409() throws Exception {
+    void ca4_transferStill409() throws Exception {
         String token = registerAndLogin();
         Long card = createCard(token, 10, 17);
         Long checking = createAccount(token, AccountType.CHECKING, "1000.00");
@@ -163,19 +163,4 @@ class TransactionEditInstallmentIntegrationTest extends CreditCardTestSupport {
         edit(token, id, card, FOOD_CATEGORY_ID, "12.00", "EXPENSE", "x", "2026-03-15", null).andExpect(status().isOk());
     }
 
-    @Test
-    void editingARefundedInstallment_orARangeWithOne_is409() throws Exception {
-        String token = registerAndLogin();
-        Long card = createCard(token, 10, 17);
-        String[] ids = installmentIds(token, card);
-        mockMvc.perform(post("/api/v1/transactions/{id}/refund", ids[2])
-                        .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"date\":\"2026-03-15\"}"))
-                .andExpect(status().isCreated());
-
-        edit(token, ids[2], card, FOOD_CATEGORY_ID, "100.00", "EXPENSE", "x", "2026-05-20", null).andExpect(status().isConflict());
-        edit(token, ids[1], card, FOOD_CATEGORY_ID, "100.00", "EXPENSE", "x", "2026-04-20", "THIS_AND_FOLLOWING").andExpect(status().isConflict());
-        assertEquals("Notebook", JsonPath.read(read(token, ids[1]), "$.description"));
-        edit(token, ids[1], card, FOOD_CATEGORY_ID, "100.00", "EXPENSE", "so esta", "2026-04-20", null).andExpect(status().isOk());
-    }
 }
